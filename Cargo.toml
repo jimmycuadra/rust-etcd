@@ -1,0 +1,16 @@
+[package]
+
+name = "etcd"
+version = "0.1.0"
+authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
+description = "A client library for CoreOS's etcd."
+license = "MIT"
+readme = "README.md"
+keywords = ["etcd", "coreos", "database"]
+repository = "https://github.com/jimmycuadra/rust-etcd"
+homepage = "https://github.com/jimmycuadra/rust-etcd"
+
+[lib]
+
+name = "etcd"
+doctest = false
