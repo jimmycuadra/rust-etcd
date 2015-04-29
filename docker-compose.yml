@@ -1,0 +1,8 @@
+etcd:
+  image: quay.io/coreos/etcd:v2.0.10
+  name: etcd
+rust:
+  image: jimmycuadra/rust
+  net: container:etcd
+  volumes:
+    - .:/source
