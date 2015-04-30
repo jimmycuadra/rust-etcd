@@ -134,7 +134,7 @@ impl Client {
 
 #[cfg(test)]
 mod mk_tests {
-    use super::Client;
+    use super::{Client, Error};
 
     #[test]
     fn mk_key() {
@@ -149,10 +149,14 @@ mod mk_tests {
 
     #[test]
     fn mk_key_failure() {
-        let client = Client::default();
+        let client = Client::new("http://etcd:2379").unwrap();
 
         assert!(client.mk("/foo", "bar", None).is_ok());
-        assert!(client.mk("/foo", "bar", None).is_err());
+
+        match client.mk("/foo", "bar", None).err().unwrap() {
+            Error::EtcdError(error) => assert_eq!(error.message, "Key already exists".to_string()),
+            _ => panic!("expected EtcdError due to pre-existing key"),
+        };
     }
 }
 
