@@ -44,18 +44,13 @@ impl Client {
 
         let body = serialize_owned(&options);
 
-        match http::put(url, body) {
-            Ok(mut response) => {
-                let mut response_body = String::new();
+        let mut response = try!(http::put(url, body));
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
 
-                response.read_to_string(&mut response_body).unwrap();
-
-                match response.status {
-                    StatusCode::Created => Ok(json::decode(&response_body).unwrap()),
-                    _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
-                }
-            },
-            Err(error) => Err(Error::Http(error)),
+        match response.status {
+            StatusCode::Created => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
         }
     }
 
@@ -67,18 +62,13 @@ impl Client {
 
         let body = serialize_owned(&options);
 
-        match http::delete(url, body) {
-            Ok(mut response) => {
-                let mut response_body = String::new();
+        let mut response = try!(http::delete(url, body));
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
 
-                response.read_to_string(&mut response_body).unwrap();
-
-                match response.status {
-                    StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-                    _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
-                }
-            },
-            Err(error) => Err(Error::Http(error)),
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
         }
     }
 
@@ -96,9 +86,7 @@ impl Client {
         url.set_query_from_pairs(query_pairs.iter().map(|(k, v)| (*k, *v)));
 
         let mut response = try!(http::get(format!("{}", url)));
-
         let mut response_body = String::new();
-
         response.read_to_string(&mut response_body).unwrap();
 
         match response.status {
