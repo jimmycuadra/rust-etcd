@@ -10,3 +10,4 @@ pub use client::Client;
 
 mod client;
 mod error;
+mod http;

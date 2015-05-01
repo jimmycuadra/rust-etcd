@@ -1,15 +1,12 @@
 use std::io::Read;
 
-use hyper::Client as HyperClient;
-use hyper::HttpError;
-use hyper::client::Response as HyperResponse;
-use hyper::header::ContentType;
 use hyper::status::StatusCode;
 use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded::serialize_owned;
 
 use error::Error;
+use http;
 
 #[derive(Debug)]
 #[derive(RustcDecodable)]
@@ -70,7 +67,7 @@ impl Client {
 
         let body = serialize_owned(&options);
 
-        match self.put(url, body) {
+        match http::put(url, body) {
             Ok(mut response) => {
                 let mut response_body = String::new();
 
@@ -87,19 +84,29 @@ impl Client {
         }
     }
 
-    pub fn mkdir(&self, key: &str, ttl: Option<u64>) -> Result<Response, EtcdError> {
-        Err(EtcdError)
-    }
+    pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
+        let url = self.build_url(key);
+        let mut options = vec![];
 
-    pub fn set(
-        &self,
-        key: &str,
-        value: &str,
-        ttl: Option<u64>,
-        prev_value: Option<&str>,
-        prev_index: Option<u64>
-    ) -> Result<Response, EtcdError> {
-        Err(EtcdError)
+        options.push(("recursive".to_string(), format!("{}", recursive)));
+
+        let body = serialize_owned(&options);
+
+        match http::delete(url, body) {
+            Ok(mut response) => {
+                let mut response_body = String::new();
+
+                response.read_to_string(&mut response_body).unwrap();
+
+                println!("{:?} - {:?} - {:?}", response.status, response.headers, response_body);
+
+                match response.status {
+                    StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+                    _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+                }
+            },
+            Err(error) => Err(Error::Http(error)),
+        }
     }
 
     // private
@@ -108,14 +115,6 @@ impl Client {
         format!("{}v2/keys{}", self.root_url, path)
     }
 
-    fn put(&self, url: String, body: String) -> Result<HyperResponse, HttpError> {
-        let mut client = HyperClient::new();
-        let content_type: ContentType = ContentType(
-            "application/x-www-form-urlencoded".parse().unwrap()
-        );
-
-        client.put(&url[..]).header(content_type).body(&body[..]).send()
-    }
 }
 
 #[cfg(test)]
@@ -135,15 +134,31 @@ mod create_tests {
     }
 
     #[test]
-    fn mk_key_failure() {
+    fn already_created() {
         let client = Client::new("http://etcd:2379").unwrap();
 
-        assert!(client.mk("/foo", "bar", None).is_ok());
+        assert!(client.create("/foo", "bar", None).is_ok());
 
-        match client.mk("/foo", "bar", None).err().unwrap() {
-            Error::EtcdError(error) => assert_eq!(error.message, "Key already exists".to_string()),
+        match client.create("/foo", "bar", None).err().unwrap() {
+            Error::Etcd(error) => assert_eq!(error.message, "Key already exists".to_string()),
             _ => panic!("expected EtcdError due to pre-existing key"),
         };
+    }
+}
+
+#[cfg(test)]
+mod delete_tests {
+    use super::Client;
+
+    #[test]
+    fn delete() {
+        let client = Client::new("http://etcd:2379").unwrap();
+
+        client.create("/foo", "bar", Some(100)).ok().unwrap();
+
+        let response = client.delete("/foo", false).ok().unwrap();
+
+        assert_eq!(response.action, "delete");
     }
 }
 
