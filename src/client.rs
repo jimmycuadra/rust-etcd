@@ -57,7 +57,7 @@ impl Client {
         Err(EtcdError)
     }
 
-    pub fn mk(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
         let url = self.build_url(key);
         let mut options = vec![];
 
@@ -119,14 +119,15 @@ impl Client {
 }
 
 #[cfg(test)]
-mod mk_tests {
-    use super::{Client, Error};
+mod create_tests {
+    use super::Client;
+    use error::Error;
 
     #[test]
-    fn mk_key() {
+    fn create() {
         let client = Client::new("http://etcd:2379").unwrap();
 
-        let response = client.mk("/foo", "bar", Some(100)).ok().unwrap();
+        let response = client.create("/foo", "bar", Some(100)).ok().unwrap();
 
         assert_eq!(response.action, "create".to_string());
         assert_eq!(response.node.value.unwrap(), "bar".to_string());
