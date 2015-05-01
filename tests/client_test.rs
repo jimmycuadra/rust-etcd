@@ -29,6 +29,14 @@ fn lifecycle() {
         _ => panic!("expected EtcdError due to pre-existing key"),
     };
 
+    // Setting a key
+
+    let set_response = client.set("/foo", "baz", None).ok().unwrap();
+
+    assert_eq!(set_response.action, "set".to_string());
+    assert_eq!(set_response.node.value.unwrap(), "baz".to_string());
+    assert!(set_response.node.ttl.is_none());
+
     // Deleting a key
 
     let delete_response = client.delete("/foo", false).ok().unwrap();

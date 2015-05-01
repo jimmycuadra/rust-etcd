@@ -32,26 +32,7 @@ impl Client {
     }
 
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        let url = self.build_url(key);
-        let mut options = vec![];
-
-        options.push(("value".to_string(), value.to_string()));
-        options.push(("prevExist".to_string(), "false".to_string()));
-
-        if ttl.is_some() {
-            options.push(("ttl".to_string(), format!("{}", ttl.unwrap())));
-        }
-
-        let body = serialize_owned(&options);
-
-        let mut response = try!(http::put(url, body));
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
-
-        match response.status {
-            StatusCode::Created => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
-        }
+        self.create_or_set(key, value, ttl, false)
     }
 
     pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
@@ -95,10 +76,45 @@ impl Client {
         }
     }
 
+    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+        self.create_or_set(key, value, ttl, true)
+    }
+
     // private
 
     fn build_url(&self, path: &str) -> String {
         format!("{}v2/keys{}", self.root_url, path)
     }
 
+    fn create_or_set(
+        &self,
+        key: &str,
+        value: &str,
+        ttl: Option<u64>,
+        prev_exist: bool,
+    ) -> Result<Response, Error> {
+        let url = self.build_url(key);
+        let mut options = vec![];
+
+        options.push(("value".to_string(), value.to_string()));
+
+        if ttl.is_some() {
+            options.push(("ttl".to_string(), format!("{}", ttl.unwrap())));
+        }
+
+        if !prev_exist {
+            options.push(("prevExist".to_string(), "false".to_string()));
+        }
+
+        let body = serialize_owned(&options);
+
+        let mut response = try!(http::put(url, body));
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
+
+        match response.status {
+            StatusCode::Created | StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+        }
+    }
 }
