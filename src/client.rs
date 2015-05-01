@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Read;
 
 use hyper::status::StatusCode;
@@ -49,8 +50,6 @@ impl Client {
 
                 response.read_to_string(&mut response_body).unwrap();
 
-                println!("{:?} - {:?} - {:?}", response.status, response.headers, response_body);
-
                 match response.status {
                     StatusCode::Created => Ok(json::decode(&response_body).unwrap()),
                     _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
@@ -74,14 +73,37 @@ impl Client {
 
                 response.read_to_string(&mut response_body).unwrap();
 
-                println!("{:?} - {:?} - {:?}", response.status, response.headers, response_body);
-
                 match response.status {
                     StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
                     _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
                 }
             },
             Err(error) => Err(Error::Http(error)),
+        }
+    }
+
+    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> Result<Response, Error> {
+        let base_url = self.build_url(key);
+        let sort_string = format!("{}", sort);
+        let recursive_string = format!("{}", recursive);
+
+        let mut query_pairs = HashMap::new();
+
+        query_pairs.insert("sorted", &sort_string[..]);
+        query_pairs.insert("recursive", &recursive_string[..]);
+
+        let mut url = Url::parse(&base_url[..]).unwrap();
+        url.set_query_from_pairs(query_pairs.iter().map(|(k, v)| (*k, *v)));
+
+        let mut response = try!(http::get(format!("{}", url)));
+
+        let mut response_body = String::new();
+
+        response.read_to_string(&mut response_body).unwrap();
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
         }
     }
 
@@ -109,6 +131,14 @@ mod client_tests {
         assert_eq!(create_response.action, "create".to_string());
         assert_eq!(create_response.node.value.unwrap(), "bar".to_string());
         assert_eq!(create_response.node.ttl.unwrap(), 100);
+
+        // Getting a key
+
+        let get_response = client.get("/foo", false, false).ok().unwrap();
+
+        assert_eq!(get_response.action, "get".to_string());
+        assert_eq!(get_response.node.value.unwrap(), "bar".to_string());
+        assert_eq!(get_response.node.ttl.unwrap(), 100);
 
         // Creating a key fails if it already exists
 
