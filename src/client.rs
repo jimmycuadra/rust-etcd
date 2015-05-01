@@ -50,10 +50,6 @@ impl Client {
         }
     }
 
-    pub fn get(&self, key: &str) -> Result<Response, EtcdError> {
-        Err(EtcdError)
-    }
-
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
         let url = self.build_url(key);
         let mut options = vec![];
@@ -118,79 +114,33 @@ impl Client {
 }
 
 #[cfg(test)]
-mod create_tests {
+mod client_tests {
     use super::Client;
     use error::Error;
 
     #[test]
-    fn create() {
+    fn lifecycle() {
         let client = Client::new("http://etcd:2379").unwrap();
 
-        let response = client.create("/foo", "bar", Some(100)).ok().unwrap();
+        // Create a key
 
-        assert_eq!(response.action, "create".to_string());
-        assert_eq!(response.node.value.unwrap(), "bar".to_string());
-        assert_eq!(response.node.ttl.unwrap(), 100);
-    }
+        let create_response = client.create("/foo", "bar", Some(100)).ok().unwrap();
 
-    #[test]
-    fn already_created() {
-        let client = Client::new("http://etcd:2379").unwrap();
+        assert_eq!(create_response.action, "create".to_string());
+        assert_eq!(create_response.node.value.unwrap(), "bar".to_string());
+        assert_eq!(create_response.node.ttl.unwrap(), 100);
 
-        assert!(client.create("/foo", "bar", None).is_ok());
+        // Creating a key fails if it already exists
 
         match client.create("/foo", "bar", None).err().unwrap() {
             Error::Etcd(error) => assert_eq!(error.message, "Key already exists".to_string()),
             _ => panic!("expected EtcdError due to pre-existing key"),
         };
-    }
-}
 
-#[cfg(test)]
-mod delete_tests {
-    use super::Client;
+        // Deleting a key
 
-    #[test]
-    fn delete() {
-        let client = Client::new("http://etcd:2379").unwrap();
+        let delete_response = client.delete("/foo", false).ok().unwrap();
 
-        client.create("/foo", "bar", Some(100)).ok().unwrap();
-
-        let response = client.delete("/foo", false).ok().unwrap();
-
-        assert_eq!(response.action, "delete");
-    }
-}
-
-#[cfg(test)]
-mod mkdir_tests {
-    use super::Client;
-
-    #[test]
-    fn mkdir() {
-        let client = Client::default();
-
-        assert!(client.mkdir("/foo", None).ok().unwrap().node.dir.unwrap());
-    }
-
-    #[test]
-    fn mkdir_failure() {
-        let client = Client::default();
-
-        assert!(client.mkdir("/foo", None).is_ok());
-        assert!(client.mkdir("/foo", None).is_err());
-    }
-}
-
-#[cfg(test)]
-mod get_tests {
-    use super::Client;
-
-    #[test]
-    fn set_and_get_key() {
-        let client = Client::default();
-
-        assert!(client.set("/foo", "bar", None, None, None).is_ok());
-        assert_eq!(client.get("/foo").ok().unwrap().node.value.unwrap(), "bar");
+        assert_eq!(delete_response.action, "delete");
     }
 }
