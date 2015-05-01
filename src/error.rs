@@ -6,8 +6,7 @@ pub enum Error {
     Http(HttpError),
 }
 
-#[derive(Debug)]
-#[derive(RustcDecodable)]
+#[derive(Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct EtcdError {
     pub cause: Option<String>,
@@ -15,4 +14,3 @@ pub struct EtcdError {
     pub index: u64,
     pub message: String,
 }
-

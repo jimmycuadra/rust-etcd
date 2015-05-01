@@ -7,27 +7,7 @@ use url::form_urlencoded::serialize_owned;
 
 use error::Error;
 use http;
-
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-pub struct Response {
-    pub action: String,
-    pub node: Node,
-    pub prev_node: Option<Node>,
-}
-
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-pub struct Node {
-    pub created_index: Option<u64>,
-    pub dir: Option<bool>,
-    pub expiration: Option<String>,
-    pub key: Option<String>,
-    pub modified_index: Option<u64>,
-    pub nodes: Option<Vec<Node>>,
-    pub ttl: Option<i64>,
-    pub value: Option<String>,
-}
+use response::Response;
 
 #[derive(Debug)]
 pub struct Client {
