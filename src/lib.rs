@@ -7,6 +7,7 @@ extern crate rustc_serialize;
 extern crate url;
 
 pub use client::Client;
+pub use error::Error;
 
 mod client;
 mod error;
