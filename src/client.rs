@@ -32,7 +32,7 @@ impl Client {
     }
 
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.create_or_set(key, value, ttl, false)
+        self.create_or_set(key, value, ttl, Some(false))
     }
 
     pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
@@ -77,7 +77,7 @@ impl Client {
     }
 
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.create_or_set(key, value, ttl, true)
+        self.create_or_set(key, value, ttl, None)
     }
 
     // private
@@ -91,7 +91,7 @@ impl Client {
         key: &str,
         value: &str,
         ttl: Option<u64>,
-        prev_exist: bool,
+        prev_exist: Option<bool>,
     ) -> Result<Response, Error> {
         let url = self.build_url(key);
         let mut options = vec![];
@@ -102,8 +102,8 @@ impl Client {
             options.push(("ttl".to_string(), format!("{}", ttl.unwrap())));
         }
 
-        if !prev_exist {
-            options.push(("prevExist".to_string(), "false".to_string()));
+        if prev_exist.is_some() {
+            options.push(("prevExist".to_string(), format!("{}", prev_exist.unwrap())));
         }
 
         let body = serialize_owned(&options);
