@@ -9,6 +9,8 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded::serialize_owned;
 
+use error::Error;
+
 #[derive(Debug)]
 #[derive(RustcDecodable)]
 pub struct Response {
@@ -28,22 +30,6 @@ pub struct Node {
     pub nodes: Option<Vec<Node>>,
     pub ttl: Option<i64>,
     pub value: Option<String>,
-}
-
-#[derive(Debug)]
-pub enum Error {
-    EtcdError(EtcdError),
-    HttpError(HttpError),
-}
-
-#[derive(Debug)]
-#[derive(RustcDecodable)]
-#[allow(non_snake_case)]
-pub struct EtcdError {
-    pub cause: Option<String>,
-    pub errorCode: u64,
-    pub index: u64,
-    pub message: String,
 }
 
 #[derive(Debug)]
@@ -94,10 +80,10 @@ impl Client {
 
                 match response.status {
                     StatusCode::Created => Ok(json::decode(&response_body).unwrap()),
-                    _ => Err(Error::EtcdError(json::decode(&response_body).unwrap())),
+                    _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
                 }
             },
-            Err(error) => Err(Error::HttpError(error)),
+            Err(error) => Err(Error::Http(error)),
         }
     }
 
