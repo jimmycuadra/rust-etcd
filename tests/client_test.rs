@@ -37,9 +37,24 @@ fn lifecycle() {
     assert_eq!(set_response.node.value.unwrap(), "baz".to_string());
     assert!(set_response.node.ttl.is_none());
 
+    // Updating a key
+
+    let update_response = client.update("/foo", "blah", Some(60)).ok().unwrap();
+
+    assert_eq!(update_response.action, "update".to_string());
+    assert_eq!(update_response.node.value.unwrap(), "blah".to_string());
+    assert_eq!(update_response.node.ttl.unwrap(), 60);
+
     // Deleting a key
 
     let delete_response = client.delete("/foo", false).ok().unwrap();
 
     assert_eq!(delete_response.action, "delete");
+
+    // Update failure
+
+    match client.update("/foo", "bar", None).err().unwrap() {
+        Error::Etcd(error) => assert_eq!(error.message, "Key not found".to_string()),
+        _ => panic!("expected EtcdError due to missing key"),
+    };
 }

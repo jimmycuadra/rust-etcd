@@ -32,7 +32,7 @@ impl Client {
     }
 
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.create_or_set(key, value, ttl, Some(false))
+        self.mutate(key, value, ttl, Some(false))
     }
 
     pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
@@ -77,7 +77,11 @@ impl Client {
     }
 
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.create_or_set(key, value, ttl, None)
+        self.mutate(key, value, ttl, None)
+    }
+
+    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+        self.mutate(key, value, ttl, Some(true))
     }
 
     // private
@@ -86,7 +90,7 @@ impl Client {
         format!("{}v2/keys{}", self.root_url, path)
     }
 
-    fn create_or_set(
+    fn mutate(
         &self,
         key: &str,
         value: &str,
