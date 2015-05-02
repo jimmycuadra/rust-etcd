@@ -10,12 +10,14 @@ use error::Error;
 use http;
 use response::EtcdResult;
 
+/// API client for etcd.
 #[derive(Debug)]
 pub struct Client {
     root_url: String,
 }
 
 impl Client {
+    /// Constructs a new client.
     pub fn new(root_url: &str) -> Result<Client, ParseError> {
         let url = try!(Url::parse(root_url));
         let client = Client {
@@ -25,28 +27,53 @@ impl Client {
         Ok(client)
     }
 
+    /// Constructs a client that will connect to http://127.0.0.1:2379/.
     pub fn default() -> Client {
         Client {
             root_url: "http://127.0.0.1:2379/".to_string(),
         }
     }
 
+    /// Creates a new file at the given key with the given value and time to live in seconds.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key already exists.
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, Some(false))
     }
 
+    /// Creates a new empty directory at the given key with the given time to live in seconds.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key already exists.
     pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, None, ttl, Some(true), Some(false))
     }
 
+    /// Deletes a file or directory at the given key. If `recursive` is `true` and the key is a
+    /// directory, the directory and all child files and directories will be deleted.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key is a directory and `recursive` is `false`.
     pub fn delete(&self, key: &str, recursive: bool) -> EtcdResult {
         self.raw_delete(key, Some(recursive), None)
     }
 
+    /// Deletes an empty directory or a file at the given key.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the directory is not empty.
     pub fn delete_dir(&self, key: &str) -> EtcdResult {
         self.raw_delete(key, None, Some(true))
     }
 
+    /// Gets the value of a key. If the key is a directory, `sort` will determine whether the
+    /// contents of the directory are returned in a sorted order. If the key is a directory and
+    /// `recursive` is `true`, the contents of child directories will be returned as well.
     pub fn get(&self, key: &str, sort: bool, recursive: bool) -> EtcdResult {
         let base_url = self.build_url(key);
         let sort_string = format!("{}", sort);
@@ -70,20 +97,33 @@ impl Client {
         }
     }
 
+    /// Sets the key to the given value with the given time to live in seconds. Any previous value
+    /// and TTL will be replaced.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key is a directory.
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, None)
     }
 
+    /// Updates the given key to the given value and time to live in seconds.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, Some(true))
     }
 
     // private
 
+    /// Constructs the full URL for an API call.
     fn build_url(&self, path: &str) -> String {
         format!("{}v2/keys{}", self.root_url, path)
     }
 
+    /// Handles all delete operations.
     fn raw_delete(
         &self,
         key: &str,
@@ -117,6 +157,7 @@ impl Client {
         }
     }
 
+    /// Handles all set operations.
     fn raw_set(
         &self,
         key: &str,

@@ -2,18 +2,26 @@ use std::convert::From;
 
 use hyper::HttpError;
 
+/// An error returned by `Client` when an API call fails.
 #[derive(Debug)]
 pub enum Error {
+    /// An error returned by etcd.
     Etcd(EtcdError),
+    /// An HTTP error from attempting to connect to etcd.
     Http(HttpError),
 }
 
+/// An error returned by etcd.
 #[derive(Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct EtcdError {
+    /// The key that was being operated upon or reason for the failure.
     pub cause: Option<String>,
+    /// The etcd error code.
     pub errorCode: u64,
+    /// The etcd index.
     pub index: u64,
+    /// A human-friendly description of the error.
     pub message: String,
 }
 
