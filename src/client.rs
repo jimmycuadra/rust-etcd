@@ -32,25 +32,19 @@ impl Client {
     }
 
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.mutate(key, value, ttl, Some(false))
+        self.raw_set(key, Some(value), ttl, None, Some(false))
+    }
+
+    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> Result<Response, Error> {
+        self.raw_set(key, None, ttl, Some(true), Some(false))
     }
 
     pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
-        let url = self.build_url(key);
-        let mut options = vec![];
+        self.raw_delete(key, Some(recursive), None)
+    }
 
-        options.push(("recursive".to_string(), format!("{}", recursive)));
-
-        let body = serialize_owned(&options);
-
-        let mut response = try!(http::delete(url, body));
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
-
-        match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
-        }
+    pub fn delete_dir(&self, key: &str) -> Result<Response, Error> {
+        self.raw_delete(key, None, Some(true))
     }
 
     pub fn get(&self, key: &str, sort: bool, recursive: bool) -> Result<Response, Error> {
@@ -77,11 +71,11 @@ impl Client {
     }
 
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.mutate(key, value, ttl, None)
+        self.raw_set(key, Some(value), ttl, None, None)
     }
 
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
-        self.mutate(key, value, ttl, Some(true))
+        self.raw_set(key, Some(value), ttl, None, Some(true))
     }
 
     // private
@@ -90,20 +84,60 @@ impl Client {
         format!("{}v2/keys{}", self.root_url, path)
     }
 
-    fn mutate(
+    fn raw_delete(
         &self,
         key: &str,
-        value: &str,
+        recursive: Option<bool>,
+        dir: Option<bool>,
+    ) -> Result<Response, Error> {
+        let base_url = self.build_url(key);
+        let recursive_string = format!("{}", recursive.unwrap_or(false));
+        let dir_string = format!("{}", dir.unwrap_or(false));
+
+        let mut query_pairs = HashMap::new();
+
+        if recursive.is_some() {
+            query_pairs.insert("recursive", &recursive_string[..]);
+        }
+
+        if dir.is_some() {
+            query_pairs.insert("dir", &dir_string[..]);
+        }
+
+        let mut url = Url::parse(&base_url[..]).unwrap();
+        url.set_query_from_pairs(query_pairs.iter().map(|(k, v)| (*k, *v)));
+
+        let mut response = try!(http::delete(format!("{}", url)));
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+        }
+    }
+
+    fn raw_set(
+        &self,
+        key: &str,
+        value: Option<&str>,
         ttl: Option<u64>,
+        dir: Option<bool>,
         prev_exist: Option<bool>,
     ) -> Result<Response, Error> {
         let url = self.build_url(key);
         let mut options = vec![];
 
-        options.push(("value".to_string(), value.to_string()));
+        if value.is_some() {
+            options.push(("value".to_string(), value.unwrap().to_string()));
+        }
 
         if ttl.is_some() {
             options.push(("ttl".to_string(), format!("{}", ttl.unwrap())));
+        }
+
+        if dir.is_some() {
+            options.push(("dir".to_string(), format!("{}", dir.unwrap())));
         }
 
         if prev_exist.is_some() {

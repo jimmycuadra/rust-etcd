@@ -3,16 +3,16 @@ use hyper::client::Response;
 use hyper::header::ContentType;
 use hyper::method::Method;
 
+pub fn delete(url: String) -> Result<Response, HttpError> {
+    request(Method::Delete, url)
+}
+
 pub fn get(url: String) -> Result<Response, HttpError> {
     request(Method::Get, url)
 }
 
 pub fn put(url: String, body: String) -> Result<Response, HttpError> {
     request_with_body(Method::Put, url, body)
-}
-
-pub fn delete(url: String, body: String) -> Result<Response, HttpError> {
-    request_with_body(Method::Delete, url, body)
 }
 
 // private
