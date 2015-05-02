@@ -81,12 +81,20 @@ fn lifecycle() {
 
     assert_eq!(non_recursive_get_response.node.dir.unwrap(), true);
 
-    let nodes = non_recursive_get_response.node.nodes.unwrap();
+    let non_recursive_nodes = non_recursive_get_response.node.nodes.unwrap();
 
-    assert_eq!(nodes[0].clone().key.unwrap(), "/foo".to_string());
-    assert_eq!(nodes[0].clone().value.unwrap(), "bar".to_string());
-    assert_eq!(nodes[1].clone().key.unwrap(), "/dir".to_string());
-    assert_eq!(nodes[1].clone().dir.unwrap(), true);
+    assert_eq!(non_recursive_nodes[0].clone().key.unwrap(), "/foo".to_string());
+    assert_eq!(non_recursive_nodes[0].clone().value.unwrap(), "bar".to_string());
+    assert_eq!(non_recursive_nodes[1].clone().key.unwrap(), "/dir".to_string());
+    assert_eq!(non_recursive_nodes[1].clone().dir.unwrap(), true);
+
+    let recursive_get_response = client.get("/", false, true).ok().unwrap();
+    let recursive_nodes = recursive_get_response.node.nodes.unwrap();
+
+    assert_eq!(
+        recursive_nodes[1].clone().nodes.unwrap()[0].clone().value.unwrap(),
+        "blah".to_string()
+    );
 
     client.delete("/foo", false).ok();
     client.delete("/dir/baz", false).ok();
