@@ -1,4 +1,4 @@
-#[derive(Debug, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct Response {
     pub action: String,
@@ -6,7 +6,7 @@ pub struct Response {
     pub prevNode: Option<Node>,
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct Node {
     pub createdIndex: Option<u64>,

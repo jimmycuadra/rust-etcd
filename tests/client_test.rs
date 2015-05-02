@@ -71,4 +71,24 @@ fn lifecycle() {
     let delete_dir_response = client.delete_dir("/dir").ok().unwrap();
 
     assert_eq!(delete_dir_response.action, "delete");
+
+    // Getting keys within directories (recursive listing)
+
+    client.set("/foo", "bar", None).ok();
+    client.set("/dir/baz", "blah", None).ok();
+
+    let non_recursive_get_response = client.get("/", false, false).ok().unwrap();
+
+    assert_eq!(non_recursive_get_response.node.dir.unwrap(), true);
+
+    let nodes = non_recursive_get_response.node.nodes.unwrap();
+
+    assert_eq!(nodes[0].clone().key.unwrap(), "/foo".to_string());
+    assert_eq!(nodes[0].clone().value.unwrap(), "bar".to_string());
+    assert_eq!(nodes[1].clone().key.unwrap(), "/dir".to_string());
+    assert_eq!(nodes[1].clone().dir.unwrap(), true);
+
+    client.delete("/foo", false).ok();
+    client.delete("/dir/baz", false).ok();
+    client.delete_dir("/dir").ok();
 }
