@@ -4,6 +4,8 @@ etcd:
   command: -listen-client-urls=http://0.0.0.0:2379
 rust:
   image: jimmycuadra/rust
+  environment:
+    RUST_BACKTRACE: 1
   links:
     - etcd
   volumes:

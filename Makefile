@@ -1,6 +1,9 @@
+.PHONY: all
+all: rust clean
+
 .PHONY: rust
 rust:
-	docker-compose run --rm rust
+	-docker-compose run --rm rust
 
 .PHONY: clean
 clean:
