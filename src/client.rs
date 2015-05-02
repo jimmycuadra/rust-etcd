@@ -8,7 +8,7 @@ use url::form_urlencoded::serialize_owned;
 
 use error::Error;
 use http;
-use response::Response;
+use response::EtcdResult;
 
 #[derive(Debug)]
 pub struct Client {
@@ -31,23 +31,23 @@ impl Client {
         }
     }
 
-    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, Some(false))
     }
 
-    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> Result<Response, Error> {
+    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, None, ttl, Some(true), Some(false))
     }
 
-    pub fn delete(&self, key: &str, recursive: bool) -> Result<Response, Error> {
+    pub fn delete(&self, key: &str, recursive: bool) -> EtcdResult {
         self.raw_delete(key, Some(recursive), None)
     }
 
-    pub fn delete_dir(&self, key: &str) -> Result<Response, Error> {
+    pub fn delete_dir(&self, key: &str) -> EtcdResult {
         self.raw_delete(key, None, Some(true))
     }
 
-    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> Result<Response, Error> {
+    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> EtcdResult {
         let base_url = self.build_url(key);
         let sort_string = format!("{}", sort);
         let recursive_string = format!("{}", recursive);
@@ -70,11 +70,11 @@ impl Client {
         }
     }
 
-    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, None)
     }
 
-    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> Result<Response, Error> {
+    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, Some(true))
     }
 
@@ -89,7 +89,7 @@ impl Client {
         key: &str,
         recursive: Option<bool>,
         dir: Option<bool>,
-    ) -> Result<Response, Error> {
+    ) -> EtcdResult {
         let base_url = self.build_url(key);
         let recursive_string = format!("{}", recursive.unwrap_or(false));
         let dir_string = format!("{}", dir.unwrap_or(false));
@@ -124,7 +124,7 @@ impl Client {
         ttl: Option<u64>,
         dir: Option<bool>,
         prev_exist: Option<bool>,
-    ) -> Result<Response, Error> {
+    ) -> EtcdResult {
         let url = self.build_url(key);
         let mut options = vec![];
 

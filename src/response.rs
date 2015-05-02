@@ -1,3 +1,7 @@
+use error::Error;
+
+pub type EtcdResult = Result<Response, Error>;
+
 #[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct Response {
