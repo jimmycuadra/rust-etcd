@@ -4,7 +4,7 @@ use std::io::Read;
 use hyper::status::StatusCode;
 use rustc_serialize::json;
 use url::{ParseError, Url};
-use url::form_urlencoded::serialize_owned;
+use url::form_urlencoded;
 
 use error::Error;
 use http;
@@ -144,7 +144,7 @@ impl Client {
             options.push(("prevExist".to_string(), format!("{}", prev_exist.unwrap())));
         }
 
-        let body = serialize_owned(&options);
+        let body = form_urlencoded::serialize(&options);
 
         let mut response = try!(http::put(url, body));
         let mut response_body = String::new();

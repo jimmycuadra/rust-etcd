@@ -19,4 +19,4 @@ doctest = false
 
 hyper = ">= 0.3.15"
 rustc-serialize = ">= 0.3.14"
-url = ">= 0.2.31"
+url = ">= 0.2.32"
