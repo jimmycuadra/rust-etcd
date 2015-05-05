@@ -1,6 +1,7 @@
 use std::convert::From;
-
 use hyper::HttpError;
+use std::io::Error as IoError;
+use rustc_serialize::json::DecoderError;
 
 /// An error returned by `Client` when an API call fails.
 #[derive(Debug)]
@@ -9,6 +10,8 @@ pub enum Error {
     Etcd(EtcdError),
     /// An HTTP error from attempting to connect to etcd.
     Http(HttpError),
+    Io(IoError),
+    JsonDecoderError(DecoderError),
 }
 
 /// An error returned by etcd.
@@ -28,5 +31,17 @@ pub struct EtcdError {
 impl From<HttpError> for Error {
     fn from(error: HttpError) -> Error {
         Error::Http(error)
+    }
+}
+
+impl From<IoError> for Error {
+    fn from(error: IoError) -> Error {
+        Error::Io(error)
+    }
+}
+
+impl From<DecoderError> for Error {
+    fn from(error: DecoderError) -> Error {
+        Error::JsonDecoderError(error)
     }
 }

@@ -100,3 +100,10 @@ fn lifecycle() {
     client.delete("/dir/baz", false).ok();
     client.delete_dir("/dir").ok();
 }
+
+#[test]
+fn leader_stats() {
+    let client = Client::new("http://etcd:2379").unwrap();
+
+    client.leader_stats().unwrap();
+}
