@@ -10,7 +10,9 @@ pub enum Error {
     Etcd(EtcdError),
     /// An HTTP error from attempting to connect to etcd.
     Http(HttpError),
+    /// An IO error, which can happen when reading the HTTP response.
     Io(IoError),
+    /// An error that occurs when the JSON response does not match the expected data structure.
     JsonDecoderError(DecoderError),
 }
 
