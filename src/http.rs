@@ -1,7 +1,14 @@
+use std::io::Read;
+
 use hyper::{Client, HttpError};
 use hyper::client::Response;
 use hyper::header::ContentType;
 use hyper::method::Method;
+use hyper::status::StatusCode;
+
+use rustc_serialize::{json, Decodable};
+
+use error::Error;
 
 /// Makes a DELETE request to etcd.
 pub fn delete(url: String) -> Result<Response, HttpError> {
@@ -17,6 +24,18 @@ pub fn get(url: String) -> Result<Response, HttpError> {
 pub fn put(url: String, body: String) -> Result<Response, HttpError> {
     request_with_body(Method::Put, url, body)
 }
+
+/// Read response and decode JSON
+pub fn decode<T: Decodable>(mut response: Response) -> Result<T, Error> {
+    let mut response_body = String::new();
+    try!(response.read_to_string(&mut response_body));
+
+    match response.status {
+        StatusCode::Created | StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+        _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+    }
+}
+
 
 // private
 
