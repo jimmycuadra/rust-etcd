@@ -117,6 +117,10 @@ impl Client {
     }
 
     /// Returns statistics on the leader member of a cluster.
+    ///
+    /// # Failures
+    ///
+    /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn leader_stats(&self) -> Result<LeaderStats, Error> {
         let url = format!("{}v2/stats/leader", self.root_url);
         let mut response = try!(http::get(url));
@@ -124,8 +128,8 @@ impl Client {
         try!(response.read_to_string(&mut response_body));
 
         match response.status {
-            StatusCode::Ok => Ok(try!(json::decode(&response_body))),
-            _ => Err(Error::Etcd(try!(json::decode(&response_body))))
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
         }
     }
 
