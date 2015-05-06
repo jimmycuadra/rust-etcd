@@ -8,7 +8,7 @@ use url::form_urlencoded;
 
 use error::Error;
 use http;
-use response::EtcdResult;
+use response::{EtcdResult, LeaderStats};
 
 /// API client for etcd.
 #[derive(Debug)]
@@ -114,6 +114,23 @@ impl Client {
     /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
         self.raw_set(key, Some(value), ttl, None, Some(true))
+    }
+
+    /// Returns statistics on the leader member of a cluster.
+    ///
+    /// # Failures
+    ///
+    /// Fails if JSON decoding fails, which suggests a bug in our schema.
+    pub fn leader_stats(&self) -> Result<LeaderStats, Error> {
+        let url = format!("{}v2/stats/leader", self.root_url);
+        let mut response = try!(http::get(url));
+        let mut response_body = String::new();
+        try!(response.read_to_string(&mut response_body));
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+        }
     }
 
     // private

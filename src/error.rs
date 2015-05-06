@@ -1,6 +1,6 @@
 use std::convert::From;
-
 use hyper::HttpError;
+use std::io::Error as IoError;
 
 /// An error returned by `Client` when an API call fails.
 #[derive(Debug)]
@@ -9,6 +9,8 @@ pub enum Error {
     Etcd(EtcdError),
     /// An HTTP error from attempting to connect to etcd.
     Http(HttpError),
+    /// An IO error, which can happen when reading the HTTP response.
+    Io(IoError),
 }
 
 /// An error returned by etcd.
@@ -28,5 +30,11 @@ pub struct EtcdError {
 impl From<HttpError> for Error {
     fn from(error: HttpError) -> Error {
         Error::Http(error)
+    }
+}
+
+impl From<IoError> for Error {
+    fn from(error: IoError) -> Error {
+        Error::Io(error)
     }
 }
