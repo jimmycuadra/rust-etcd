@@ -63,25 +63,32 @@ fn get() {
 }
 
 #[test]
-fn get_recursive() {
+fn get_non_recursive() {
     let client = TestClient::new();
 
     client.c.set("/test/dir/baz", "blah", None).ok();
     client.c.set("/test/foo", "bar", None).ok();
 
-    let mut response = client.c.get("/test", true, false).ok().unwrap();
+    let response = client.c.get("/test", true, false).ok().unwrap();
 
     assert_eq!(response.node.dir.unwrap(), true);
 
-    let mut nodes = response.node.nodes.unwrap();
+    let nodes = response.node.nodes.unwrap();
 
     assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir".to_string());
     assert_eq!(nodes[0].clone().dir.unwrap(), true);
     assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo".to_string());
     assert_eq!(nodes[1].clone().value.unwrap(), "bar".to_string());
+}
 
-    response = client.c.get("/test", true, true).ok().unwrap();
-    nodes = response.node.nodes.unwrap();
+#[test]
+fn get_recursive() {
+    let client = TestClient::new();
+
+    client.c.set("/test/dir/baz", "blah", None).ok();
+
+    let response = client.c.get("/test", true, true).ok().unwrap();
+    let nodes = response.node.nodes.unwrap();
 
     assert_eq!(
         nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(),
