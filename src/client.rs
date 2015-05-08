@@ -126,6 +126,17 @@ impl Client {
         self.raw_set(key, Some(value), ttl, None, Some(true))
     }
 
+    /// Updates the given key to a directory with the given time to live in seconds. If the
+    /// directory already existed, only the TTL is updated. If the key was a file, its value is
+    /// removed and its TTL is updated.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key does not exist.
+    pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
+        self.raw_set(key, None, ttl, Some(true), Some(true))
+    }
+
     /// Returns statistics on the leader member of a cluster.
     ///
     /// # Failures

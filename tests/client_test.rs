@@ -135,6 +135,36 @@ fn update_fail() {
 }
 
 #[test]
+fn update_dir() {
+    let client = TestClient::new();
+
+    client.c.create_dir("/test", None).ok().unwrap();
+
+    let response = client.c.update_dir("/test", Some(60)).ok().unwrap();
+
+    assert_eq!(response.node.ttl.unwrap(), 60);
+}
+
+#[test]
+fn update_dir_replaces_key() {
+    let client = TestClient::new();
+
+    client.c.set("/test/foo", "bar", None).ok().unwrap();
+
+    let response = client.c.update_dir("/test/foo", Some(60)).ok().unwrap();
+
+    assert_eq!(response.node.value.unwrap(), "");
+    assert_eq!(response.node.ttl.unwrap(), 60);
+}
+
+#[test]
+fn update_dir_requires_existing_dir() {
+    let client = TestClient::new();
+
+    assert!(client.c.update_dir("/test", None).is_err());
+}
+
+#[test]
 fn delete() {
     let client = TestClient::new();
     client.c.create("/test/foo", "bar", None).ok().unwrap();
