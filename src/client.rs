@@ -6,6 +6,7 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded;
 
+use conditions::CompareAndDeleteConditions;
 use error::Error;
 use http;
 use response::{EtcdResult, LeaderStats};
@@ -34,6 +35,28 @@ impl Client {
         }
     }
 
+    /// Deletes a key only if the given current value and/or current modified index match.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the conditions didn't match or if no conditions were given.
+    pub fn compare_and_delete(
+        &self,
+        key: &str,
+        current_value: Option<&str>,
+        current_modified_index: Option<u64>
+    ) -> EtcdResult {
+        self.raw_delete(
+            key,
+            None,
+            None,
+            Some(CompareAndDeleteConditions {
+                value: current_value,
+                modified_index: current_modified_index,
+            }),
+        )
+    }
+
     /// Creates a new file at the given key with the given value and time to live in seconds.
     ///
     /// # Failures
@@ -59,7 +82,7 @@ impl Client {
     ///
     /// Fails if the key is a directory and `recursive` is `false`.
     pub fn delete(&self, key: &str, recursive: bool) -> EtcdResult {
-        self.raw_delete(key, Some(recursive), None)
+        self.raw_delete(key, Some(recursive), None, None)
     }
 
     /// Deletes an empty directory or a file at the given key.
@@ -68,7 +91,7 @@ impl Client {
     ///
     /// Fails if the directory is not empty.
     pub fn delete_dir(&self, key: &str) -> EtcdResult {
-        self.raw_delete(key, None, Some(true))
+        self.raw_delete(key, None, Some(true), None)
     }
 
     /// Gets the value of a key. If the key is a directory, `sort` will determine whether the
@@ -167,10 +190,20 @@ impl Client {
         key: &str,
         recursive: Option<bool>,
         dir: Option<bool>,
+        compare_and_delete: Option<CompareAndDeleteConditions>,
     ) -> EtcdResult {
         let base_url = self.build_url(key);
         let recursive_string = format!("{}", recursive.unwrap_or(false));
         let dir_string = format!("{}", dir.unwrap_or(false));
+        let modified_index_string = format!("{}", match compare_and_delete.clone() {
+            Some(conditions) => {
+                match conditions.modified_index {
+                    Some(index) => index,
+                    None => 0,
+                }
+            },
+            None => 0,
+        });
 
         let mut query_pairs = HashMap::new();
 
@@ -180,6 +213,24 @@ impl Client {
 
         if dir.is_some() {
             query_pairs.insert("dir", &dir_string[..]);
+        }
+
+        if compare_and_delete.is_some() {
+            let conditions = compare_and_delete.unwrap();
+
+            if conditions.is_empty() {
+                return Err(
+                    Error::InvalidConditions("Current value or modified index is required.")
+                );
+            }
+
+            if conditions.modified_index.is_some() {
+              query_pairs.insert("prevIndex", &modified_index_string[..]);
+            }
+
+            if conditions.value.is_some() {
+                query_pairs.insert("prevValue", conditions.value.unwrap());
+            }
         }
 
         let mut url = Url::parse(&base_url[..]).unwrap();

@@ -50,6 +50,72 @@ fn create_does_not_replace_existing_key() {
 }
 
 #[test]
+fn compare_and_delete() {
+    let client = TestClient::new();
+
+    let modified_index = client.c.create(
+        "/test/foo",
+        "bar",
+        None
+    ).ok().unwrap().node.modifiedIndex.unwrap();
+
+    let response = client.c.compare_and_delete(
+        "/test/foo",
+        Some("bar"),
+        Some(modified_index)
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndDelete".to_string());
+}
+
+#[test]
+fn compare_and_delete_only_index() {
+    let client = TestClient::new();
+
+    let modified_index = client.c.create(
+        "/test/foo",
+        "bar",
+        None
+    ).ok().unwrap().node.modifiedIndex.unwrap();
+
+    let response = client.c.compare_and_delete(
+        "/test/foo",
+        None,
+        Some(modified_index)
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndDelete".to_string());
+}
+
+#[test]
+fn compare_and_delete_only_value() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    let response = client.c.compare_and_delete(
+        "/test/foo",
+        Some("bar"),
+        None,
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndDelete".to_string());
+}
+
+#[test]
+fn compare_and_delete_requires_conditions() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    match client.c.compare_and_delete("/test/foo", None, None).err().unwrap() {
+        Error::InvalidConditions(message) => assert_eq!(
+            message,
+            "Current value or modified index is required."
+        ),
+        _ => panic!("expected Error::InvalidConditions"),
+    }
+}
+
+#[test]
 fn get() {
     let client = TestClient::new();
     client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();

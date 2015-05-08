@@ -11,6 +11,7 @@ pub use error::Error;
 pub use response::{Response, EtcdResult};
 
 mod client;
+mod conditions;
 mod error;
 mod http;
 mod response;

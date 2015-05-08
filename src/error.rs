@@ -11,6 +11,9 @@ pub enum Error {
     Http(HttpError),
     /// An IO error, which can happen when reading the HTTP response.
     Io(IoError),
+    /// An error returned when invalid conditions have been provided for a compare-and-delete or
+    /// compare-and-swap operation.
+    InvalidConditions(&'static str),
 }
 
 /// An error returned by etcd.
