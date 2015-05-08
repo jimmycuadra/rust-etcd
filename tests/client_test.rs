@@ -38,7 +38,7 @@ fn create() {
 }
 
 #[test]
-fn create_fail() {
+fn create_does_not_replace_existing_key() {
     let client = TestClient::new();
 
     client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
@@ -125,7 +125,7 @@ fn update() {
 }
 
 #[test]
-fn update_fail() {
+fn update_requires_existing_key() {
     let client = TestClient::new();
 
     match client.c.update("/test/foo", "bar", None).err().unwrap() {
