@@ -101,6 +101,18 @@ fn set() {
 }
 
 #[test]
+fn set_dir() {
+    let client = TestClient::new();
+
+    assert!(client.c.set_dir("/test", None).is_ok());
+    assert!(client.c.set_dir("/test", None).is_err());
+
+    client.c.set("/test/foo", "bar", None).ok().unwrap();
+
+    assert!(client.c.set_dir("/test/foo", None).is_ok());
+}
+
+#[test]
 fn update() {
     let client = TestClient::new();
     client.c.create("/test/foo", "bar", None).ok().unwrap();

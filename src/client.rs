@@ -107,6 +107,16 @@ impl Client {
         self.raw_set(key, Some(value), ttl, None, None)
     }
 
+    /// Sets the key to an empty directory with the given time to live in seconds. An existing file
+    /// will be replaced, but an existing directory will not.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key is an existing directory.
+    pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
+        self.raw_set(key, None, ttl, Some(true), None)
+    }
+
     /// Updates the given key to the given value and time to live in seconds.
     ///
     /// # Failures
