@@ -2,108 +2,160 @@ extern crate etcd;
 
 use etcd::{Client, Error};
 
+/// Wrapper around Client that automatically cleans up etcd after each test.
+struct TestClient {
+    c: Client,
+}
+
+impl TestClient {
+    /// Creates a new client for a test.
+    fn new() -> TestClient {
+        TestClient {
+            c: Client::new("http://etcd:2379").unwrap(),
+        }
+    }
+}
+
+impl Drop for TestClient {
+    #[allow(unused_must_use)]
+    fn drop(&mut self) {
+        self.c.delete("/test", true);
+    }
+}
+
 #[test]
-fn lifecycle() {
-    let client = Client::new("http://etcd:2379").unwrap();
+fn create() {
+    let client = TestClient::new();
 
-    // Creating a key
+    let response = match client.c.create("/test/foo", "bar", Some(60)) {
+        Ok(response) => response,
+        Err(error) => panic!("{:?}", error),
+    };
 
-    let create_response = client.create("/foo", "bar", Some(60)).ok().unwrap();
+    assert_eq!(response.action, "create".to_string());
+    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+    assert_eq!(response.node.ttl.unwrap(), 60);
+}
 
-    assert_eq!(create_response.action, "create".to_string());
-    assert_eq!(create_response.node.value.unwrap(), "bar".to_string());
-    assert_eq!(create_response.node.ttl.unwrap(), 60);
+#[test]
+fn create_fail() {
+    let client = TestClient::new();
 
-    // Getting a key
+    client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    let get_response = client.get("/foo", false, false).ok().unwrap();
-
-    assert_eq!(get_response.action, "get".to_string());
-    assert_eq!(get_response.node.value.unwrap(), "bar".to_string());
-    assert_eq!(get_response.node.ttl.unwrap(), 60);
-
-    // Creating a key fails if it already exists
-
-    match client.create("/foo", "bar", None).err().unwrap() {
+    match client.c.create("/test/foo", "bar", None).err().unwrap() {
         Error::Etcd(error) => assert_eq!(error.message, "Key already exists".to_string()),
         _ => panic!("expected EtcdError due to pre-existing key"),
     };
+}
 
-    // Setting a key
+#[test]
+fn get() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    let set_response = client.set("/foo", "baz", None).ok().unwrap();
+    let response = client.c.get("/test/foo", false, false).ok().unwrap();
 
-    assert_eq!(set_response.action, "set".to_string());
-    assert_eq!(set_response.node.value.unwrap(), "baz".to_string());
-    assert!(set_response.node.ttl.is_none());
+    assert_eq!(response.action, "get".to_string());
+    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+    assert_eq!(response.node.ttl.unwrap(), 60);
 
-    // Updating a key
+}
 
-    let update_response = client.update("/foo", "blah", Some(30)).ok().unwrap();
+#[test]
+fn get_recursive() {
+    let client = TestClient::new();
 
-    assert_eq!(update_response.action, "update".to_string());
-    assert_eq!(update_response.node.value.unwrap(), "blah".to_string());
-    assert_eq!(update_response.node.ttl.unwrap(), 30);
+    client.c.set("/test/dir/baz", "blah", None).ok();
+    client.c.set("/test/foo", "bar", None).ok();
 
-    // Deleting a key
+    let mut response = client.c.get("/test", true, false).ok().unwrap();
 
-    let delete_response = client.delete("/foo", false).ok().unwrap();
+    assert_eq!(response.node.dir.unwrap(), true);
 
-    assert_eq!(delete_response.action, "delete");
+    let mut nodes = response.node.nodes.unwrap();
 
-    // Updating a key fails if it doesn't exist
+    assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir".to_string());
+    assert_eq!(nodes[0].clone().dir.unwrap(), true);
+    assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo".to_string());
+    assert_eq!(nodes[1].clone().value.unwrap(), "bar".to_string());
 
-    match client.update("/foo", "bar", None).err().unwrap() {
+    response = client.c.get("/test", true, true).ok().unwrap();
+    nodes = response.node.nodes.unwrap();
+
+    assert_eq!(
+        nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(),
+        "blah".to_string()
+    );
+}
+
+#[test]
+fn set() {
+    let client = TestClient::new();
+
+    let response = client.c.set("/test/foo", "baz", None).ok().unwrap();
+
+    assert_eq!(response.action, "set".to_string());
+    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+    assert!(response.node.ttl.is_none());
+}
+
+#[test]
+fn update() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    let response = client.c.update("/test/foo", "blah", Some(30)).ok().unwrap();
+
+    assert_eq!(response.action, "update".to_string());
+    assert_eq!(response.node.value.unwrap(), "blah".to_string());
+    assert_eq!(response.node.ttl.unwrap(), 30);
+}
+
+#[test]
+fn update_fail() {
+    let client = TestClient::new();
+
+    match client.c.update("/test/foo", "bar", None).err().unwrap() {
         Error::Etcd(error) => assert_eq!(error.message, "Key not found".to_string()),
         _ => panic!("expected EtcdError due to missing key"),
     };
+}
 
-    // Creating a directory
+#[test]
+fn delete() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
 
-    let create_dir_response = client.create_dir("/dir", None).ok().unwrap();
+    let response = client.c.delete("/test/foo", false).ok().unwrap();
 
-    assert_eq!(create_dir_response.action, "create".to_string());
-    assert!(create_dir_response.node.dir.unwrap());
-    assert!(create_dir_response.node.value.is_none());
+    assert_eq!(response.action, "delete");
+}
 
-    // Deleting an empty directory
+#[test]
+fn create_dir() {
+    let client = TestClient::new();
 
-    let delete_dir_response = client.delete_dir("/dir").ok().unwrap();
+    let response = client.c.create_dir("/test/dir", None).ok().unwrap();
 
-    assert_eq!(delete_dir_response.action, "delete");
+    assert_eq!(response.action, "create".to_string());
+    assert!(response.node.dir.unwrap());
+    assert!(response.node.value.is_none());
+}
 
-    // Getting keys within directories (recursive listing)
+#[test]
+fn delete_dir() {
+    let client = TestClient::new();
+    client.c.create_dir("/test/dir", None).ok().unwrap();
 
-    client.set("/foo", "bar", None).ok();
-    client.set("/dir/baz", "blah", None).ok();
+    let response = client.c.delete_dir("/test/dir").ok().unwrap();
 
-    let non_recursive_get_response = client.get("/", false, false).ok().unwrap();
-
-    assert_eq!(non_recursive_get_response.node.dir.unwrap(), true);
-
-    let non_recursive_nodes = non_recursive_get_response.node.nodes.unwrap();
-
-    assert_eq!(non_recursive_nodes[0].clone().key.unwrap(), "/foo".to_string());
-    assert_eq!(non_recursive_nodes[0].clone().value.unwrap(), "bar".to_string());
-    assert_eq!(non_recursive_nodes[1].clone().key.unwrap(), "/dir".to_string());
-    assert_eq!(non_recursive_nodes[1].clone().dir.unwrap(), true);
-
-    let recursive_get_response = client.get("/", false, true).ok().unwrap();
-    let recursive_nodes = recursive_get_response.node.nodes.unwrap();
-
-    assert_eq!(
-        recursive_nodes[1].clone().nodes.unwrap()[0].clone().value.unwrap(),
-        "blah".to_string()
-    );
-
-    client.delete("/foo", false).ok();
-    client.delete("/dir/baz", false).ok();
-    client.delete_dir("/dir").ok();
+    assert_eq!(response.action, "delete");
 }
 
 #[test]
 fn leader_stats() {
-    let client = Client::new("http://etcd:2379").unwrap();
+    let client = TestClient::new();
 
-    client.leader_stats().unwrap();
+    client.c.leader_stats().unwrap();
 }

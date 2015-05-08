@@ -6,6 +6,7 @@ rust:
   image: jimmycuadra/rust
   environment:
     RUST_BACKTRACE: 1
+    RUST_TEST_THREADS: 1
   links:
     - etcd
   volumes:
