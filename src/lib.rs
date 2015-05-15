@@ -14,4 +14,5 @@ mod client;
 mod conditions;
 mod error;
 mod http;
+mod query_pairs;
 mod response;

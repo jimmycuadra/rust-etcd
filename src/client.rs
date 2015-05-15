@@ -9,6 +9,7 @@ use url::form_urlencoded;
 use conditions::CompareAndDeleteConditions;
 use error::Error;
 use http;
+use query_pairs::UrlWithQueryPairs;
 use response::{EtcdResult, LeaderStats};
 
 /// API client for etcd.
@@ -98,17 +99,15 @@ impl Client {
     /// contents of the directory are returned in a sorted order. If the key is a directory and
     /// `recursive` is `true`, the contents of child directories will be returned as well.
     pub fn get(&self, key: &str, sort: bool, recursive: bool) -> EtcdResult {
-        let base_url = self.build_url(key);
-        let sort_string = format!("{}", sort);
-        let recursive_string = format!("{}", recursive);
-
         let mut query_pairs = HashMap::new();
 
-        query_pairs.insert("sorted", &sort_string[..]);
-        query_pairs.insert("recursive", &recursive_string[..]);
+        query_pairs.insert("sorted", format!("{}", sort));
+        query_pairs.insert("recursive", format!("{}", recursive));
 
-        let mut url = Url::parse(&base_url[..]).unwrap();
-        url.set_query_from_pairs(query_pairs.iter().map(|(k, v)| (*k, *v)));
+        let url = UrlWithQueryPairs {
+            pairs: &query_pairs,
+            url: self.build_url(key),
+        }.parse();
 
         let mut response = try!(http::get(format!("{}", url)));
         let mut response_body = String::new();
@@ -192,27 +191,14 @@ impl Client {
         dir: Option<bool>,
         compare_and_delete: Option<CompareAndDeleteConditions>,
     ) -> EtcdResult {
-        let base_url = self.build_url(key);
-        let recursive_string = format!("{}", recursive.unwrap_or(false));
-        let dir_string = format!("{}", dir.unwrap_or(false));
-        let modified_index_string = format!("{}", match compare_and_delete.clone() {
-            Some(conditions) => {
-                match conditions.modified_index {
-                    Some(index) => index,
-                    None => 0,
-                }
-            },
-            None => 0,
-        });
-
         let mut query_pairs = HashMap::new();
 
         if recursive.is_some() {
-            query_pairs.insert("recursive", &recursive_string[..]);
+            query_pairs.insert("recursive", format!("{}", recursive.unwrap()));
         }
 
         if dir.is_some() {
-            query_pairs.insert("dir", &dir_string[..]);
+            query_pairs.insert("dir", format!("{}", dir.unwrap()));
         }
 
         if compare_and_delete.is_some() {
@@ -225,16 +211,18 @@ impl Client {
             }
 
             if conditions.modified_index.is_some() {
-              query_pairs.insert("prevIndex", &modified_index_string[..]);
+              query_pairs.insert("prevIndex", format!("{}", conditions.modified_index.unwrap()));
             }
 
             if conditions.value.is_some() {
-                query_pairs.insert("prevValue", conditions.value.unwrap());
+                query_pairs.insert("prevValue", conditions.value.unwrap().to_string());
             }
         }
 
-        let mut url = Url::parse(&base_url[..]).unwrap();
-        url.set_query_from_pairs(query_pairs.iter().map(|(k, v)| (*k, *v)));
+        let url = UrlWithQueryPairs {
+            pairs: &query_pairs,
+            url: self.build_url(key),
+        }.parse();
 
         let mut response = try!(http::delete(format!("{}", url)));
         let mut response_body = String::new();
