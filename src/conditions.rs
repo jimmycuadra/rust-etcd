@@ -8,12 +8,3 @@ impl<'a> CompareAndDeleteConditions<'a> {
         self.modified_index.is_none() && self.value.is_none()
     }
 }
-
-impl<'a> Clone for CompareAndDeleteConditions<'a> {
-    fn clone(&self) -> CompareAndDeleteConditions<'a> {
-        CompareAndDeleteConditions {
-            modified_index: self.modified_index.clone(),
-            value: self.value.clone(),
-        }
-    }
-}
