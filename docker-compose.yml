@@ -1,5 +1,5 @@
 etcd:
-  image: quay.io/coreos/etcd:v2.0.10
+  image: quay.io/coreos/etcd:v2.1.1
   name: etcd
   command: -listen-client-urls=http://0.0.0.0:2379
 rust:
