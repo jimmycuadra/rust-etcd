@@ -1,5 +1,5 @@
 use std::convert::From;
-use hyper::HttpError;
+use hyper::Error as HttpError;
 use std::io::Error as IoError;
 
 /// An error returned by `Client` when an API call fails.
