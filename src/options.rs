@@ -14,8 +14,9 @@ impl<'a> ComparisonConditions<'a> {
 }
 
 /// Controls the various different ways a delete operation can be performed.
+#[derive(Default)]
 pub struct DeleteOptions<'a> {
-    /// Conditions used for "compare and delete" or "compare and swap" operations.
+    /// Conditions used for "compare and delete" operations.
     pub conditions: Option<ComparisonConditions<'a>>,
     /// Whether or not the key to be deleted is a directory.
     pub dir: Option<bool>,
@@ -23,13 +24,19 @@ pub struct DeleteOptions<'a> {
     pub recursive: Option<bool>,
 }
 
-impl<'a> Default for DeleteOptions<'a> {
-    /// Provides default values for the struct's fields.
-    fn default() -> DeleteOptions<'a> {
-        DeleteOptions {
-            conditions: None,
-            dir: None,
-            recursive: None,
-        }
-    }
+/// Controls the various different ways a create, update, or set operation can be performed.
+#[derive(Default)]
+pub struct SetOptions<'a> {
+    /// Conditions used for "compare and swap" operations.
+    pub conditions: Option<ComparisonConditions<'a>>,
+    /// Whether or not to use the "create in order" API.
+    pub create_in_order: bool,
+    /// Whether or not the key being operated on is or should be a directory.
+    pub dir: Option<bool>,
+    /// Whether or not the key being operated on must already exist.
+    pub prev_exist: Option<bool>,
+    /// Time to live in seconds.
+    pub ttl: Option<u64>,
+    /// New value for the key.
+    pub value: Option<&'a str>,
 }

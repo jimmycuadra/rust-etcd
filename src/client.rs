@@ -6,7 +6,7 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded;
 
-use options::{ComparisonConditions, DeleteOptions};
+use options::{ComparisonConditions, DeleteOptions, SetOptions};
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
@@ -75,15 +75,15 @@ impl Client {
     ) -> EtcdResult {
         self.raw_set(
             key,
-            Some(value),
-            ttl,
-            None,
-            Some(true),
-            Some(ComparisonConditions {
-                value: current_value,
-                modified_index: current_modified_index,
-            }),
-            false,
+            SetOptions {
+                conditions: Some(ComparisonConditions {
+                    value: current_value,
+                    modified_index: current_modified_index,
+                }),
+                ttl: ttl,
+                value: Some(value),
+                ..Default::default()
+            },
         )
     }
 
@@ -93,7 +93,15 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(false), None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                prev_exist: Some(false),
+                ttl: ttl,
+                value: Some(value),
+                ..Default::default()
+            },
+        )
     }
 
     /// Creates a new empty directory at the given key with the given time to live in seconds.
@@ -102,7 +110,15 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(false), None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                dir: Some(true),
+                prev_exist: Some(false),
+                ttl: ttl,
+                ..Default::default()
+            },
+        )
     }
 
     /// Creates a new file in the given directory with the given value and time to live in seconds
@@ -112,7 +128,15 @@ impl Client {
     ///
     /// Fails if the key already exists and is not a directory.
     pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, None, None, true)
+        self.raw_set(
+            key,
+            SetOptions {
+                create_in_order: true,
+                ttl: ttl,
+                value: Some(value),
+                ..Default::default()
+            },
+        )
     }
 
     /// Deletes a file or directory at the given key. If `recursive` is `true` and the key is a
@@ -177,7 +201,14 @@ impl Client {
     ///
     /// Fails if the key is a directory.
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, None, None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                ttl: ttl,
+                value: Some(value),
+                ..Default::default()
+            },
+        )
     }
 
     /// Sets the key to an empty directory with the given time to live in seconds. An existing file
@@ -187,7 +218,14 @@ impl Client {
     ///
     /// Fails if the key is an existing directory.
     pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), None, None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                dir: Some(true),
+                ttl: ttl,
+                ..Default::default()
+            },
+        )
     }
 
     /// Updates the given key to the given value and time to live in seconds.
@@ -196,7 +234,15 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(true), None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                prev_exist: Some(true),
+                ttl: ttl,
+                value: Some(value),
+                ..Default::default()
+            },
+        )
     }
 
     /// Updates the given key to a directory with the given time to live in seconds. If the
@@ -207,7 +253,15 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(true), None, false)
+        self.raw_set(
+            key,
+            SetOptions {
+                dir: Some(true),
+                prev_exist: Some(true),
+                ttl: ttl,
+                ..Default::default()
+            },
+        )
     }
 
     /// Returns statistics on the leader member of a cluster.
@@ -287,34 +341,31 @@ impl Client {
     fn raw_set(
         &self,
         key: &str,
-        value: Option<&str>,
-        ttl: Option<u64>,
-        dir: Option<bool>,
-        prev_exist: Option<bool>,
-        compare_and_swap: Option<ComparisonConditions>,
-        create_in_order: bool,
+        options: SetOptions,
     ) -> EtcdResult {
         let url = self.build_url(key);
-        let mut options = vec![];
+        let mut http_options = vec![];
 
-        if value.is_some() {
-            options.push(("value".to_string(), value.unwrap().to_string()));
+        if options.value.is_some() {
+            http_options.push(("value".to_string(), options.value.unwrap().to_string()));
         }
 
-        if ttl.is_some() {
-            options.push(("ttl".to_string(), format!("{}", ttl.unwrap())));
+        if options.ttl.is_some() {
+            http_options.push(("ttl".to_string(), format!("{}", options.ttl.unwrap())));
         }
 
-        if dir.is_some() {
-            options.push(("dir".to_string(), format!("{}", dir.unwrap())));
+        if options.dir.is_some() {
+            http_options.push(("dir".to_string(), format!("{}", options.dir.unwrap())));
         }
 
-        if prev_exist.is_some() {
-            options.push(("prevExist".to_string(), format!("{}", prev_exist.unwrap())));
+        if options.prev_exist.is_some() {
+            http_options.push(
+                ("prevExist".to_string(), format!("{}", options.prev_exist.unwrap()))
+            );
         }
 
-        if compare_and_swap.is_some() {
-            let conditions = compare_and_swap.unwrap();
+        if options.conditions.is_some() {
+            let conditions = options.conditions.unwrap();
 
             if conditions.is_empty() {
                 return Err(
@@ -323,19 +374,19 @@ impl Client {
             }
 
             if conditions.modified_index.is_some() {
-                options.push(
+                http_options.push(
                     ("prevIndex".to_string(), format!("{}", conditions.modified_index.unwrap()))
                 );
             }
 
             if conditions.value.is_some() {
-                options.push(("prevValue".to_string(), conditions.value.unwrap().to_string()));
+                http_options.push(("prevValue".to_string(), conditions.value.unwrap().to_string()));
             }
         }
 
-        let body = form_urlencoded::serialize(&options);
+        let body = form_urlencoded::serialize(&http_options);
 
-        let mut response = if create_in_order {
+        let mut response = if options.create_in_order {
             try!(http::post(url, body))
         } else {
             try!(http::put(url, body))
