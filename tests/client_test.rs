@@ -50,6 +50,31 @@ fn create_does_not_replace_existing_key() {
 }
 
 #[test]
+fn create_in_order() {
+    let client = TestClient::new();
+
+    let keys: Vec<String> = (1..4).map(|ref _key| {
+        client.c.create_in_order(
+            "/test/foo",
+            "bar",
+            None,
+        ).ok().unwrap().node.key.unwrap()
+    }).collect();
+
+    assert!(keys[0] < keys[1]);
+    assert!(keys[1] < keys[2]);
+}
+
+#[test]
+fn create_in_order_must_operate_on_a_directory() {
+    let client = TestClient::new();
+
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    assert!(client.c.create_in_order("/test/foo", "baz", None).is_err());
+}
+
+#[test]
 fn compare_and_delete() {
     let client = TestClient::new();
 

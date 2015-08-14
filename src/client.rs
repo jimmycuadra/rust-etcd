@@ -82,6 +82,7 @@ impl Client {
                 value: current_value,
                 modified_index: current_modified_index,
             }),
+            false,
         )
     }
 
@@ -91,7 +92,7 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(false), None)
+        self.raw_set(key, Some(value), ttl, None, Some(false), None, false)
     }
 
     /// Creates a new empty directory at the given key with the given time to live in seconds.
@@ -100,7 +101,17 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(false), None)
+        self.raw_set(key, None, ttl, Some(true), Some(false), None, false)
+    }
+
+    /// Creates a new file in the given directory with the given value and time to live in seconds
+    /// with a key name guaranteed to be greater than all existing keys in the directory.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the key already exists and is not a directory.
+    pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
+        self.raw_set(key, Some(value), ttl, None, None, None, true)
     }
 
     /// Deletes a file or directory at the given key. If `recursive` is `true` and the key is a
@@ -153,7 +164,7 @@ impl Client {
     ///
     /// Fails if the key is a directory.
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, None, None)
+        self.raw_set(key, Some(value), ttl, None, None, None, false)
     }
 
     /// Sets the key to an empty directory with the given time to live in seconds. An existing file
@@ -163,7 +174,7 @@ impl Client {
     ///
     /// Fails if the key is an existing directory.
     pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), None, None)
+        self.raw_set(key, None, ttl, Some(true), None, None, false)
     }
 
     /// Updates the given key to the given value and time to live in seconds.
@@ -172,7 +183,7 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(true), None)
+        self.raw_set(key, Some(value), ttl, None, Some(true), None, false)
     }
 
     /// Updates the given key to a directory with the given time to live in seconds. If the
@@ -183,7 +194,7 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(true), None)
+        self.raw_set(key, None, ttl, Some(true), Some(true), None, false)
     }
 
     /// Returns statistics on the leader member of a cluster.
@@ -270,6 +281,7 @@ impl Client {
         dir: Option<bool>,
         prev_exist: Option<bool>,
         compare_and_swap: Option<ComparisonConditions>,
+        create_in_order: bool,
     ) -> EtcdResult {
         let url = self.build_url(key);
         let mut options = vec![];
@@ -312,7 +324,12 @@ impl Client {
 
         let body = form_urlencoded::serialize(&options);
 
-        let mut response = try!(http::put(url, body));
+        let mut response = if create_in_order {
+            try!(http::post(url, body))
+        } else {
+            try!(http::put(url, body))
+        };
+
         let mut response_body = String::new();
         response.read_to_string(&mut response_body).unwrap();
 

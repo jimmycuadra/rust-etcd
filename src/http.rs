@@ -13,6 +13,11 @@ pub fn get(url: String) -> Result<Response, Error> {
     request(Method::Get, url)
 }
 
+/// Makes a POST request to etcd.
+pub fn post(url: String, body: String) -> Result<Response, Error> {
+    request_with_body(Method::Post, url, body)
+}
+
 /// Makes a PUT request to etcd.
 pub fn put(url: String, body: String) -> Result<Response, Error> {
     request_with_body(Method::Put, url, body)
