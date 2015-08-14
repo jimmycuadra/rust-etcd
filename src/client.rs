@@ -87,7 +87,7 @@ impl Client {
         )
     }
 
-    /// Creates a new file at the given key with the given value and time to live in seconds.
+    /// Creates a new key-value pair with any given time to live in seconds.
     ///
     /// # Failures
     ///
@@ -121,8 +121,8 @@ impl Client {
         )
     }
 
-    /// Creates a new file in the given directory with the given value and time to live in seconds
-    /// with a key name guaranteed to be greater than all existing keys in the directory.
+    /// Creates a new key-value pair in the given directory with any given time to live in seconds
+    /// and a key name guaranteed to be greater than all existing keys in the directory.
     ///
     /// # Failures
     ///
@@ -139,8 +139,8 @@ impl Client {
         )
     }
 
-    /// Deletes a file or directory at the given key. If `recursive` is `true` and the key is a
-    /// directory, the directory and all child files and directories will be deleted.
+    /// Deletes a key-value pair or directory. If `recursive` is `true` and the key is a
+    /// directory, the directory and all child key-value pairs and directories will be deleted.
     ///
     /// # Failures
     ///
@@ -155,7 +155,7 @@ impl Client {
         )
     }
 
-    /// Deletes an empty directory or a file at the given key.
+    /// Deletes an empty directory or a key-value pair at the given key.
     ///
     /// # Failures
     ///
@@ -211,8 +211,8 @@ impl Client {
         )
     }
 
-    /// Sets the key to an empty directory with the given time to live in seconds. An existing file
-    /// will be replaced, but an existing directory will not.
+    /// Sets the key to an empty directory with the given time to live in seconds. An existing
+    /// key-value will be replaced, but an existing directory will not.
     ///
     /// # Failures
     ///
@@ -246,8 +246,8 @@ impl Client {
     }
 
     /// Updates the given key to a directory with the given time to live in seconds. If the
-    /// directory already existed, only the TTL is updated. If the key was a file, its value is
-    /// removed and its TTL is updated.
+    /// directory already existed, only the TTL is updated. If the key was a key-value pair, its
+    /// value is removed and its TTL is updated.
     ///
     /// # Failures
     ///
