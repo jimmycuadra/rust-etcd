@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use url::Url;
 
+#[derive(Debug)]
 pub struct UrlWithQueryPairs<'a> {
     pub pairs: &'a HashMap<&'a str, String>,
     pub url: String,

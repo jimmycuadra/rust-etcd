@@ -1,4 +1,5 @@
 /// Possible conditions for "compare and delete" and "compare and swap" operations.
+#[derive(Debug)]
 pub struct ComparisonConditions<'a> {
     /// The etcd modified index the key must have before the operation is performed.
     pub modified_index: Option<u64>,
@@ -14,7 +15,7 @@ impl<'a> ComparisonConditions<'a> {
 }
 
 /// Controls the various different ways a delete operation can be performed.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct DeleteOptions<'a> {
     /// Conditions used for "compare and delete" operations.
     pub conditions: Option<ComparisonConditions<'a>>,
@@ -25,7 +26,7 @@ pub struct DeleteOptions<'a> {
 }
 
 /// Controls the various different ways a create, update, or set operation can be performed.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct SetOptions<'a> {
     /// Conditions used for "compare and swap" operations.
     pub conditions: Option<ComparisonConditions<'a>>,
