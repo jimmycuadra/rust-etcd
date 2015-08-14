@@ -11,8 +11,8 @@ pub use error::Error;
 pub use response::{Response, EtcdResult, LeaderStats, FollowerStats, CountStats, LatencyStats};
 
 mod client;
-mod conditions;
 mod error;
 mod http;
+mod options;
 mod query_pairs;
 mod response;

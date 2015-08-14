@@ -6,7 +6,7 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded;
 
-use conditions::ComparisonConditions;
+use options::{ComparisonConditions, DeleteOptions};
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
@@ -49,12 +49,13 @@ impl Client {
     ) -> EtcdResult {
         self.raw_delete(
             key,
-            None,
-            None,
-            Some(ComparisonConditions {
-                value: current_value,
-                modified_index: current_modified_index,
-            }),
+            DeleteOptions {
+                conditions: Some(ComparisonConditions {
+                    value: current_value,
+                    modified_index: current_modified_index,
+                }),
+                ..Default::default()
+            }
         )
     }
 
@@ -121,7 +122,13 @@ impl Client {
     ///
     /// Fails if the key is a directory and `recursive` is `false`.
     pub fn delete(&self, key: &str, recursive: bool) -> EtcdResult {
-        self.raw_delete(key, Some(recursive), None, None)
+        self.raw_delete(
+            key,
+            DeleteOptions {
+                recursive: Some(recursive),
+                ..Default::default()
+            }
+        )
     }
 
     /// Deletes an empty directory or a file at the given key.
@@ -130,7 +137,13 @@ impl Client {
     ///
     /// Fails if the directory is not empty.
     pub fn delete_dir(&self, key: &str) -> EtcdResult {
-        self.raw_delete(key, None, Some(true), None)
+        self.raw_delete(
+            key,
+            DeleteOptions {
+                dir: Some(true),
+                ..Default::default()
+            }
+        )
     }
 
     /// Gets the value of a key. If the key is a directory, `sort` will determine whether the
@@ -225,22 +238,20 @@ impl Client {
     fn raw_delete(
         &self,
         key: &str,
-        recursive: Option<bool>,
-        dir: Option<bool>,
-        compare_and_delete: Option<ComparisonConditions>,
+        options: DeleteOptions,
     ) -> EtcdResult {
         let mut query_pairs = HashMap::new();
 
-        if recursive.is_some() {
-            query_pairs.insert("recursive", format!("{}", recursive.unwrap()));
+        if options.recursive.is_some() {
+            query_pairs.insert("recursive", format!("{}", options.recursive.unwrap()));
         }
 
-        if dir.is_some() {
-            query_pairs.insert("dir", format!("{}", dir.unwrap()));
+        if options.dir.is_some() {
+            query_pairs.insert("dir", format!("{}", options.dir.unwrap()));
         }
 
-        if compare_and_delete.is_some() {
-            let conditions = compare_and_delete.unwrap();
+        if options.conditions.is_some() {
+            let conditions = options.conditions.unwrap();
 
             if conditions.is_empty() {
                 return Err(
