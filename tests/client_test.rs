@@ -116,6 +116,78 @@ fn compare_and_delete_requires_conditions() {
 }
 
 #[test]
+fn compare_and_swap() {
+    let client = TestClient::new();
+
+    let modified_index = client.c.create(
+        "/test/foo",
+        "bar",
+        None
+    ).ok().unwrap().node.modifiedIndex.unwrap();
+
+    let response = client.c.compare_and_swap(
+        "/test/foo",
+        "baz",
+        Some(100),
+        Some("bar"),
+        Some(modified_index)
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndSwap".to_string());
+}
+
+#[test]
+fn compare_and_swap_only_index() {
+    let client = TestClient::new();
+
+    let modified_index = client.c.create(
+        "/test/foo",
+        "bar",
+        None
+    ).ok().unwrap().node.modifiedIndex.unwrap();
+
+    let response = client.c.compare_and_swap(
+        "/test/foo",
+        "baz",
+        None,
+        None,
+        Some(modified_index)
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndSwap".to_string());
+}
+
+#[test]
+fn compare_and_swap_only_value() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    let response = client.c.compare_and_swap(
+        "/test/foo",
+        "bar",
+        None,
+        Some("bar"),
+        None,
+    ).ok().unwrap();
+
+    assert_eq!(response.action, "compareAndSwap".to_string());
+}
+
+#[test]
+fn compare_and_swap_requires_conditions() {
+    let client = TestClient::new();
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    match client.c.compare_and_swap("/test/foo", "bar", None, None, None).err().unwrap() {
+        Error::InvalidConditions(message) => assert_eq!(
+            message,
+            "Current value or modified index is required."
+        ),
+        _ => panic!("expected Error::InvalidConditions"),
+    }
+}
+
+#[test]
 fn get() {
     let client = TestClient::new();
     client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();

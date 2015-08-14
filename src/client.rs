@@ -6,7 +6,7 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded;
 
-use conditions::CompareAndDeleteConditions;
+use conditions::ComparisonConditions;
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
@@ -51,7 +51,34 @@ impl Client {
             key,
             None,
             None,
-            Some(CompareAndDeleteConditions {
+            Some(ComparisonConditions {
+                value: current_value,
+                modified_index: current_modified_index,
+            }),
+        )
+    }
+
+    /// Updates the value of a key only if the given current value and/or current modified index
+    /// match.
+    ///
+    /// # Failures
+    ///
+    /// Fails if the conditions didn't match or if no conditions were given.
+    pub fn compare_and_swap(
+        &self,
+        key: &str,
+        value: &str,
+        ttl: Option<u64>,
+        current_value: Option<&str>,
+        current_modified_index: Option<u64>,
+    ) -> EtcdResult {
+        self.raw_set(
+            key,
+            Some(value),
+            ttl,
+            None,
+            Some(true),
+            Some(ComparisonConditions {
                 value: current_value,
                 modified_index: current_modified_index,
             }),
@@ -64,7 +91,7 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(false))
+        self.raw_set(key, Some(value), ttl, None, Some(false), None)
     }
 
     /// Creates a new empty directory at the given key with the given time to live in seconds.
@@ -73,7 +100,7 @@ impl Client {
     ///
     /// Fails if the key already exists.
     pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(false))
+        self.raw_set(key, None, ttl, Some(true), Some(false), None)
     }
 
     /// Deletes a file or directory at the given key. If `recursive` is `true` and the key is a
@@ -126,7 +153,7 @@ impl Client {
     ///
     /// Fails if the key is a directory.
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, None)
+        self.raw_set(key, Some(value), ttl, None, None, None)
     }
 
     /// Sets the key to an empty directory with the given time to live in seconds. An existing file
@@ -136,7 +163,7 @@ impl Client {
     ///
     /// Fails if the key is an existing directory.
     pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), None)
+        self.raw_set(key, None, ttl, Some(true), None, None)
     }
 
     /// Updates the given key to the given value and time to live in seconds.
@@ -145,7 +172,7 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, Some(value), ttl, None, Some(true))
+        self.raw_set(key, Some(value), ttl, None, Some(true), None)
     }
 
     /// Updates the given key to a directory with the given time to live in seconds. If the
@@ -156,7 +183,7 @@ impl Client {
     ///
     /// Fails if the key does not exist.
     pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
-        self.raw_set(key, None, ttl, Some(true), Some(true))
+        self.raw_set(key, None, ttl, Some(true), Some(true), None)
     }
 
     /// Returns statistics on the leader member of a cluster.
@@ -189,7 +216,7 @@ impl Client {
         key: &str,
         recursive: Option<bool>,
         dir: Option<bool>,
-        compare_and_delete: Option<CompareAndDeleteConditions>,
+        compare_and_delete: Option<ComparisonConditions>,
     ) -> EtcdResult {
         let mut query_pairs = HashMap::new();
 
@@ -242,6 +269,7 @@ impl Client {
         ttl: Option<u64>,
         dir: Option<bool>,
         prev_exist: Option<bool>,
+        compare_and_swap: Option<ComparisonConditions>,
     ) -> EtcdResult {
         let url = self.build_url(key);
         let mut options = vec![];
@@ -260,6 +288,26 @@ impl Client {
 
         if prev_exist.is_some() {
             options.push(("prevExist".to_string(), format!("{}", prev_exist.unwrap())));
+        }
+
+        if compare_and_swap.is_some() {
+            let conditions = compare_and_swap.unwrap();
+
+            if conditions.is_empty() {
+                return Err(
+                    Error::InvalidConditions("Current value or modified index is required.")
+                );
+            }
+
+            if conditions.modified_index.is_some() {
+                options.push(
+                    ("prevIndex".to_string(), format!("{}", conditions.modified_index.unwrap()))
+                );
+            }
+
+            if conditions.value.is_some() {
+                options.push(("prevValue".to_string(), conditions.value.unwrap().to_string()));
+            }
         }
 
         let body = form_urlencoded::serialize(&options);
