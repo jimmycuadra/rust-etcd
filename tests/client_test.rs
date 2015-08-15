@@ -262,6 +262,13 @@ fn get_recursive() {
 }
 
 #[test]
+fn leader_stats() {
+    let client = TestClient::new();
+
+    client.c.leader_stats().unwrap();
+}
+
+#[test]
 fn set() {
     let client = TestClient::new();
 
@@ -428,11 +435,4 @@ fn version() {
 
     assert_eq!(version.etcdcluster.unwrap(), "2.1.0".to_string());
     assert_eq!(version.etcdserver.unwrap(), "2.1.1".to_string());
-}
-
-#[test]
-fn leader_stats() {
-    let client = TestClient::new();
-
-    client.c.leader_stats().unwrap();
 }

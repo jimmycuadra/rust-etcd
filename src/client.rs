@@ -184,6 +184,23 @@ impl Client {
         )
     }
 
+    /// Returns statistics on the leader member of a cluster.
+    ///
+    /// # Failures
+    ///
+    /// Fails if JSON decoding fails, which suggests a bug in our schema.
+    pub fn leader_stats(&self) -> Result<LeaderStats, Error> {
+        let url = format!("{}v2/stats/leader", self.root_url);
+        let mut response = try!(http::get(url));
+        let mut response_body = String::new();
+        try!(response.read_to_string(&mut response_body));
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+        }
+    }
+
     /// Sets the key to the given value with the given time to live in seconds. Any previous value
     /// and TTL will be replaced.
     ///
@@ -288,23 +305,6 @@ impl Client {
                 ..Default::default()
             },
         )
-    }
-
-    /// Returns statistics on the leader member of a cluster.
-    ///
-    /// # Failures
-    ///
-    /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn leader_stats(&self) -> Result<LeaderStats, Error> {
-        let url = format!("{}v2/stats/leader", self.root_url);
-        let mut response = try!(http::get(url));
-        let mut response_body = String::new();
-        try!(response.read_to_string(&mut response_body));
-
-        match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
-        }
     }
 
     // private
