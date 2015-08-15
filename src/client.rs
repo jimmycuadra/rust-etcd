@@ -6,7 +6,7 @@ use rustc_serialize::json;
 use url::{ParseError, Url};
 use url::form_urlencoded;
 
-use options::{ComparisonConditions, DeleteOptions, SetOptions};
+use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
@@ -174,24 +174,14 @@ impl Client {
     /// contents of the directory are returned in a sorted order. If the key is a directory and
     /// `recursive` is `true`, the contents of child directories will be returned as well.
     pub fn get(&self, key: &str, sort: bool, recursive: bool) -> EtcdResult {
-        let mut query_pairs = HashMap::new();
-
-        query_pairs.insert("sorted", format!("{}", sort));
-        query_pairs.insert("recursive", format!("{}", recursive));
-
-        let url = UrlWithQueryPairs {
-            pairs: &query_pairs,
-            url: self.build_url(key),
-        }.parse();
-
-        let mut response = try!(http::get(format!("{}", url)));
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
-
-        match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
-        }
+        self.raw_get(
+            key,
+            GetOptions {
+                recursive: recursive,
+                sort: Some(sort),
+                ..Default::default()
+            },
+        )
     }
 
     /// Sets the key to the given value with the given time to live in seconds. Any previous value
@@ -264,6 +254,29 @@ impl Client {
         )
     }
 
+    /// Watches etcd for changes to the given key (including all child keys if `recursive` is
+    /// `true`,) and returns the new value as soon as a change takes place. The watch will return
+    /// the first change indexed with `index` or greater, if specified, allowing you to watch for
+    /// changes that happened in the past.
+    ///
+    /// # Failures
+    ///
+    /// Fails if a supplied `index` value is too old and has been flushed out of etcd's internal
+    /// store of the most recent change events. In this case, the key should be queried for its
+    /// latest "modified index" value and that should be used as the new `index` on a subsequent
+    /// `watch`.
+    pub fn watch(&self, key: &str, index: Option<u64>, recursive: bool) -> EtcdResult {
+        self.raw_get(
+            key,
+            GetOptions {
+                recursive: recursive,
+                wait_index: index,
+                wait: true,
+                ..Default::default()
+            },
+        )
+    }
+
     /// Returns statistics on the leader member of a cluster.
     ///
     /// # Failures
@@ -328,6 +341,39 @@ impl Client {
         }.parse();
 
         let mut response = try!(http::delete(format!("{}", url)));
+        let mut response_body = String::new();
+        response.read_to_string(&mut response_body).unwrap();
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+        }
+    }
+
+    /// Handles all get operations.
+    fn raw_get(&self, key: &str, options: GetOptions) -> EtcdResult {
+        let mut query_pairs = HashMap::new();
+
+        query_pairs.insert("recursive", format!("{}", options.recursive));
+
+        if options.sort.is_some() {
+            query_pairs.insert("sorted", format!("{}", options.sort.unwrap()));
+        }
+
+        if options.wait {
+            query_pairs.insert("wait", "true".to_string());
+        }
+
+        if options.wait_index.is_some() {
+            query_pairs.insert("waitIndex", format!("{}", options.wait_index.unwrap()));
+        }
+
+        let url = UrlWithQueryPairs {
+            pairs: &query_pairs,
+            url: self.build_url(key),
+        }.parse();
+
+        let mut response = try!(http::get(format!("{}", url)));
         let mut response_body = String::new();
         response.read_to_string(&mut response_body).unwrap();
 

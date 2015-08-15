@@ -1,5 +1,7 @@
 extern crate etcd;
 
+use std::thread;
+
 use etcd::{Client, Error};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
@@ -363,6 +365,59 @@ fn delete_dir() {
     let response = client.c.delete_dir("/test/dir").ok().unwrap();
 
     assert_eq!(response.action, "delete");
+}
+
+#[test]
+fn watch() {
+    let child = thread::spawn(|| {
+        let client = Client::new("http://etcd:2379").unwrap();
+
+        thread::sleep_ms(50);
+
+        client.set("/test/foo", "baz", None).ok().unwrap();
+    });
+
+    let client = TestClient::new();
+
+    client.c.create("/test/foo", "bar", None).ok().unwrap();
+
+    let response = client.c.watch("/test/foo", None, false).ok().unwrap();
+
+    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+
+    child.join().ok().unwrap();
+}
+
+#[test]
+fn watch_index() {
+    let client = TestClient::new();
+
+    let index = client.c.set("/test/foo", "bar", None).ok().unwrap().node.modifiedIndex.unwrap();
+
+    let response = client.c.watch("/test/foo", Some(index), false).ok().unwrap();
+
+    assert_eq!(response.node.modifiedIndex.unwrap(), index);
+    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+}
+
+#[test]
+fn watch_recursive() {
+    let child = thread::spawn(|| {
+        let client = Client::new("http://etcd:2379").unwrap();
+
+        thread::sleep_ms(50);
+
+        client.set("/test/foo/bar", "baz", None).ok().unwrap();
+    });
+
+    let client = TestClient::new();
+
+    let response = client.c.watch("/test", None, true).ok().unwrap();
+
+    assert_eq!(response.node.key.unwrap(), "/test/foo/bar".to_string());
+    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+
+    child.join().ok().unwrap();
 }
 
 #[test]

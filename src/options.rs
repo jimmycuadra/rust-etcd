@@ -25,6 +25,19 @@ pub struct DeleteOptions<'a> {
     pub recursive: Option<bool>,
 }
 
+/// Controls the various different ways a get operation can be performed.
+#[derive(Debug, Default)]
+pub struct GetOptions {
+    /// Whether or not keys within a directory should be included in the response.
+    pub recursive: bool,
+    /// Whether or not directory contents will be sorted within the response.
+    pub sort: Option<bool>,
+    /// Whether or not to wait for a change.
+    pub wait: bool,
+    /// The etcd index to use as a lower bound when watching a key.
+    pub wait_index: Option<u64>,
+}
+
 /// Controls the various different ways a create, update, or set operation can be performed.
 #[derive(Debug, Default)]
 pub struct SetOptions<'a> {
