@@ -8,17 +8,19 @@ extern crate url;
 
 pub use client::Client;
 pub use error::Error;
-pub use response::{
-    Response,
-    EtcdResult,
+pub use responses::{
+    // Key space operations
+    KeySpaceInfo,
+    KeySpaceResult,
 
+    // Stats operations
     LeaderStats,
     FollowerStats,
     CountStats,
     LatencyStats,
 
-    Version,
-    VersionResult,
+    // Version operations
+    VersionInfo,
 };
 
 mod client;
@@ -26,4 +28,4 @@ mod error;
 mod http;
 mod options;
 mod query_pairs;
-mod response;
+mod responses;

@@ -1,16 +1,13 @@
 use std::collections::HashMap;
 use error::Error;
 
-/// Returned by `Client` API calls. A result containing an etcd `Response` or an `Error`.
-pub type EtcdResult = Result<Response, Error>;
+/// Returned by key space API calls.
+pub type KeySpaceResult = Result<KeySpaceInfo, Error>;
 
-/// Returned by `Client`'s `version` method. A result containing an `EtcdVersion` or an `Error`.
-pub type VersionResult = Result<Version, Error>;
-
-/// A successful response from etcd.
+/// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
-pub struct Response {
+pub struct KeySpaceInfo {
     /// The action that was taken, e.g. `get`, `set`.
     pub action: String,
     /// The etcd `Node` that was operated upon.
@@ -19,7 +16,7 @@ pub struct Response {
     pub prevNode: Option<Node>,
 }
 
-/// An etcd key or directory.
+/// An etcd key-value pair or directory.
 #[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
 pub struct Node {
@@ -43,7 +40,7 @@ pub struct Node {
 
 /// Versions of the etcd cluster and server.
 #[derive(Debug, RustcDecodable)]
-pub struct Version {
+pub struct VersionInfo {
     /// The version of the etcd cluster.
     pub etcdcluster: Option<String>,
     /// The version of the etcd server.

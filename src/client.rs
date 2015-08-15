@@ -10,7 +10,7 @@ use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
-use response::{EtcdResult, LeaderStats, VersionResult};
+use responses::{KeySpaceResult, LeaderStats, VersionInfo};
 
 /// API client for etcd.
 #[derive(Debug)]
@@ -46,7 +46,7 @@ impl Client {
         key: &str,
         current_value: Option<&str>,
         current_modified_index: Option<u64>
-    ) -> EtcdResult {
+    ) -> KeySpaceResult {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -72,7 +72,7 @@ impl Client {
         ttl: Option<u64>,
         current_value: Option<&str>,
         current_modified_index: Option<u64>,
-    ) -> EtcdResult {
+    ) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -92,7 +92,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key already exists.
-    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -109,7 +109,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key already exists.
-    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -127,7 +127,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key already exists and is not a directory.
-    pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -145,7 +145,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key is a directory and `recursive` is `false`.
-    pub fn delete(&self, key: &str, recursive: bool) -> EtcdResult {
+    pub fn delete(&self, key: &str, recursive: bool) -> KeySpaceResult {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -160,7 +160,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the directory is not empty.
-    pub fn delete_dir(&self, key: &str) -> EtcdResult {
+    pub fn delete_dir(&self, key: &str) -> KeySpaceResult {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -173,7 +173,7 @@ impl Client {
     /// Gets the value of a key. If the key is a directory, `sort` will determine whether the
     /// contents of the directory are returned in a sorted order. If the key is a directory and
     /// `recursive` is `true`, the contents of child directories will be returned as well.
-    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> EtcdResult {
+    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> KeySpaceResult {
         self.raw_get(
             key,
             GetOptions {
@@ -190,7 +190,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key is a directory.
-    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -207,7 +207,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key is an existing directory.
-    pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -223,7 +223,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key does not exist.
-    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -242,7 +242,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if the key does not exist.
-    pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> EtcdResult {
+    pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
             key,
             SetOptions {
@@ -255,7 +255,7 @@ impl Client {
     }
 
     /// Returns the versions of the etcd cluster and server.
-    pub fn version(&self) -> VersionResult {
+    pub fn version(&self) -> Result<VersionInfo, Error> {
         let url = format!("{}version", self.root_url);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
@@ -278,7 +278,7 @@ impl Client {
     /// store of the most recent change events. In this case, the key should be queried for its
     /// latest "modified index" value and that should be used as the new `index` on a subsequent
     /// `watch`.
-    pub fn watch(&self, key: &str, index: Option<u64>, recursive: bool) -> EtcdResult {
+    pub fn watch(&self, key: &str, index: Option<u64>, recursive: bool) -> KeySpaceResult {
         self.raw_get(
             key,
             GetOptions {
@@ -319,7 +319,7 @@ impl Client {
         &self,
         key: &str,
         options: DeleteOptions,
-    ) -> EtcdResult {
+    ) -> KeySpaceResult {
         let mut query_pairs = HashMap::new();
 
         if options.recursive.is_some() {
@@ -364,7 +364,7 @@ impl Client {
     }
 
     /// Handles all get operations.
-    fn raw_get(&self, key: &str, options: GetOptions) -> EtcdResult {
+    fn raw_get(&self, key: &str, options: GetOptions) -> KeySpaceResult {
         let mut query_pairs = HashMap::new();
 
         query_pairs.insert("recursive", format!("{}", options.recursive));
@@ -401,7 +401,7 @@ impl Client {
         &self,
         key: &str,
         options: SetOptions,
-    ) -> EtcdResult {
+    ) -> KeySpaceResult {
         let url = self.build_url(key);
         let mut http_options = vec![];
 
