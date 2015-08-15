@@ -4,6 +4,9 @@ use error::Error;
 /// Returned by `Client` API calls. A result containing an etcd `Response` or an `Error`.
 pub type EtcdResult = Result<Response, Error>;
 
+/// Returned by `Client`'s `version` method. A result containing an `EtcdVersion` or an `Error`.
+pub type VersionResult = Result<Version, Error>;
+
 /// A successful response from etcd.
 #[derive(Clone, Debug, RustcDecodable)]
 #[allow(non_snake_case)]
@@ -36,6 +39,15 @@ pub struct Node {
     pub ttl: Option<i64>,
     /// The value of the key.
     pub value: Option<String>,
+}
+
+/// Versions of the etcd cluster and server.
+#[derive(Debug, RustcDecodable)]
+pub struct Version {
+    /// The version of the etcd cluster.
+    pub etcdcluster: Option<String>,
+    /// The version of the etcd server.
+    pub etcdserver: Option<String>,
 }
 
 /// Statistics about an etcd cluster leader.

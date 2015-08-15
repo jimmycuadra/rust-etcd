@@ -421,6 +421,16 @@ fn watch_recursive() {
 }
 
 #[test]
+fn version() {
+    let client = TestClient::new();
+
+    let version = client.c.version().ok().unwrap();
+
+    assert_eq!(version.etcdcluster.unwrap(), "2.1.0".to_string());
+    assert_eq!(version.etcdserver.unwrap(), "2.1.1".to_string());
+}
+
+#[test]
 fn leader_stats() {
     let client = TestClient::new();
 

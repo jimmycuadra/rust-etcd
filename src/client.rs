@@ -10,7 +10,7 @@ use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use error::Error;
 use http;
 use query_pairs::UrlWithQueryPairs;
-use response::{EtcdResult, LeaderStats};
+use response::{EtcdResult, LeaderStats, VersionResult};
 
 /// API client for etcd.
 #[derive(Debug)]
@@ -252,6 +252,19 @@ impl Client {
                 ..Default::default()
             },
         )
+    }
+
+    /// Returns the versions of the etcd cluster and server.
+    pub fn version(&self) -> VersionResult {
+        let url = format!("{}version", self.root_url);
+        let mut response = try!(http::get(url));
+        let mut response_body = String::new();
+        try!(response.read_to_string(&mut response_body));
+
+        match response.status {
+            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
+            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+        }
     }
 
     /// Watches etcd for changes to the given key (including all child keys if `recursive` is

@@ -8,7 +8,18 @@ extern crate url;
 
 pub use client::Client;
 pub use error::Error;
-pub use response::{Response, EtcdResult, LeaderStats, FollowerStats, CountStats, LatencyStats};
+pub use response::{
+    Response,
+    EtcdResult,
+
+    LeaderStats,
+    FollowerStats,
+    CountStats,
+    LatencyStats,
+
+    Version,
+    VersionResult,
+};
 
 mod client;
 mod error;
