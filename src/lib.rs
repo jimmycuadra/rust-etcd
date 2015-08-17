@@ -12,6 +12,7 @@ pub use responses::{
     // Key space operations
     KeySpaceInfo,
     KeySpaceResult,
+    Node,
 
     // Stats operations
     LeaderStats,
