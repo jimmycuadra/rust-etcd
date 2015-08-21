@@ -9,6 +9,7 @@ readme = "README.md"
 keywords = ["etcd", "coreos", "database"]
 repository = "https://github.com/jimmycuadra/rust-etcd"
 homepage = "https://github.com/jimmycuadra/rust-etcd"
+documentation = "http://jimmycuadra.github.io/rust-etcd/"
 
 [lib]
 
