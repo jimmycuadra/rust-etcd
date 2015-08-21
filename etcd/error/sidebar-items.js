@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Error","An error returned by `Client` when an API call fails."]]});
