@@ -142,8 +142,10 @@ impl Client {
         )
     }
 
-    /// Deletes a key-value pair or directory. If `recursive` is `true` and the key is a
-    /// directory, the directory and all child key-value pairs and directories will be deleted.
+    /// Deletes a key-value pair or directory.
+    ///
+    /// If `recursive` is `true` and the key is a directory, the directory and all child key-value
+    /// pairs and directories will be deleted.
     ///
     /// # Failures
     ///
@@ -303,9 +305,10 @@ impl Client {
     }
 
     /// Watches etcd for changes to the given key (including all child keys if `recursive` is
-    /// `true`,) and returns the new value as soon as a change takes place. The watch will return
-    /// the first change indexed with `index` or greater, if specified, allowing you to watch for
-    /// changes that happened in the past.
+    /// `true`,) and returns the new value as soon as a change takes place.
+    ///
+    /// The watch will return the first change indexed with `index` or greater, if specified,
+    /// allowing you to watch for changes that happened in the past.
     ///
     /// # Failures
     ///
