@@ -28,6 +28,8 @@ pub struct DeleteOptions<'a> {
 /// Controls the various different ways a get operation can be performed.
 #[derive(Debug, Default)]
 pub struct GetOptions {
+    /// Whether or not to use read linearization to avoid stale data.
+    pub strong_consistency: bool,
     /// Whether or not keys within a directory should be included in the response.
     pub recursive: bool,
     /// Whether or not directory contents will be sorted within the response.

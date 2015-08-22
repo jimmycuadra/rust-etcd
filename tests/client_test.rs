@@ -219,7 +219,7 @@ fn get() {
     let client = TestClient::new();
     client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    let response = client.c.get("/test/foo", false, false).ok().unwrap();
+    let response = client.c.get("/test/foo", false, false, false).ok().unwrap();
 
     assert_eq!(response.action, "get".to_string());
     assert_eq!(response.node.value.unwrap(), "bar".to_string());
@@ -234,7 +234,7 @@ fn get_non_recursive() {
     client.c.set("/test/dir/baz", "blah", None).ok();
     client.c.set("/test/foo", "bar", None).ok();
 
-    let response = client.c.get("/test", true, false).ok().unwrap();
+    let response = client.c.get("/test", true, false, false).ok().unwrap();
 
     assert_eq!(response.node.dir.unwrap(), true);
 
@@ -252,7 +252,7 @@ fn get_recursive() {
 
     client.c.set("/test/dir/baz", "blah", None).ok();
 
-    let response = client.c.get("/test", true, true).ok().unwrap();
+    let response = client.c.get("/test", true, true, false).ok().unwrap();
     let nodes = response.node.nodes.unwrap();
 
     assert_eq!(

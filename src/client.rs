@@ -173,15 +173,30 @@ impl Client {
         )
     }
 
-    /// Gets the value of a key. If the key is a directory, `sort` will determine whether the
-    /// contents of the directory are returned in a sorted order. If the key is a directory and
-    /// `recursive` is `true`, the contents of child directories will be returned as well.
-    pub fn get(&self, key: &str, sort: bool, recursive: bool) -> KeySpaceResult {
+    /// Gets the value of a key.
+    ///
+    /// If the key is a directory, `sort` will determine whether the
+    /// contents of the directory are returned in a sorted order.
+    ///
+    /// If the key is a directory and `recursive` is `true`, the contents of child directories will
+    /// be returned as well.
+    ///
+    /// If `strong_consistency` is `true`, the etcd node serving the response will synchronize with
+    /// the quorum before returning the value. This is slower but avoids possibly stale data from
+    /// being returned.
+    pub fn get(
+        &self,
+        key: &str,
+        sort: bool,
+        recursive: bool,
+        strong_consistency: bool,
+    ) -> KeySpaceResult {
         self.raw_get(
             key,
             GetOptions {
                 recursive: recursive,
                 sort: Some(sort),
+                strong_consistency: strong_consistency,
                 ..Default::default()
             },
         )
