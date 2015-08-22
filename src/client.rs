@@ -1,23 +1,26 @@
+//! Contains the etcd client. All API calls are made via the client.
 use std::collections::HashMap;
 use std::io::Read;
 
 use hyper::status::StatusCode;
 use rustc_serialize::json;
-use url::{ParseError, Url};
-use url::form_urlencoded;
+use url::{form_urlencoded, ParseError, Url};
 
-use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
+use keys::KeySpaceResult;
 use error::Error;
 use http;
+use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
-use responses::{KeySpaceResult, LeaderStats, VersionInfo};
+use stats::LeaderStats;
+use version::VersionInfo;
 
-/// API client for etcd.
+/// API client for etcd. All API calls are made via the client.
 #[derive(Debug)]
 pub struct Client {
     root_url: String,
 }
 
+/// The entry point for all etcd API calls.
 impl Client {
     /// Constructs a new client.
     pub fn new(root_url: &str) -> Result<Client, ParseError> {

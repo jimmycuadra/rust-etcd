@@ -1,3 +1,5 @@
+//! Contains etcd error types.
+
 use std::convert::From;
 use hyper::Error as HttpError;
 use std::io::Error as IoError;
