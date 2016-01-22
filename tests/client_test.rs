@@ -1,6 +1,7 @@
 extern crate etcd;
 
-use std::thread;
+use std::thread::{sleep, spawn};
+use std::time::Duration;
 
 use etcd::{Client, Error};
 
@@ -376,10 +377,10 @@ fn delete_dir() {
 
 #[test]
 fn watch() {
-    let child = thread::spawn(|| {
+    let child = spawn(|| {
         let client = Client::new("http://etcd:2379").unwrap();
 
-        thread::sleep_ms(50);
+        sleep(Duration::from_millis(50));
 
         client.set("/test/foo", "baz", None).ok().unwrap();
     });
@@ -409,10 +410,10 @@ fn watch_index() {
 
 #[test]
 fn watch_recursive() {
-    let child = thread::spawn(|| {
+    let child = spawn(|| {
         let client = Client::new("http://etcd:2379").unwrap();
 
-        thread::sleep_ms(50);
+        sleep(Duration::from_millis(50));
 
         client.set("/test/foo/bar", "baz", None).ok().unwrap();
     });
@@ -433,6 +434,6 @@ fn version() {
 
     let version = client.c.version().ok().unwrap();
 
-    assert_eq!(version.etcdcluster.unwrap(), "2.1.0".to_string());
-    assert_eq!(version.etcdserver.unwrap(), "2.1.1".to_string());
+    assert_eq!(version.etcdcluster.unwrap(), "2.2.0".to_string());
+    assert_eq!(version.etcdserver.unwrap(), "2.2.4".to_string());
 }

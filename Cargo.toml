@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["etcd", "coreos", "database"]
 repository = "https://github.com/jimmycuadra/rust-etcd"
 homepage = "https://github.com/jimmycuadra/rust-etcd"
-documentation = "http://jimmycuadra.github.io/rust-etcd/"
+documentation = "http://jimmycuadra.github.io/rust-etcd/etcd/"
 
 [lib]
 
@@ -18,6 +18,6 @@ doctest = false
 
 [dependencies]
 
-hyper = ">= 0.6.8"
-rustc-serialize = ">= 0.3.15"
-url = ">= 0.2.37"
+hyper = "0.7.2"
+rustc-serialize = "0.3.16"
+url = "0.5.3"
