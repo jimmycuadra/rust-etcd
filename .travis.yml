@@ -1,0 +1,4 @@
+script: make ci
+services:
+  - docker
+sudo: required

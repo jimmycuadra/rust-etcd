@@ -1,5 +1,7 @@
 # etcd
 
+[![Build Status](https://travis-ci.org/jimmycuadra/rust-etcd.svg?branch=master)](https://travis-ci.org/jimmycuadra/rust-etcd)
+
 A Rust client library for [etcd](https://github.com/coreos/etcd).
 
 * [etcd](https://crates.io/crates/etcd) on crates.io

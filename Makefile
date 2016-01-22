@@ -9,3 +9,7 @@ rust:
 clean:
 	docker-compose stop
 	docker-compose rm -f
+
+.PHONY: ci
+ci:
+	docker-compose run --rm rust cargo test --verbose
