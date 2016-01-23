@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::io::Read;
 
 use hyper::status::StatusCode;
-use rustc_serialize::json;
+use serde_json::from_str;
 use url::{form_urlencoded, ParseError, Url};
 
 use keys::KeySpaceResult;
@@ -216,8 +216,8 @@ impl Client {
         try!(response.read_to_string(&mut response_body));
 
         match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
         }
     }
 
@@ -299,8 +299,8 @@ impl Client {
         try!(response.read_to_string(&mut response_body));
 
         match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap()))
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
         }
     }
 
@@ -379,8 +379,8 @@ impl Client {
         response.read_to_string(&mut response_body).unwrap();
 
         match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
         }
     }
 
@@ -412,8 +412,8 @@ impl Client {
         response.read_to_string(&mut response_body).unwrap();
 
         match response.status {
-            StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
         }
     }
 
@@ -476,8 +476,8 @@ impl Client {
         response.read_to_string(&mut response_body).unwrap();
 
         match response.status {
-            StatusCode::Created | StatusCode::Ok => Ok(json::decode(&response_body).unwrap()),
-            _ => Err(Error::Etcd(json::decode(&response_body).unwrap())),
+            StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
         }
     }
 }

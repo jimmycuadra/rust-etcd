@@ -85,7 +85,7 @@ fn compare_and_delete() {
         "/test/foo",
         "bar",
         None
-    ).ok().unwrap().node.modifiedIndex.unwrap();
+    ).ok().unwrap().node.modified_index.unwrap();
 
     let response = client.c.compare_and_delete(
         "/test/foo",
@@ -104,7 +104,7 @@ fn compare_and_delete_only_index() {
         "/test/foo",
         "bar",
         None
-    ).ok().unwrap().node.modifiedIndex.unwrap();
+    ).ok().unwrap().node.modified_index.unwrap();
 
     let response = client.c.compare_and_delete(
         "/test/foo",
@@ -151,7 +151,7 @@ fn compare_and_swap() {
         "/test/foo",
         "bar",
         None
-    ).ok().unwrap().node.modifiedIndex.unwrap();
+    ).ok().unwrap().node.modified_index.unwrap();
 
     let response = client.c.compare_and_swap(
         "/test/foo",
@@ -172,7 +172,7 @@ fn compare_and_swap_only_index() {
         "/test/foo",
         "bar",
         None
-    ).ok().unwrap().node.modifiedIndex.unwrap();
+    ).ok().unwrap().node.modified_index.unwrap();
 
     let response = client.c.compare_and_swap(
         "/test/foo",
@@ -400,11 +400,11 @@ fn watch() {
 fn watch_index() {
     let client = TestClient::new();
 
-    let index = client.c.set("/test/foo", "bar", None).ok().unwrap().node.modifiedIndex.unwrap();
+    let index = client.c.set("/test/foo", "bar", None).ok().unwrap().node.modified_index.unwrap();
 
     let response = client.c.watch("/test/foo", Some(index), false).ok().unwrap();
 
-    assert_eq!(response.node.modifiedIndex.unwrap(), index);
+    assert_eq!(response.node.modified_index.unwrap(), index);
     assert_eq!(response.node.value.unwrap(), "bar".to_string());
 }
 
