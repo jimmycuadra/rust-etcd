@@ -4,11 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/Users/jimmy/.cargo/registry/src/github.com-0a35038f75765ae4/cookie-0.1.21/src/lib.rs`.">
+    <meta name="description" content="Source to the Rust file `/Users/jimmy/.cargo/registry/src/github.com-88ac128001ac3a9a/cookie-0.2.2/src/lib.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>lib.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
     
@@ -24,17 +25,17 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -269,6 +270,26 @@
 <span id="227">227</span>
 <span id="228">228</span>
 <span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
 </pre><pre class='rust '>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>doc</span>(<span class='ident'>html_root_url</span> <span class='op'>=</span> <span class='string'>&quot;http://alexcrichton.com/cookie-rs&quot;</span>)]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>cfg_attr</span>(<span class='ident'>test</span>, <span class='ident'>deny</span>(<span class='ident'>warnings</span>))]</span>
@@ -306,7 +327,7 @@
             <span class='ident'>expires</span>: <span class='prelude-val'>None</span>,
             <span class='ident'>max_age</span>: <span class='prelude-val'>None</span>,
             <span class='ident'>domain</span>: <span class='prelude-val'>None</span>,
-            <span class='ident'>path</span>: <span class='prelude-val'>Some</span>(<span class='string'>&quot;/&quot;</span>.<span class='ident'>to_string</span>()),
+            <span class='ident'>path</span>: <span class='prelude-val'>None</span>,
             <span class='ident'>secure</span>: <span class='boolval'>false</span>,
             <span class='ident'>httponly</span>: <span class='boolval'>false</span>,
             <span class='ident'>custom</span>: <span class='ident'>BTreeMap</span>::<span class='ident'>new</span>(),
@@ -338,7 +359,18 @@
                 _ <span class='op'>=&gt;</span> {
                     <span class='kw'>let</span> (<span class='ident'>k</span>, <span class='ident'>v</span>) <span class='op'>=</span> <span class='macro'>unwrap_or_skip</span><span class='macro'>!</span>(<span class='ident'>split</span>(<span class='ident'>trimmed</span>).<span class='ident'>ok</span>());
                     <span class='kw'>match</span> <span class='kw-2'>&amp;</span><span class='ident'>k</span>.<span class='ident'>to_ascii_lowercase</span>()[..] {
-                        <span class='string'>&quot;max-age&quot;</span> <span class='op'>=&gt;</span> <span class='ident'>c</span>.<span class='ident'>max_age</span> <span class='op'>=</span> <span class='prelude-val'>Some</span>(<span class='macro'>unwrap_or_skip</span><span class='macro'>!</span>(<span class='ident'>v</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>())),
+                        <span class='string'>&quot;max-age&quot;</span> <span class='op'>=&gt;</span> {
+                            <span class='comment'>// See RFC 6265 Section 5.2.2, negative values</span>
+                            <span class='comment'>// indicate that the earliest possible expiration</span>
+                            <span class='comment'>// time should be used, so set the max age as 0</span>
+                            <span class='comment'>// seconds.</span>
+                            <span class='kw'>let</span> <span class='ident'>max_age</span>: <span class='ident'>i64</span> <span class='op'>=</span> <span class='macro'>unwrap_or_skip</span><span class='macro'>!</span>(<span class='ident'>v</span>.<span class='ident'>parse</span>().<span class='ident'>ok</span>());
+                            <span class='ident'>c</span>.<span class='ident'>max_age</span> <span class='op'>=</span> <span class='prelude-val'>Some</span>(<span class='kw'>if</span> <span class='ident'>max_age</span> <span class='op'>&lt;</span> <span class='number'>0</span> {
+                                <span class='number'>0</span>
+                            } <span class='kw'>else</span> {
+                                <span class='ident'>max_age</span> <span class='kw'>as</span> <span class='ident'>u64</span>
+                            });
+                        },
                         <span class='string'>&quot;domain&quot;</span> <span class='op'>=&gt;</span> {
                             <span class='kw'>if</span> <span class='ident'>v</span>.<span class='ident'>is_empty</span>() {
                                 <span class='kw'>continue</span>;
@@ -462,6 +494,15 @@
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ; sekure; HTTPONLY&quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
         <span class='ident'>expected</span>.<span class='ident'>secure</span> <span class='op'>=</span> <span class='boolval'>true</span>;
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure&quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
+        <span class='ident'>expected</span>.<span class='ident'>max_age</span> <span class='op'>=</span> <span class='prelude-val'>Some</span>(<span class='number'>0</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure; \
+                                  Max-Age=0&quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure; \
+                                  Max-Age = 0 &quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure; \
+                                  Max-Age=-1&quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure; \
+                                  Max-Age = -1 &quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
         <span class='ident'>expected</span>.<span class='ident'>max_age</span> <span class='op'>=</span> <span class='prelude-val'>Some</span>(<span class='number'>4</span>);
         <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>Cookie</span>::<span class='ident'>parse</span>(<span class='string'>&quot; foo=bar ;HttpOnly; Secure; \
                                   Max-Age=4&quot;</span>).<span class='ident'>ok</span>().<span class='ident'>unwrap</span>(), <span class='ident'>expected</span>);
@@ -505,40 +546,49 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -550,6 +600,6 @@
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

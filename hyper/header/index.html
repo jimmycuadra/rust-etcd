@@ -9,6 +9,7 @@
 
     <title>hyper::header - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
     
@@ -24,17 +25,17 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'><a href='../index.html'>hyper</a></p><script>window.sidebarCurrent = {name: 'header', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -45,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-6244' class='srclink' href='../../src/hyper/header/mod.rs.html#1-785' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-923' class='srclink' href='../../src/hyper/header/mod.rs.html#1-808' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Headers container, and common header fields.</p>
 
 <p>hyper has the opinion that Headers should be strongly-typed, because that&#39;s
@@ -53,8 +54,7 @@ why we&#39;re using Rust in the first place. To set or get any header, an object
 must implement the <code>Header</code> trait from this module. Several common headers
 are already provided, such as <code>Host</code>, <code>ContentType</code>, <code>UserAgent</code>, and others.</p>
 
-<h1 id="why-typed?" class='section-header'><a
-                           href="#why-typed?">Why Typed?</a></h1>
+<h1 id='why-typed' class='section-header'><a href='#why-typed'>Why Typed?</a></h1>
 <p>Or, why not stringly-typed? Types give the following advantages:</p>
 
 <ul>
@@ -62,8 +62,7 @@ are already provided, such as <code>Host</code>, <code>ContentType</code>, <code
 <li>Parsing to a proper type by default</li>
 </ul>
 
-<h1 id="defining-custom-headers" class='section-header'><a
-                           href="#defining-custom-headers">Defining Custom Headers</a></h1>
+<h1 id='defining-custom-headers' class='section-header'><a href='#defining-custom-headers'>Defining Custom Headers</a></h1>
 <p>Hyper provides many of the most commonly used headers in HTTP. If
 you need to define a custom header, it&#39;s easy to do while still taking
 advantage of the type system. Hyper includes a <code>header!</code> macro for defining
@@ -77,15 +76,13 @@ many wrapper-style headers.</p>
     <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>headers</span> <span class='op'>=</span> <span class='ident'>Headers</span>::<span class='ident'>new</span>();
 
     <span class='ident'>headers</span>.<span class='ident'>set</span>(<span class='ident'>XRequestGuid</span>(<span class='string'>&quot;a proper guid&quot;</span>.<span class='ident'>to_owned</span>()))
-}
-</pre>
+}</pre>
 
 <p>This works well for simple &quot;string&quot; headers. But the header system
 actually involves 2 parts: parsing, and formatting. If you need to
 customize either part, you can do so.</p>
 
-<h2 id="header-and-headerformat" class='section-header'><a
-                           href="#header-and-headerformat"><code>Header</code> and <code>HeaderFormat</code></a></h2>
+<h2 id='header-and-headerformat' class='section-header'><a href='#header-and-headerformat'><code>Header</code> and <code>HeaderFormat</code></a></h2>
 <p>Consider a Do Not Track header. It can be true or false, but it represents
 that via the numerals <code>1</code> and <code>0</code>.</p>
 <pre class='rust rust-example-rendered'>
@@ -124,8 +121,7 @@ that via the numerals <code>1</code> and <code>0</code>.</p>
             <span class='ident'>f</span>.<span class='ident'>write_str</span>(<span class='string'>&quot;0&quot;</span>)
         }
     }
-}
-</pre>
+}</pre>
 </div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
                     <tr class=' module-item'>
@@ -188,6 +184,16 @@ that via the numerals <code>1</code> and <code>0</code>.</p>
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='struct' href='struct.AccessControlAllowCredentials.html'
+                               title='hyper::header::AccessControlAllowCredentials'>AccessControlAllowCredentials</a></td>
+                        <td class='docblock short'>
+                             <p><code>Access-Control-Allow-Credentials</code> header, part of
+<a href="http://www.w3.org/TR/cors/#access-control-allow-headers-response-header">CORS</a></p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='struct' href='struct.AccessControlAllowHeaders.html'
                                title='hyper::header::AccessControlAllowHeaders'>AccessControlAllowHeaders</a></td>
                         <td class='docblock short'>
@@ -203,6 +209,16 @@ that via the numerals <code>1</code> and <code>0</code>.</p>
                         <td class='docblock short'>
                              <p><code>Access-Control-Allow-Methods</code> header, part of
 <a href="http://www.w3.org/TR/cors/#access-control-allow-methods-response-header">CORS</a></p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.AccessControlExposeHeaders.html'
+                               title='hyper::header::AccessControlExposeHeaders'>AccessControlExposeHeaders</a></td>
+                        <td class='docblock short'>
+                             <p><code>Access-Control-Expose-Headers</code> header, part of
+<a href="http://www.w3.org/TR/cors/#access-control-expose-headers-response-header">CORS</a></p>
 
                         </td>
                     </tr>
@@ -293,6 +309,15 @@ that via the numerals <code>1</code> and <code>0</code>.</p>
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='struct' href='struct.ContentDisposition.html'
+                               title='hyper::header::ContentDisposition'>ContentDisposition</a></td>
+                        <td class='docblock short'>
+                             <p>A <code>Content-Disposition</code> header, (re)defined in <a href="https://tools.ietf.org/html/rfc6266">RFC6266</a></p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='struct' href='struct.ContentEncoding.html'
                                title='hyper::header::ContentEncoding'>ContentEncoding</a></td>
                         <td class='docblock short'>
@@ -348,6 +373,23 @@ that via the numerals <code>1</code> and <code>0</code>.</p>
                         <td class='docblock short'>
                              <p><code>Cookie</code> header, defined in <a href="http://tools.ietf.org/html/rfc6265#section-5.4">RFC6265</a></p>
 
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.CookieJar.html'
+                               title='hyper::header::CookieJar'>CookieJar</a></td>
+                        <td class='docblock short'>
+                             <p>A jar of cookies for managing a session</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.CookiePair.html'
+                               title='hyper::header::CookiePair'>CookiePair</a></td>
+                        <td class='docblock short'>
+                             
                         </td>
                     </tr>
                 
@@ -642,6 +684,24 @@ Each ByteRangeSpec defines a range of bytes to fetch</p>
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='enum' href='enum.DispositionParam.html'
+                               title='hyper::header::DispositionParam'>DispositionParam</a></td>
+                        <td class='docblock short'>
+                             <p>A parameter to the disposition type</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.DispositionType.html'
+                               title='hyper::header::DispositionType'>DispositionType</a></td>
+                        <td class='docblock short'>
+                             <p>The implied disposition of the content of the HTTP body</p>
+
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='enum' href='enum.Encoding.html'
                                title='hyper::header::Encoding'>Encoding</a></td>
                         <td class='docblock short'>
@@ -768,7 +828,7 @@ except for the <code>WebSocket</code> value.</p>
                         <td><a class='fn' href='fn.q.html'
                                title='hyper::header::q'>q</a></td>
                         <td class='docblock short'>
-                             <p>Convenience function to create a <code>Quality</code> fromt a float.</p>
+                             <p>Convenience function to create a <code>Quality</code> from a float.</p>
 
                         </td>
                     </tr>
@@ -787,40 +847,49 @@ Sets <code>q</code> to the default 1.0</p>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -832,6 +901,6 @@ Sets <code>q</code> to the default 1.0</p>
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>

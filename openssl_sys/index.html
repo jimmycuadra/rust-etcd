@@ -9,6 +9,7 @@
 
     <title>openssl_sys - Rust</title>
 
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../main.css">
 
     
@@ -24,17 +25,17 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         <p class='location'></p><script>window.sidebarCurrent = {name: 'openssl_sys', ty: 'mod', relpath: '../'};</script>
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -45,7 +46,7 @@
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-0' class='srclink' href='../src/openssl_sys/lib.rs.html#1-632' title='goto source code'>[src]</a></span></h1>
+        </span><a id='src-0' class='srclink' href='../src/openssl_sys/lib.rs.html#1-723' title='goto source code'>[src]</a></span></h1>
 <h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
                     <tr class=' module-item'>
@@ -60,6 +61,30 @@
                     <tr class=' module-item'>
                         <td><a class='struct' href='struct.BIGNUM.html'
                                title='openssl_sys::BIGNUM'>BIGNUM</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.BIO.html'
+                               title='openssl_sys::BIO'>BIO</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.BIO_METHOD.html'
+                               title='openssl_sys::BIO_METHOD'>BIO_METHOD</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.CRYPTO_EX_DATA.html'
+                               title='openssl_sys::CRYPTO_EX_DATA'>CRYPTO_EX_DATA</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -99,8 +124,24 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='constant' href='constant.BIO_CTRL_FLUSH.html'
+                               title='openssl_sys::BIO_CTRL_FLUSH'>BIO_CTRL_FLUSH</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='constant' href='constant.BIO_C_SET_BUF_MEM_EOF_RETURN.html'
                                title='openssl_sys::BIO_C_SET_BUF_MEM_EOF_RETURN'>BIO_C_SET_BUF_MEM_EOF_RETURN</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='constant' href='constant.BIO_TYPE_NONE.html'
+                               title='openssl_sys::BIO_TYPE_NONE'>BIO_TYPE_NONE</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -171,6 +212,14 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='constant' href='constant.PKCS5_SALT_LEN.html'
+                               title='openssl_sys::PKCS5_SALT_LEN'>PKCS5_SALT_LEN</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='constant' href='constant.SSL_CTRL_CLEAR_OPTIONS.html'
                                title='openssl_sys::SSL_CTRL_CLEAR_OPTIONS'>SSL_CTRL_CLEAR_OPTIONS</a></td>
                         <td class='docblock short'>
@@ -205,6 +254,22 @@
                     <tr class=' module-item'>
                         <td><a class='constant' href='constant.SSL_CTRL_SET_TLSEXT_HOSTNAME.html'
                                title='openssl_sys::SSL_CTRL_SET_TLSEXT_HOSTNAME'>SSL_CTRL_SET_TLSEXT_HOSTNAME</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='constant' href='constant.SSL_CTRL_SET_TLSEXT_SERVERNAME_ARG.html'
+                               title='openssl_sys::SSL_CTRL_SET_TLSEXT_SERVERNAME_ARG'>SSL_CTRL_SET_TLSEXT_SERVERNAME_ARG</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='constant' href='constant.SSL_CTRL_SET_TLSEXT_SERVERNAME_CB.html'
+                               title='openssl_sys::SSL_CTRL_SET_TLSEXT_SERVERNAME_CB'>SSL_CTRL_SET_TLSEXT_SERVERNAME_CB</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -860,14 +925,6 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.BIO_eof.html'
-                               title='openssl_sys::BIO_eof'>BIO_eof</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.BIO_free_all.html'
                                title='openssl_sys::BIO_free_all'>BIO_free_all</a></td>
                         <td class='docblock short'>
@@ -902,14 +959,6 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.BIO_s_mem.html'
                                title='openssl_sys::BIO_s_mem'>BIO_s_mem</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.BIO_set_mem_eof_return.html'
-                               title='openssl_sys::BIO_set_mem_eof_return'>BIO_set_mem_eof_return</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1348,8 +1397,32 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.CRYPTO_set_id_callback.html'
+                               title='openssl_sys::CRYPTO_set_id_callback'>CRYPTO_set_id_callback</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.CRYPTO_set_locking_callback.html'
                                title='openssl_sys::CRYPTO_set_locking_callback'>CRYPTO_set_locking_callback</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.DH_free.html'
+                               title='openssl_sys::DH_free'>DH_free</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.DH_new_from_params.html'
+                               title='openssl_sys::DH_new_from_params'>DH_new_from_params</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1390,6 +1463,14 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.ERR_reason_error_string.html'
                                title='openssl_sys::ERR_reason_error_string'>ERR_reason_error_string</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_BytesToKey.html'
+                               title='openssl_sys::EVP_BytesToKey'>EVP_BytesToKey</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1564,6 +1645,30 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_128_cfb1.html'
+                               title='openssl_sys::EVP_aes_128_cfb1'>EVP_aes_128_cfb1</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_128_cfb128.html'
+                               title='openssl_sys::EVP_aes_128_cfb128'>EVP_aes_128_cfb128</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_128_cfb8.html'
+                               title='openssl_sys::EVP_aes_128_cfb8'>EVP_aes_128_cfb8</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.EVP_aes_128_ecb.html'
                                title='openssl_sys::EVP_aes_128_ecb'>EVP_aes_128_ecb</a></td>
                         <td class='docblock short'>
@@ -1574,6 +1679,30 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.EVP_aes_256_cbc.html'
                                title='openssl_sys::EVP_aes_256_cbc'>EVP_aes_256_cbc</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_256_cfb1.html'
+                               title='openssl_sys::EVP_aes_256_cfb1'>EVP_aes_256_cfb1</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_256_cfb128.html'
+                               title='openssl_sys::EVP_aes_256_cfb128'>EVP_aes_256_cfb128</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.EVP_aes_256_cfb8.html'
+                               title='openssl_sys::EVP_aes_256_cfb8'>EVP_aes_256_cfb8</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1660,14 +1789,6 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_CTX_copy.html'
-                               title='openssl_sys::HMAC_CTX_copy'>HMAC_CTX_copy</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.HMAC_CTX_init.html'
                                title='openssl_sys::HMAC_CTX_init'>HMAC_CTX_init</a></td>
                         <td class='docblock short'>
@@ -1676,59 +1797,40 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Final.html'
-                               title='openssl_sys::HMAC_Final'>HMAC_Final</a></td>
+                        <td><a class='fn' href='fn.PEM_read_bio_DHparams.html'
+                               title='openssl_sys::PEM_read_bio_DHparams'>PEM_read_bio_DHparams</a></td>
                         <td class='docblock short'>
                              
                         </td>
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Final_shim.html'
-                               title='openssl_sys::HMAC_Final_shim'>HMAC_Final_shim</a></td>
-                        <td class='docblock short'>
-                             <p>Deprecated - use the non &quot;_shim&quot; version</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Init_ex.html'
-                               title='openssl_sys::HMAC_Init_ex'>HMAC_Init_ex</a></td>
+                        <td><a class='fn' href='fn.PEM_read_bio_PUBKEY.html'
+                               title='openssl_sys::PEM_read_bio_PUBKEY'>PEM_read_bio_PUBKEY</a></td>
                         <td class='docblock short'>
                              
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Init_ex_shim.html'
-                               title='openssl_sys::HMAC_Init_ex_shim'>HMAC_Init_ex_shim</a></td>
-                        <td class='docblock short'>
-                             <p>Deprecated - use the non &quot;_shim&quot; version</p>
-
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Update.html'
-                               title='openssl_sys::HMAC_Update'>HMAC_Update</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.HMAC_Update_shim.html'
-                               title='openssl_sys::HMAC_Update_shim'>HMAC_Update_shim</a></td>
-                        <td class='docblock short'>
-                             <p>Deprecated - use the non &quot;_shim&quot; version</p>
-
                         </td>
                     </tr>
                 
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.PEM_read_bio_PrivateKey.html'
                                title='openssl_sys::PEM_read_bio_PrivateKey'>PEM_read_bio_PrivateKey</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.PEM_read_bio_RSAPrivateKey.html'
+                               title='openssl_sys::PEM_read_bio_RSAPrivateKey'>PEM_read_bio_RSAPrivateKey</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.PEM_read_bio_RSA_PUBKEY.html'
+                               title='openssl_sys::PEM_read_bio_RSA_PUBKEY'>PEM_read_bio_RSA_PUBKEY</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1745,6 +1847,14 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.PEM_read_bio_X509_REQ.html'
                                title='openssl_sys::PEM_read_bio_X509_REQ'>PEM_read_bio_X509_REQ</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.PEM_write_bio_PUBKEY.html'
+                               title='openssl_sys::PEM_write_bio_PUBKEY'>PEM_write_bio_PUBKEY</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1791,6 +1901,14 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.RSA_free.html'
+                               title='openssl_sys::RSA_free'>RSA_free</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.RSA_generate_key.html'
                                title='openssl_sys::RSA_generate_key'>RSA_generate_key</a></td>
                         <td class='docblock short'>
@@ -1799,8 +1917,32 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.RSA_generate_key_ex.html'
+                               title='openssl_sys::RSA_generate_key_ex'>RSA_generate_key_ex</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.RSA_private_decrypt.html'
                                title='openssl_sys::RSA_private_decrypt'>RSA_private_decrypt</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.RSA_private_encrypt.html'
+                               title='openssl_sys::RSA_private_encrypt'>RSA_private_encrypt</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.RSA_public_decrypt.html'
+                               title='openssl_sys::RSA_public_decrypt'>RSA_public_decrypt</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1847,32 +1989,8 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_add_extra_chain_cert.html'
-                               title='openssl_sys::SSL_CTX_add_extra_chain_cert'>SSL_CTX_add_extra_chain_cert</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_CTX_check_private_key.html'
                                title='openssl_sys::SSL_CTX_check_private_key'>SSL_CTX_check_private_key</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_clear_options.html'
-                               title='openssl_sys::SSL_CTX_clear_options'>SSL_CTX_clear_options</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_ctrl.html'
-                               title='openssl_sys::SSL_CTX_ctrl'>SSL_CTX_ctrl</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1897,14 +2015,6 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_CTX_get_ex_new_index.html'
                                title='openssl_sys::SSL_CTX_get_ex_new_index'>SSL_CTX_get_ex_new_index</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_get_options.html'
-                               title='openssl_sys::SSL_CTX_get_options'>SSL_CTX_get_options</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1937,22 +2047,6 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_CTX_set_ex_data.html'
                                title='openssl_sys::SSL_CTX_set_ex_data'>SSL_CTX_set_ex_data</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_set_options.html'
-                               title='openssl_sys::SSL_CTX_set_options'>SSL_CTX_set_options</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_CTX_set_read_ahead.html'
-                               title='openssl_sys::SSL_CTX_set_read_ahead'>SSL_CTX_set_read_ahead</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -1993,6 +2087,14 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_CTX_use_certificate.html'
                                title='openssl_sys::SSL_CTX_use_certificate'>SSL_CTX_use_certificate</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.SSL_CTX_use_certificate_chain_file.html'
+                               title='openssl_sys::SSL_CTX_use_certificate_chain_file'>SSL_CTX_use_certificate_chain_file</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2087,6 +2189,22 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.SSL_get_servername.html'
+                               title='openssl_sys::SSL_get_servername'>SSL_get_servername</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.SSL_get_ssl_method.html'
+                               title='openssl_sys::SSL_get_ssl_method'>SSL_get_ssl_method</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_get_wbio.html'
                                title='openssl_sys::SSL_get_wbio'>SSL_get_wbio</a></td>
                         <td class='docblock short'>
@@ -2135,6 +2253,14 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.SSL_set_SSL_CTX.html'
+                               title='openssl_sys::SSL_set_SSL_CTX'>SSL_set_SSL_CTX</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.SSL_set_bio.html'
                                title='openssl_sys::SSL_set_bio'>SSL_set_bio</a></td>
                         <td class='docblock short'>
@@ -2143,8 +2269,16 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='fn' href='fn.SSL_set_tlsext_host_name.html'
-                               title='openssl_sys::SSL_set_tlsext_host_name'>SSL_set_tlsext_host_name</a></td>
+                        <td><a class='fn' href='fn.SSL_state_string.html'
+                               title='openssl_sys::SSL_state_string'>SSL_state_string</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.SSL_state_string_long.html'
+                               title='openssl_sys::SSL_state_string_long'>SSL_state_string_long</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2177,6 +2311,14 @@
                     <tr class=' module-item'>
                         <td><a class='fn' href='fn.TLSv1_method.html'
                                title='openssl_sys::TLSv1_method'>TLSv1_method</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.X509V3_EXT_conf.html'
+                               title='openssl_sys::X509V3_EXT_conf'>X509V3_EXT_conf</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2239,8 +2381,24 @@
                     </tr>
                 
                     <tr class=' module-item'>
+                        <td><a class='fn' href='fn.X509_REQ_add_extensions.html'
+                               title='openssl_sys::X509_REQ_add_extensions'>X509_REQ_add_extensions</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
                         <td><a class='fn' href='fn.X509_REQ_free.html'
                                title='openssl_sys::X509_REQ_free'>X509_REQ_free</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='fn' href='fn.X509_REQ_sign.html'
+                               title='openssl_sys::X509_REQ_sign'>X509_REQ_sign</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2456,22 +2614,6 @@
                     </tr>
                 
                     <tr class=' module-item'>
-                        <td><a class='type' href='type.BIO.html'
-                               title='openssl_sys::BIO'>BIO</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.BIO_METHOD.html'
-                               title='openssl_sys::BIO_METHOD'>BIO_METHOD</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
                         <td><a class='type' href='type.BN_CTX.html'
                                title='openssl_sys::BN_CTX'>BN_CTX</a></td>
                         <td class='docblock short'>
@@ -2482,14 +2624,6 @@
                     <tr class=' module-item'>
                         <td><a class='type' href='type.COMP_METHOD.html'
                                title='openssl_sys::COMP_METHOD'>COMP_METHOD</a></td>
-                        <td class='docblock short'>
-                             
-                        </td>
-                    </tr>
-                
-                    <tr class=' module-item'>
-                        <td><a class='type' href='type.CRYPTO_EX_DATA.html'
-                               title='openssl_sys::CRYPTO_EX_DATA'>CRYPTO_EX_DATA</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2514,6 +2648,14 @@
                     <tr class=' module-item'>
                         <td><a class='type' href='type.CRYPTO_EX_new.html'
                                title='openssl_sys::CRYPTO_EX_new'>CRYPTO_EX_new</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.DH.html'
+                               title='openssl_sys::DH'>DH</a></td>
                         <td class='docblock short'>
                              
                         </td>
@@ -2662,45 +2804,86 @@
                              
                         </td>
                     </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.bio_info_cb.html'
+                               title='openssl_sys::bio_info_cb'>bio_info_cb</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.bio_st.html'
+                               title='openssl_sys::bio_st'>bio_st</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.stack_st_X509_EXTENSION.html'
+                               title='openssl_sys::stack_st_X509_EXTENSION'>stack_st_X509_EXTENSION</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
+                
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.stack_st_void.html'
+                               title='openssl_sys::stack_st_void'>stack_st_void</a></td>
+                        <td class='docblock short'>
+                             
+                        </td>
+                    </tr>
                 </table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -2712,6 +2895,6 @@
     <script src="../jquery.js"></script>
     <script src="../main.js"></script>
     
-    <script async src="../search-index.js"></script>
+    <script defer src="../search-index.js"></script>
 </body>
 </html>

@@ -4,11 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="Source to the Rust file `/Users/jimmy/.cargo/registry/src/github.com-0a35038f75765ae4/openssl-0.6.4/src/x509/mod.rs`.">
+    <meta name="description" content="Source to the Rust file `/Users/jimmy/.cargo/registry/src/github.com-88ac128001ac3a9a/openssl-0.7.5/src/x509/mod.rs`.">
     <meta name="keywords" content="rust, rustlang, rust-lang">
 
     <title>mod.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
@@ -24,17 +25,17 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -722,6 +723,30 @@
 <span id="680">680</span>
 <span id="681">681</span>
 <span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
 </pre><pre class='rust '>
 <span class='kw'>use</span> <span class='ident'>libc</span>::{<span class='ident'>c_char</span>, <span class='ident'>c_int</span>, <span class='ident'>c_long</span>, <span class='ident'>c_ulong</span>, <span class='ident'>c_uint</span>, <span class='ident'>c_void</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>io</span>;
@@ -734,28 +759,35 @@
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>::<span class='ident'>Deref</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>fmt</span>;
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>str</span>;
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>collections</span>::<span class='ident'>HashMap</span>;
 
-<span class='kw'>use</span> <span class='ident'>asn1</span>::{<span class='ident'>Asn1Time</span>};
-<span class='kw'>use</span> <span class='ident'>bio</span>::{<span class='ident'>MemBio</span>};
+<span class='kw'>use</span> <span class='ident'>asn1</span>::<span class='ident'>Asn1Time</span>;
+<span class='kw'>use</span> <span class='ident'>bio</span>::<span class='ident'>MemBio</span>;
 <span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>hash</span>;
 <span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>hash</span>::<span class='ident'>Type</span> <span class='kw'>as</span> <span class='ident'>HashType</span>;
-<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>pkey</span>::{<span class='ident'>PKey</span>,<span class='ident'>Parts</span>};
+<span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>pkey</span>::{<span class='ident'>PKey</span>, <span class='ident'>Parts</span>};
 <span class='kw'>use</span> <span class='ident'>crypto</span>::<span class='ident'>rand</span>::<span class='ident'>rand_bytes</span>;
 <span class='kw'>use</span> <span class='ident'>ffi</span>;
+<span class='kw'>use</span> <span class='ident'>ffi_extras</span>;
 <span class='kw'>use</span> <span class='ident'>ssl</span>::<span class='ident'>error</span>::{<span class='ident'>SslError</span>, <span class='ident'>StreamError</span>};
 <span class='kw'>use</span> <span class='ident'>nid</span>;
 
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>extension</span>;
+
+<span class='kw'>use</span> <span class='self'>self</span>::<span class='ident'>extension</span>::{<span class='ident'>ExtensionType</span>, <span class='ident'>Extension</span>};
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span>
 <span class='kw'>mod</span> <span class='ident'>tests</span>;
 
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>SslString</span> {
-    <span class='ident'>s</span> : <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span>
+    <span class='ident'>s</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span>,
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;s</span><span class='op'>&gt;</span> <span class='ident'>Drop</span> <span class='kw'>for</span> <span class='ident'>SslString</span> {
     <span class='kw'>fn</span> <span class='ident'>drop</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) {
-        <span class='kw'>unsafe</span> { <span class='ident'>ffi</span>::<span class='ident'>CRYPTO_free</span>(<span class='self'>self</span>.<span class='ident'>s</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_void</span>); }
+        <span class='kw'>unsafe</span> {
+            <span class='ident'>ffi</span>::<span class='ident'>CRYPTO_free</span>(<span class='self'>self</span>.<span class='ident'>s</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_void</span>);
+        }
     }
 }
 
@@ -769,9 +801,7 @@
 
 <span class='kw'>impl</span> <span class='ident'>SslString</span> {
     <span class='kw'>unsafe</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>buf</span>: <span class='op'>*</span><span class='kw'>const</span> <span class='ident'>c_char</span>) <span class='op'>-&gt;</span> <span class='ident'>SslString</span> {
-        <span class='ident'>SslString</span> {
-            <span class='ident'>s</span>: <span class='ident'>str</span>::<span class='ident'>from_utf8</span>(<span class='ident'>CStr</span>::<span class='ident'>from_ptr</span>(<span class='ident'>buf</span>).<span class='ident'>to_bytes</span>()).<span class='ident'>unwrap</span>()
-        }
+        <span class='ident'>SslString</span> { <span class='ident'>s</span>: <span class='ident'>str</span>::<span class='ident'>from_utf8</span>(<span class='ident'>CStr</span>::<span class='ident'>from_ptr</span>(<span class='ident'>buf</span> <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> _).<span class='ident'>to_bytes</span>()).<span class='ident'>unwrap</span>() }
     }
 }
 
@@ -792,19 +822,17 @@
 <span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>X509FileType</span> {
     <span class='ident'>PEM</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_FILETYPE_PEM</span>,
     <span class='ident'>ASN1</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_FILETYPE_ASN1</span>,
-    <span class='ident'>Default</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_FILETYPE_DEFAULT</span>
+    <span class='ident'>Default</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_FILETYPE_DEFAULT</span>,
 }
 
 <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>missing_copy_implementations</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>X509StoreContext</span> {
-    <span class='ident'>ctx</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_STORE_CTX</span>
+    <span class='ident'>ctx</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_STORE_CTX</span>,
 }
 
 <span class='kw'>impl</span> <span class='ident'>X509StoreContext</span> {
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>ctx</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_STORE_CTX</span>) <span class='op'>-&gt;</span> <span class='ident'>X509StoreContext</span> {
-        <span class='ident'>X509StoreContext</span> {
-            <span class='ident'>ctx</span>: <span class='ident'>ctx</span>
-        }
+        <span class='ident'>X509StoreContext</span> { <span class='ident'>ctx</span>: <span class='ident'>ctx</span> }
     }
 
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>get_error</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>X509ValidationError</span><span class='op'>&gt;</span> {
@@ -818,95 +846,12 @@
         <span class='kw'>if</span> <span class='ident'>ptr</span>.<span class='ident'>is_null</span>() {
             <span class='prelude-val'>None</span>
         } <span class='kw'>else</span> {
-            <span class='prelude-val'>Some</span>(<span class='ident'>X509</span> { <span class='ident'>ctx</span>: <span class='prelude-val'>Some</span>(<span class='self'>self</span>), <span class='ident'>handle</span>: <span class='ident'>ptr</span>, <span class='ident'>owned</span>: <span class='boolval'>false</span> })
+            <span class='prelude-val'>Some</span>(<span class='ident'>X509</span> {
+                <span class='ident'>ctx</span>: <span class='prelude-val'>Some</span>(<span class='self'>self</span>),
+                <span class='ident'>handle</span>: <span class='ident'>ptr</span>,
+                <span class='ident'>owned</span>: <span class='boolval'>false</span>,
+            })
         }
-    }
-}
-
-<span class='attribute'>#[<span class='ident'>doc</span>(<span class='ident'>hidden</span>)]</span>
-<span class='kw'>trait</span> <span class='ident'>AsStr</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
-    <span class='kw'>fn</span> <span class='ident'>as_str</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>str</span>;
-}
-
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>, <span class='ident'>Copy</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>KeyUsage</span> {
-    <span class='ident'>DigitalSignature</span>,
-    <span class='ident'>NonRepudiation</span>,
-    <span class='ident'>KeyEncipherment</span>,
-    <span class='ident'>DataEncipherment</span>,
-    <span class='ident'>KeyAgreement</span>,
-    <span class='ident'>KeyCertSign</span>,
-    <span class='ident'>CRLSign</span>,
-    <span class='ident'>EncipherOnly</span>,
-    <span class='ident'>DecipherOnly</span>
-}
-
-<span class='kw'>impl</span> <span class='ident'>AsStr</span><span class='op'>&lt;</span><span class='lifetime'>&#39;static</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>KeyUsage</span> {
-    <span class='kw'>fn</span> <span class='ident'>as_str</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-        <span class='kw'>match</span> <span class='self'>self</span> {
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>DigitalSignature</span> <span class='op'>=&gt;</span> <span class='string'>&quot;digitalSignature&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>NonRepudiation</span> <span class='op'>=&gt;</span> <span class='string'>&quot;nonRepudiation&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>KeyEncipherment</span> <span class='op'>=&gt;</span> <span class='string'>&quot;keyEncipherment&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>DataEncipherment</span> <span class='op'>=&gt;</span> <span class='string'>&quot;dataEncipherment&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>KeyAgreement</span> <span class='op'>=&gt;</span> <span class='string'>&quot;keyAgreement&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>KeyCertSign</span> <span class='op'>=&gt;</span> <span class='string'>&quot;keyCertSign&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>CRLSign</span> <span class='op'>=&gt;</span> <span class='string'>&quot;cRLSign&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>EncipherOnly</span> <span class='op'>=&gt;</span> <span class='string'>&quot;encipherOnly&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>KeyUsage</span>::<span class='ident'>DecipherOnly</span> <span class='op'>=&gt;</span> <span class='string'>&quot;decipherOnly&quot;</span>
-        }
-    }
-}
-
-
-<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>, <span class='ident'>Copy</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>enum</span> <span class='ident'>ExtKeyUsage</span> {
-    <span class='ident'>ServerAuth</span>,
-    <span class='ident'>ClientAuth</span>,
-    <span class='ident'>CodeSigning</span>,
-    <span class='ident'>EmailProtection</span>,
-    <span class='ident'>TimeStamping</span>,
-    <span class='ident'>MsCodeInd</span>,
-    <span class='ident'>MsCodeCom</span>,
-    <span class='ident'>MsCtlSign</span>,
-    <span class='ident'>MsSgc</span>,
-    <span class='ident'>MsEfs</span>,
-    <span class='ident'>NsSgc</span>
-}
-
-<span class='kw'>impl</span> <span class='ident'>AsStr</span><span class='op'>&lt;</span><span class='lifetime'>&#39;static</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>ExtKeyUsage</span> {
-    <span class='kw'>fn</span> <span class='ident'>as_str</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;static</span> <span class='ident'>str</span> {
-        <span class='kw'>match</span> <span class='self'>self</span> {
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>ServerAuth</span> <span class='op'>=&gt;</span> <span class='string'>&quot;serverAuth&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>ClientAuth</span> <span class='op'>=&gt;</span> <span class='string'>&quot;clientAuth&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>CodeSigning</span> <span class='op'>=&gt;</span> <span class='string'>&quot;codeSigning&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>EmailProtection</span> <span class='op'>=&gt;</span> <span class='string'>&quot;emailProtection&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>TimeStamping</span> <span class='op'>=&gt;</span> <span class='string'>&quot;timeStamping&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>MsCodeInd</span> <span class='op'>=&gt;</span> <span class='string'>&quot;msCodeInd&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>MsCodeCom</span> <span class='op'>=&gt;</span> <span class='string'>&quot;msCodeCom&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>MsCtlSign</span> <span class='op'>=&gt;</span> <span class='string'>&quot;msCTLSign&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>MsSgc</span> <span class='op'>=&gt;</span> <span class='string'>&quot;msSGC&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>MsEfs</span> <span class='op'>=&gt;</span> <span class='string'>&quot;msEFS&quot;</span>,
-            <span class='kw-2'>&amp;</span><span class='ident'>ExtKeyUsage</span>::<span class='ident'>NsSgc</span> <span class='op'>=&gt;</span><span class='string'>&quot;nsSGC&quot;</span>
-        }
-    }
-}
-
-
-<span class='comment'>// FIXME: a dirty hack as there is no way to</span>
-<span class='comment'>// implement ToString for Vec as both are defined</span>
-<span class='comment'>// in another crate</span>
-<span class='attribute'>#[<span class='ident'>doc</span>(<span class='ident'>hidden</span>)]</span>
-<span class='kw'>trait</span> <span class='ident'>ToStr</span> {
-    <span class='kw'>fn</span> <span class='ident'>to_str</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>String</span>;
-}
-
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='ident'>T</span>: <span class='ident'>AsStr</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span> <span class='ident'>ToStr</span> <span class='kw'>for</span> <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-    <span class='kw'>fn</span> <span class='ident'>to_str</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>String</span> {
-        <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>enumerate</span>().<span class='ident'>fold</span>(<span class='ident'>String</span>::<span class='ident'>new</span>(), <span class='op'>|</span><span class='kw-2'>mut</span> <span class='ident'>acc</span>, (<span class='ident'>idx</span>, <span class='ident'>v</span>)<span class='op'>|</span> {
-            <span class='kw'>if</span> <span class='ident'>idx</span> <span class='op'>&gt;</span> <span class='number'>0</span> { <span class='ident'>acc</span>.<span class='ident'>push</span>(<span class='string'>&#39;,&#39;</span>) };
-            <span class='ident'>acc</span>.<span class='ident'>push_str</span>(<span class='ident'>v</span>.<span class='ident'>as_str</span>());
-            <span class='ident'>acc</span>
-        })
     }
 }
 
@@ -924,14 +869,15 @@
 <span class='doccomment'>/// use std::path::Path;</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// use openssl::crypto::hash::Type;</span>
-<span class='doccomment'>/// use openssl::x509::{KeyUsage, X509Generator};</span>
+<span class='doccomment'>/// use openssl::x509::X509Generator;</span>
+<span class='doccomment'>/// use openssl::x509::extension::{Extension, KeyUsageOption};</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// let gen = X509Generator::new()</span>
 <span class='doccomment'>///        .set_bitlength(2048)</span>
 <span class='doccomment'>///        .set_valid_period(365*2)</span>
-<span class='doccomment'>///        .set_CN(&quot;SuperMegaCorp Inc.&quot;)</span>
+<span class='doccomment'>///        .add_name(&quot;CN&quot;.to_owned(), &quot;SuperMegaCorp Inc.&quot;.to_owned())</span>
 <span class='doccomment'>///        .set_sign_hash(Type::SHA256)</span>
-<span class='doccomment'>///        .set_usage(&amp;[KeyUsage::DigitalSignature]);</span>
+<span class='doccomment'>///        .add_extension(Extension::KeyUsage(vec![KeyUsageOption::DigitalSignature]));</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// let (cert, pkey) = gen.generate().unwrap();</span>
 <span class='doccomment'>///</span>
@@ -949,9 +895,9 @@
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>X509Generator</span> {
     <span class='ident'>bits</span>: <span class='ident'>u32</span>,
     <span class='ident'>days</span>: <span class='ident'>u32</span>,
-    <span class='ident'>CN</span>: <span class='ident'>String</span>,
-    <span class='ident'>key_usage</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>KeyUsage</span><span class='op'>&gt;</span>,
-    <span class='ident'>ext_key_usage</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>ExtKeyUsage</span><span class='op'>&gt;</span>,
+    <span class='ident'>names</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span>(<span class='ident'>String</span>, <span class='ident'>String</span>)<span class='op'>&gt;</span>,
+    <span class='comment'>// RFC 3280 §4.2: A certificate MUST NOT include more than one instance of a particular extension.</span>
+    <span class='ident'>extensions</span>: <span class='ident'>HashMap</span><span class='op'>&lt;</span><span class='ident'>ExtensionType</span>, <span class='ident'>Extension</span><span class='op'>&gt;</span>,
     <span class='ident'>hash_type</span>: <span class='ident'>HashType</span>,
 }
 
@@ -969,10 +915,9 @@
         <span class='ident'>X509Generator</span> {
             <span class='ident'>bits</span>: <span class='number'>1024</span>,
             <span class='ident'>days</span>: <span class='number'>365</span>,
-            <span class='ident'>CN</span>: <span class='string'>&quot;rust-openssl&quot;</span>.<span class='ident'>to_string</span>(),
-            <span class='ident'>key_usage</span>: <span class='ident'>Vec</span>::<span class='ident'>new</span>(),
-            <span class='ident'>ext_key_usage</span>: <span class='ident'>Vec</span>::<span class='ident'>new</span>(),
-            <span class='ident'>hash_type</span>: <span class='ident'>HashType</span>::<span class='ident'>SHA1</span>
+            <span class='ident'>names</span>: <span class='macro'>vec</span><span class='macro'>!</span>[],
+            <span class='ident'>extensions</span>: <span class='ident'>HashMap</span>::<span class='ident'>new</span>(),
+            <span class='ident'>hash_type</span>: <span class='ident'>HashType</span>::<span class='ident'>SHA1</span>,
         }
     }
 
@@ -988,22 +933,61 @@
         <span class='self'>self</span>
     }
 
-    <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>non_snake_case</span>)]</span>
-    <span class='doccomment'>/// Sets Common Name of certificate</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>set_CN</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>CN</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span> {
-        <span class='self'>self</span>.<span class='ident'>CN</span> <span class='op'>=</span> <span class='ident'>CN</span>.<span class='ident'>to_string</span>();
+    <span class='doccomment'>/// Add attribute to the name of the certificate</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// # let generator = openssl::x509::X509Generator::new();</span>
+    <span class='doccomment'>/// generator.add_name(&quot;CN&quot;.to_string(),&quot;example.com&quot;.to_string());</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>add_name</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>attr_type</span>: <span class='ident'>String</span>, <span class='ident'>attr_value</span>: <span class='ident'>String</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span> {
+        <span class='self'>self</span>.<span class='ident'>names</span>.<span class='ident'>push</span>((<span class='ident'>attr_type</span>, <span class='ident'>attr_value</span>));
         <span class='self'>self</span>
     }
 
-    <span class='doccomment'>/// Sets what for certificate could be used</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>set_usage</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>purposes</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>KeyUsage</span>]) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span> {
-        <span class='self'>self</span>.<span class='ident'>key_usage</span> <span class='op'>=</span> <span class='ident'>purposes</span>.<span class='ident'>to_vec</span>();
+    <span class='doccomment'>/// Add multiple attributes to the name of the certificate</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// # let generator = openssl::x509::X509Generator::new();</span>
+    <span class='doccomment'>/// generator.add_names(vec![(&quot;CN&quot;.to_string(),&quot;example.com&quot;.to_string())]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>add_names</span><span class='op'>&lt;</span><span class='ident'>I</span><span class='op'>&gt;</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>attrs</span>: <span class='ident'>I</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span>
+        <span class='kw'>where</span> <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span> <span class='op'>=</span> (<span class='ident'>String</span>, <span class='ident'>String</span>)<span class='op'>&gt;</span>
+    {
+        <span class='self'>self</span>.<span class='ident'>names</span>.<span class='ident'>extend</span>(<span class='ident'>attrs</span>);
         <span class='self'>self</span>
     }
 
-    <span class='doccomment'>/// Sets allowed extended usage of certificate</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>set_ext_usage</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>purposes</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>ExtKeyUsage</span>]) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span> {
-        <span class='self'>self</span>.<span class='ident'>ext_key_usage</span> <span class='op'>=</span> <span class='ident'>purposes</span>.<span class='ident'>to_vec</span>();
+    <span class='doccomment'>/// Add an extension to a certificate</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// If the extension already exists, it will be replaced.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// use openssl::x509::extension::Extension::*;</span>
+    <span class='doccomment'>/// use openssl::x509::extension::KeyUsageOption::*;</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # let generator = openssl::x509::X509Generator::new();</span>
+    <span class='doccomment'>/// generator.add_extension(KeyUsage(vec![DigitalSignature, KeyEncipherment]));</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>add_extension</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>ext</span>: <span class='ident'>extension</span>::<span class='ident'>Extension</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span> {
+        <span class='self'>self</span>.<span class='ident'>extensions</span>.<span class='ident'>insert</span>(<span class='ident'>ext</span>.<span class='ident'>get_type</span>(), <span class='ident'>ext</span>);
+        <span class='self'>self</span>
+    }
+
+    <span class='doccomment'>/// Add multiple extensions to a certificate</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// If any of the extensions already exist, they will be replaced.</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// use openssl::x509::extension::Extension::*;</span>
+    <span class='doccomment'>/// use openssl::x509::extension::KeyUsageOption::*;</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// # let generator = openssl::x509::X509Generator::new();</span>
+    <span class='doccomment'>/// generator.add_extensions(vec![KeyUsage(vec![DigitalSignature, KeyEncipherment])]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>add_extensions</span><span class='op'>&lt;</span><span class='ident'>I</span><span class='op'>&gt;</span>(<span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>exts</span>: <span class='ident'>I</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Generator</span>
+        <span class='kw'>where</span> <span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>extension</span>::<span class='ident'>Extension</span><span class='op'>&gt;</span>
+    {
+        <span class='self'>self</span>.<span class='ident'>extensions</span>.<span class='ident'>extend</span>(<span class='ident'>exts</span>.<span class='ident'>into_iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='ident'>ext</span><span class='op'>|</span> (<span class='ident'>ext</span>.<span class='ident'>get_type</span>(), <span class='ident'>ext</span>)));
         <span class='self'>self</span>
     }
 
@@ -1012,17 +996,29 @@
         <span class='self'>self</span>
     }
 
-    <span class='kw'>fn</span> <span class='ident'>add_extension</span>(<span class='ident'>x509</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509</span>, <span class='ident'>extension</span>: <span class='ident'>c_int</span>, <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>add_extension_internal</span>(<span class='ident'>x509</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509</span>,
+                              <span class='ident'>exttype</span>: <span class='kw-2'>&amp;</span><span class='ident'>extension</span>::<span class='ident'>ExtensionType</span>,
+                              <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>)
+                              <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
             <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>ctx</span>: <span class='ident'>ffi</span>::<span class='ident'>X509V3_CTX</span> <span class='op'>=</span> <span class='ident'>mem</span>::<span class='ident'>zeroed</span>();
-            <span class='ident'>ffi</span>::<span class='ident'>X509V3_set_ctx</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>ctx</span>, <span class='ident'>x509</span>, <span class='ident'>x509</span>,
-                                <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(), <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(), <span class='number'>0</span>);
+            <span class='ident'>ffi</span>::<span class='ident'>X509V3_set_ctx</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>ctx</span>, <span class='ident'>x509</span>, <span class='ident'>x509</span>, <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(), <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(), <span class='number'>0</span>);
             <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>CString</span>::<span class='ident'>new</span>(<span class='ident'>value</span>.<span class='ident'>as_bytes</span>()).<span class='ident'>unwrap</span>();
-            <span class='kw'>let</span> <span class='ident'>ext</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509V3_EXT_conf_nid</span>(<span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
-                                               <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='ident'>ctx</span>),
-                                               <span class='ident'>extension</span>,
-                                               <span class='ident'>value</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span>);
-
+            <span class='kw'>let</span> <span class='ident'>ext</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='ident'>exttype</span>.<span class='ident'>get_nid</span>() {
+                <span class='prelude-val'>Some</span>(<span class='ident'>nid</span>) <span class='op'>=&gt;</span> {
+                    <span class='ident'>ffi</span>::<span class='ident'>X509V3_EXT_conf_nid</span>(<span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
+                                             <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='ident'>ctx</span>),
+                                             <span class='ident'>nid</span> <span class='kw'>as</span> <span class='ident'>c_int</span>,
+                                             <span class='ident'>value</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span>)
+                }
+                <span class='prelude-val'>None</span> <span class='op'>=&gt;</span> {
+                    <span class='kw'>let</span> <span class='ident'>name</span> <span class='op'>=</span> <span class='ident'>CString</span>::<span class='ident'>new</span>(<span class='ident'>exttype</span>.<span class='ident'>get_name</span>().<span class='ident'>unwrap</span>().<span class='ident'>as_bytes</span>()).<span class='ident'>unwrap</span>();
+                    <span class='ident'>ffi</span>::<span class='ident'>X509V3_EXT_conf</span>(<span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
+                                         <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='ident'>ctx</span>),
+                                         <span class='ident'>name</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span>,
+                                         <span class='ident'>value</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span>)
+                }
+            };
             <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>success</span> <span class='op'>=</span> <span class='boolval'>false</span>;
             <span class='kw'>if</span> <span class='ident'>ext</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>() {
                 <span class='ident'>success</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_add_ext</span>(<span class='ident'>x509</span>, <span class='ident'>ext</span>, <span class='op'>-</span><span class='number'>1</span>) <span class='op'>!=</span> <span class='number'>0</span>;
@@ -1032,13 +1028,21 @@
         }
     }
 
-    <span class='kw'>fn</span> <span class='ident'>add_name</span>(<span class='ident'>name</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME</span>, <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>, <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>add_name_internal</span>(<span class='ident'>name</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME</span>,
+                         <span class='ident'>key</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>,
+                         <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>str</span>)
+                         <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>value_len</span> <span class='op'>=</span> <span class='ident'>value</span>.<span class='ident'>len</span>() <span class='kw'>as</span> <span class='ident'>c_int</span>;
         <span class='macro'>lift_ssl</span><span class='macro'>!</span>(<span class='kw'>unsafe</span> {
             <span class='kw'>let</span> <span class='ident'>key</span> <span class='op'>=</span> <span class='ident'>CString</span>::<span class='ident'>new</span>(<span class='ident'>key</span>.<span class='ident'>as_bytes</span>()).<span class='ident'>unwrap</span>();
             <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>CString</span>::<span class='ident'>new</span>(<span class='ident'>value</span>.<span class='ident'>as_bytes</span>()).<span class='ident'>unwrap</span>();
-            <span class='ident'>ffi</span>::<span class='ident'>X509_NAME_add_entry_by_txt</span>(<span class='ident'>name</span>, <span class='ident'>key</span>.<span class='ident'>as_ptr</span>(), <span class='ident'>ffi</span>::<span class='ident'>MBSTRING_UTF8</span>,
-                                            <span class='ident'>value</span>.<span class='ident'>as_ptr</span>(), <span class='ident'>value_len</span>, <span class='op'>-</span><span class='number'>1</span>, <span class='number'>0</span>)
+            <span class='ident'>ffi</span>::<span class='ident'>X509_NAME_add_entry_by_txt</span>(<span class='ident'>name</span>,
+                                            <span class='ident'>key</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> _,
+                                            <span class='ident'>ffi</span>::<span class='ident'>MBSTRING_UTF8</span>,
+                                            <span class='ident'>value</span>.<span class='ident'>as_ptr</span>() <span class='kw'>as</span> <span class='op'>*</span><span class='kw'>const</span> _,
+                                            <span class='ident'>value_len</span>,
+                                            <span class='op'>-</span><span class='number'>1</span>,
+                                            <span class='number'>0</span>)
         })
     }
 
@@ -1077,10 +1081,15 @@
             <span class='kw'>let</span> <span class='ident'>x509</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_new</span>();
             <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>x509</span>);
 
-            <span class='kw'>let</span> <span class='ident'>x509</span> <span class='op'>=</span> <span class='ident'>X509</span> { <span class='ident'>handle</span>: <span class='ident'>x509</span>, <span class='ident'>ctx</span>: <span class='prelude-val'>None</span>, <span class='ident'>owned</span>: <span class='boolval'>true</span>};
+            <span class='kw'>let</span> <span class='ident'>x509</span> <span class='op'>=</span> <span class='ident'>X509</span> {
+                <span class='ident'>handle</span>: <span class='ident'>x509</span>,
+                <span class='ident'>ctx</span>: <span class='prelude-val'>None</span>,
+                <span class='ident'>owned</span>: <span class='boolval'>true</span>,
+            };
 
             <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>X509_set_version</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>, <span class='number'>2</span>));
-            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>ASN1_INTEGER_set</span>(<span class='ident'>ffi</span>::<span class='ident'>X509_get_serialNumber</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>), <span class='ident'>X509Generator</span>::<span class='ident'>random_serial</span>()));
+            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>ASN1_INTEGER_set</span>(<span class='ident'>ffi</span>::<span class='ident'>X509_get_serialNumber</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>),
+                                           <span class='ident'>X509Generator</span>::<span class='ident'>random_serial</span>()));
 
             <span class='kw'>let</span> <span class='ident'>not_before</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>Asn1Time</span>::<span class='ident'>days_from_now</span>(<span class='number'>0</span>));
             <span class='kw'>let</span> <span class='ident'>not_after</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>Asn1Time</span>::<span class='ident'>days_from_now</span>(<span class='self'>self</span>.<span class='ident'>days</span>));
@@ -1098,17 +1107,22 @@
             <span class='kw'>let</span> <span class='ident'>name</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_get_subject_name</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>);
             <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>name</span>);
 
-            <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>add_name</span>(<span class='ident'>name</span>, <span class='string'>&quot;CN&quot;</span>, <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>CN</span>));
+            <span class='kw'>let</span> <span class='ident'>default</span> <span class='op'>=</span> [(<span class='string'>&quot;CN&quot;</span>, <span class='string'>&quot;rust-openssl&quot;</span>)];
+            <span class='kw'>let</span> <span class='ident'>default_iter</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>default</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span>(<span class='ident'>k</span>, <span class='ident'>v</span>)<span class='op'>|</span> (<span class='ident'>k</span>, <span class='ident'>v</span>));
+            <span class='kw'>let</span> <span class='ident'>arg_iter</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>.<span class='ident'>names</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span>(<span class='kw-2'>ref</span> <span class='ident'>k</span>, <span class='kw-2'>ref</span> <span class='ident'>v</span>)<span class='op'>|</span> (<span class='kw-2'>&amp;</span><span class='ident'>k</span>[..], <span class='kw-2'>&amp;</span><span class='ident'>v</span>[..]));
+            <span class='kw'>let</span> <span class='ident'>iter</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>Iterator</span><span class='op'>&lt;</span><span class='ident'>Item</span> <span class='op'>=</span> (<span class='kw-2'>&amp;</span><span class='ident'>str</span>, <span class='kw-2'>&amp;</span><span class='ident'>str</span>)<span class='op'>&gt;</span> <span class='op'>=</span> <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>names</span>.<span class='ident'>len</span>() <span class='op'>==</span> <span class='number'>0</span> {
+                <span class='ident'>default_iter</span>
+            } <span class='kw'>else</span> {
+                <span class='ident'>arg_iter</span>
+            };
+
+            <span class='kw'>for</span> (<span class='ident'>key</span>, <span class='ident'>val</span>) <span class='kw'>in</span> <span class='ident'>iter</span> {
+                <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>add_name_internal</span>(<span class='ident'>name</span>, <span class='kw-2'>&amp;</span><span class='ident'>key</span>, <span class='kw-2'>&amp;</span><span class='ident'>val</span>));
+            }
             <span class='ident'>ffi</span>::<span class='ident'>X509_set_issuer_name</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>, <span class='ident'>name</span>);
 
-            <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>key_usage</span>.<span class='ident'>len</span>() <span class='op'>&gt;</span> <span class='number'>0</span> {
-                <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>add_extension</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>, <span class='ident'>ffi</span>::<span class='ident'>NID_key_usage</span>,
-                                                  <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>key_usage</span>.<span class='ident'>to_str</span>()));
-            }
-
-            <span class='kw'>if</span> <span class='self'>self</span>.<span class='ident'>ext_key_usage</span>.<span class='ident'>len</span>() <span class='op'>&gt;</span> <span class='number'>0</span> {
-                <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>add_extension</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>, <span class='ident'>ffi</span>::<span class='ident'>NID_ext_key_usage</span>,
-                                                  <span class='kw-2'>&amp;</span><span class='self'>self</span>.<span class='ident'>ext_key_usage</span>.<span class='ident'>to_str</span>()));
+            <span class='kw'>for</span> (<span class='ident'>exttype</span>, <span class='ident'>ext</span>) <span class='kw'>in</span> <span class='self'>self</span>.<span class='ident'>extensions</span>.<span class='ident'>iter</span>() {
+                <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>add_extension_internal</span>(<span class='ident'>x509</span>.<span class='ident'>handle</span>, <span class='ident'>exttype</span>, <span class='kw-2'>&amp;</span><span class='ident'>ext</span>.<span class='ident'>to_string</span>()));
             }
 
             <span class='kw'>let</span> <span class='ident'>hash_fn</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>hash_type</span>.<span class='ident'>evp_md</span>();
@@ -1119,16 +1133,25 @@
 
     <span class='doccomment'>/// Obtain a certificate signing request (CSR)</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>request</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>p_key</span>: <span class='kw-2'>&amp;</span><span class='ident'>PKey</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>X509Req</span>, <span class='ident'>SslError</span><span class='op'>&gt;</span> {
-        <span class='kw'>let</span> <span class='ident'>cert</span><span class='op'>=</span><span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>sign</span>(<span class='ident'>p_key</span>) {
+        <span class='kw'>let</span> <span class='ident'>cert</span> <span class='op'>=</span> <span class='kw'>match</span> <span class='self'>self</span>.<span class='ident'>sign</span>(<span class='ident'>p_key</span>) {
             <span class='prelude-val'>Ok</span>(<span class='ident'>c</span>) <span class='op'>=&gt;</span> <span class='ident'>c</span>,
-            <span class='prelude-val'>Err</span>(<span class='ident'>x</span>) <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>x</span>)
+            <span class='prelude-val'>Err</span>(<span class='ident'>x</span>) <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='prelude-val'>Err</span>(<span class='ident'>x</span>),
         };
 
-        <span class='kw'>let</span> <span class='ident'>hash_fn</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>hash_type</span>.<span class='ident'>evp_md</span>();
-        <span class='kw'>let</span> <span class='ident'>req</span> <span class='op'>=</span> <span class='kw'>unsafe</span> { <span class='ident'>ffi</span>::<span class='ident'>X509_to_X509_REQ</span>(<span class='ident'>cert</span>.<span class='ident'>handle</span>, <span class='ident'>p_key</span>.<span class='ident'>get_handle</span>(), <span class='ident'>hash_fn</span>) };
-        <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>req</span>);
+        <span class='kw'>unsafe</span> {
+            <span class='kw'>let</span> <span class='ident'>req</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_to_X509_REQ</span>(<span class='ident'>cert</span>.<span class='ident'>handle</span>, <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(), <span class='ident'>ptr</span>::<span class='ident'>null</span>());
+            <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>req</span>);
 
-        <span class='prelude-val'>Ok</span>(<span class='ident'>X509Req</span>::<span class='ident'>new</span>(<span class='ident'>req</span>))
+            <span class='kw'>let</span> <span class='ident'>exts</span> <span class='op'>=</span> <span class='ident'>ffi_extras</span>::<span class='ident'>X509_get_extensions</span>(<span class='ident'>cert</span>.<span class='ident'>handle</span>);
+            <span class='kw'>if</span> <span class='ident'>exts</span> <span class='op'>!=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>() {
+                <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>X509_REQ_add_extensions</span>(<span class='ident'>req</span>, <span class='ident'>exts</span>));
+            }
+
+            <span class='kw'>let</span> <span class='ident'>hash_fn</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>hash_type</span>.<span class='ident'>evp_md</span>();
+            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>X509_REQ_sign</span>(<span class='ident'>req</span>, <span class='ident'>p_key</span>.<span class='ident'>get_handle</span>(), <span class='ident'>hash_fn</span>));
+
+            <span class='prelude-val'>Ok</span>(<span class='ident'>X509Req</span>::<span class='ident'>new</span>(<span class='ident'>req</span>))
+        }
     }
 }
 
@@ -1138,7 +1161,7 @@
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> {
     <span class='ident'>ctx</span>: <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;ctx</span> <span class='ident'>X509StoreContext</span><span class='op'>&gt;</span>,
     <span class='ident'>handle</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509</span>,
-    <span class='ident'>owned</span>: <span class='ident'>bool</span>
+    <span class='ident'>owned</span>: <span class='ident'>bool</span>,
 }
 
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> <span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> {
@@ -1157,19 +1180,22 @@
         <span class='ident'>X509</span> {
             <span class='ident'>ctx</span>: <span class='prelude-val'>Some</span>(<span class='ident'>ctx</span>),
             <span class='ident'>handle</span>: <span class='ident'>handle</span>,
-            <span class='ident'>owned</span>: <span class='boolval'>false</span>
+            <span class='ident'>owned</span>: <span class='boolval'>false</span>,
         }
     }
 
     <span class='doccomment'>/// Reads certificate from PEM, takes ownership of handle</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>from_pem</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span>(<span class='ident'>reader</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span>, <span class='ident'>SslError</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Read</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>from_pem</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span>(<span class='ident'>reader</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span>, <span class='ident'>SslError</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Read</span>
+    {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>mem_bio</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>MemBio</span>::<span class='ident'>new</span>());
         <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>io</span>::<span class='ident'>copy</span>(<span class='ident'>reader</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>mem_bio</span>).<span class='ident'>map_err</span>(<span class='ident'>StreamError</span>));
 
         <span class='kw'>unsafe</span> {
             <span class='kw'>let</span> <span class='ident'>handle</span> <span class='op'>=</span> <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_read_bio_X509</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(),
                                                               <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
-                                                              <span class='prelude-val'>None</span>, <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>()));
+                                                              <span class='prelude-val'>None</span>,
+                                                              <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>()));
             <span class='prelude-val'>Ok</span>(<span class='ident'>X509</span>::<span class='ident'>new</span>(<span class='ident'>handle</span>, <span class='boolval'>true</span>))
         }
     }
@@ -1180,7 +1206,10 @@
 
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>subject_name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
         <span class='kw'>let</span> <span class='ident'>name</span> <span class='op'>=</span> <span class='kw'>unsafe</span> { <span class='ident'>ffi</span>::<span class='ident'>X509_get_subject_name</span>(<span class='self'>self</span>.<span class='ident'>handle</span>) };
-        <span class='ident'>X509Name</span> { <span class='ident'>x509</span>: <span class='self'>self</span>, <span class='ident'>name</span>: <span class='ident'>name</span> }
+        <span class='ident'>X509Name</span> {
+            <span class='ident'>x509</span>: <span class='self'>self</span>,
+            <span class='ident'>name</span>: <span class='ident'>name</span>,
+        }
     }
 
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>public_key</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>PKey</span> {
@@ -1197,7 +1226,9 @@
         <span class='kw'>let</span> <span class='ident'>v</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>u8</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>repeat</span>(<span class='number'>0</span>).<span class='ident'>take</span>(<span class='ident'>len</span> <span class='kw'>as</span> <span class='ident'>usize</span>).<span class='ident'>collect</span>();
         <span class='kw'>let</span> <span class='ident'>act_len</span>: <span class='ident'>c_uint</span> <span class='op'>=</span> <span class='number'>0</span>;
         <span class='kw'>let</span> <span class='ident'>res</span> <span class='op'>=</span> <span class='kw'>unsafe</span> {
-            <span class='ident'>ffi</span>::<span class='ident'>X509_digest</span>(<span class='self'>self</span>.<span class='ident'>handle</span>, <span class='ident'>evp</span>, <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>v</span>.<span class='ident'>as_ptr</span>()),
+            <span class='ident'>ffi</span>::<span class='ident'>X509_digest</span>(<span class='self'>self</span>.<span class='ident'>handle</span>,
+                             <span class='ident'>evp</span>,
+                             <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='ident'>v</span>.<span class='ident'>as_ptr</span>()),
                              <span class='ident'>mem</span>::<span class='ident'>transmute</span>(<span class='kw-2'>&amp;</span><span class='ident'>act_len</span>))
         };
 
@@ -1208,20 +1239,35 @@
                 <span class='kw'>match</span> <span class='ident'>len</span>.<span class='ident'>cmp</span>(<span class='kw-2'>&amp;</span><span class='ident'>act_len</span>) {
                     <span class='ident'>Ordering</span>::<span class='ident'>Greater</span> <span class='op'>=&gt;</span> <span class='prelude-val'>None</span>,
                     <span class='ident'>Ordering</span>::<span class='ident'>Equal</span> <span class='op'>=&gt;</span> <span class='prelude-val'>Some</span>(<span class='ident'>v</span>),
-                    <span class='ident'>Ordering</span>::<span class='ident'>Less</span> <span class='op'>=&gt;</span> <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;Fingerprint buffer was corrupted!&quot;</span>)
+                    <span class='ident'>Ordering</span>::<span class='ident'>Less</span> <span class='op'>=&gt;</span> <span class='macro'>panic</span><span class='macro'>!</span>(<span class='string'>&quot;Fingerprint buffer was corrupted!&quot;</span>),
                 }
             }
         }
     }
 
     <span class='doccomment'>/// Writes certificate as PEM</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>write_pem</span><span class='op'>&lt;</span><span class='ident'>W</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>writer</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>W</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='ident'>W</span>: <span class='ident'>Write</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>write_pem</span><span class='op'>&lt;</span><span class='ident'>W</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>writer</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>W</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>W</span>: <span class='ident'>Write</span>
+    {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>mem_bio</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>MemBio</span>::<span class='ident'>new</span>());
         <span class='kw'>unsafe</span> {
-            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_write_bio_X509</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(),
-                                             <span class='self'>self</span>.<span class='ident'>handle</span>));
+            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_write_bio_X509</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(), <span class='self'>self</span>.<span class='ident'>handle</span>));
         }
         <span class='ident'>io</span>::<span class='ident'>copy</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>mem_bio</span>, <span class='ident'>writer</span>).<span class='ident'>map_err</span>(<span class='ident'>StreamError</span>).<span class='ident'>map</span>(<span class='op'>|</span>_<span class='op'>|</span> ())
+    }
+}
+
+<span class='kw'>extern</span> <span class='string'>&quot;C&quot;</span> {
+    <span class='kw'>fn</span> <span class='ident'>rust_X509_clone</span>(<span class='ident'>x509</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509</span>);
+}
+
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> <span class='ident'>Clone</span> <span class='kw'>for</span> <span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> {
+    <span class='kw'>fn</span> <span class='ident'>clone</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;ctx</span><span class='op'>&gt;</span> {
+        <span class='kw'>unsafe</span> { <span class='ident'>rust_X509_clone</span>(<span class='self'>self</span>.<span class='ident'>handle</span>) }
+        <span class='comment'>/* FIXME: given that we now have refcounting control, &#39;owned&#39; should be uneeded, the &#39;ctx
+         * is probably also uneeded. We can remove both to condense the x509 api quite a bit
+         */</span>
+        <span class='ident'>X509</span>::<span class='ident'>new</span>(<span class='self'>self</span>.<span class='ident'>handle</span>, <span class='boolval'>true</span>)
     }
 }
 
@@ -1236,16 +1282,16 @@
 <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>dead_code</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>X509Name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> {
     <span class='ident'>x509</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;x</span> <span class='ident'>X509</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span>,
-    <span class='ident'>name</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME</span>
+    <span class='ident'>name</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME</span>,
 }
 
 <span class='attribute'>#[<span class='ident'>allow</span>(<span class='ident'>dead_code</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>X509NameEntry</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> {
     <span class='ident'>x509_name</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;x</span> <span class='ident'>X509Name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span>,
-    <span class='ident'>ne</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME_ENTRY</span>
+    <span class='ident'>ne</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME_ENTRY</span>,
 }
 
-<span class='kw'>impl</span> <span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> <span class='ident'>X509Name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> <span class='ident'>X509Name</span><span class='op'>&lt;</span><span class='lifetime'>&#39;x</span><span class='op'>&gt;</span> {
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>text_by_nid</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>nid</span>: <span class='ident'>nid</span>::<span class='ident'>Nid</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>SslString</span><span class='op'>&gt;</span> {
         <span class='kw'>unsafe</span> {
             <span class='kw'>let</span> <span class='ident'>loc</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>X509_NAME_get_index_by_NID</span>(<span class='self'>self</span>.<span class='ident'>name</span>, <span class='ident'>nid</span> <span class='kw'>as</span> <span class='ident'>c_int</span>, <span class='op'>-</span><span class='number'>1</span>);
@@ -1263,11 +1309,11 @@
                 <span class='kw'>return</span> <span class='prelude-val'>None</span>;
             }
 
-            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>str_from_asn1</span> : <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
+            <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>str_from_asn1</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>c_char</span> <span class='op'>=</span> <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>();
             <span class='kw'>let</span> <span class='ident'>len</span> <span class='op'>=</span> <span class='ident'>ffi</span>::<span class='ident'>ASN1_STRING_to_UTF8</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>str_from_asn1</span>, <span class='ident'>asn1_str</span>);
 
             <span class='kw'>if</span> <span class='ident'>len</span> <span class='op'>&lt;</span> <span class='number'>0</span> {
-                <span class='kw'>return</span> <span class='prelude-val'>None</span>
+                <span class='kw'>return</span> <span class='prelude-val'>None</span>;
             }
 
             <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>!</span><span class='ident'>str_from_asn1</span>.<span class='ident'>is_null</span>());
@@ -1285,30 +1331,32 @@
 <span class='kw'>impl</span> <span class='ident'>X509Req</span> {
     <span class='doccomment'>/// Creates new from handle</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>(<span class='ident'>handle</span>: <span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>ffi</span>::<span class='ident'>X509_REQ</span>) <span class='op'>-&gt;</span> <span class='ident'>X509Req</span> {
-        <span class='ident'>X509Req</span> {
-            <span class='ident'>handle</span>: <span class='ident'>handle</span>,
-        }
+        <span class='ident'>X509Req</span> { <span class='ident'>handle</span>: <span class='ident'>handle</span> }
     }
 
     <span class='doccomment'>/// Reads CSR from PEM</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>from_pem</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span>(<span class='ident'>reader</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>X509Req</span>, <span class='ident'>SslError</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Read</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>from_pem</span><span class='op'>&lt;</span><span class='ident'>R</span><span class='op'>&gt;</span>(<span class='ident'>reader</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>R</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span><span class='ident'>X509Req</span>, <span class='ident'>SslError</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>R</span>: <span class='ident'>Read</span>
+    {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>mem_bio</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>MemBio</span>::<span class='ident'>new</span>());
         <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>io</span>::<span class='ident'>copy</span>(<span class='ident'>reader</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>mem_bio</span>).<span class='ident'>map_err</span>(<span class='ident'>StreamError</span>));
 
         <span class='kw'>unsafe</span> {
             <span class='kw'>let</span> <span class='ident'>handle</span> <span class='op'>=</span> <span class='macro'>try_ssl_null</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_read_bio_X509_REQ</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(),
-                                                              <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
-                                                              <span class='prelude-val'>None</span>, <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>()));
+                                                                  <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>(),
+                                                                  <span class='prelude-val'>None</span>,
+                                                                  <span class='ident'>ptr</span>::<span class='ident'>null_mut</span>()));
             <span class='prelude-val'>Ok</span>(<span class='ident'>X509Req</span>::<span class='ident'>new</span>(<span class='ident'>handle</span>))
         }
     }
 
     <span class='doccomment'>/// Writes CSR as PEM</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>write_pem</span><span class='op'>&lt;</span><span class='ident'>W</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>writer</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>W</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span> <span class='kw'>where</span> <span class='ident'>W</span>: <span class='ident'>Write</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>write_pem</span><span class='op'>&lt;</span><span class='ident'>W</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>writer</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>W</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Result</span><span class='op'>&lt;</span>(), <span class='ident'>SslError</span><span class='op'>&gt;</span>
+        <span class='kw'>where</span> <span class='ident'>W</span>: <span class='ident'>Write</span>
+    {
         <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>mem_bio</span> <span class='op'>=</span> <span class='macro'>try</span><span class='macro'>!</span>(<span class='ident'>MemBio</span>::<span class='ident'>new</span>());
         <span class='kw'>unsafe</span> {
-            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_write_bio_X509_REQ</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(),
-                                             <span class='self'>self</span>.<span class='ident'>handle</span>));
+            <span class='macro'>try_ssl</span><span class='macro'>!</span>(<span class='ident'>ffi</span>::<span class='ident'>PEM_write_bio_X509_REQ</span>(<span class='ident'>mem_bio</span>.<span class='ident'>get_handle</span>(), <span class='self'>self</span>.<span class='ident'>handle</span>));
         }
         <span class='ident'>io</span>::<span class='ident'>copy</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>mem_bio</span>, <span class='ident'>writer</span>).<span class='ident'>map_err</span>(<span class='ident'>StreamError</span>).<span class='ident'>map</span>(<span class='op'>|</span>_<span class='op'>|</span> ())
     }
@@ -1402,7 +1450,8 @@
 <span class='kw'>fn</span> <span class='ident'>test_negative_serial</span>() {
     <span class='comment'>// I guess that&#39;s enough to get a random negative number</span>
     <span class='kw'>for</span> _ <span class='kw'>in</span> <span class='number'>0</span>..<span class='number'>1000</span> {
-        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>random_serial</span>() <span class='op'>&gt;</span> <span class='number'>0</span>, <span class='string'>&quot;All serials should be positive&quot;</span>);
+        <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>X509Generator</span>::<span class='ident'>random_serial</span>() <span class='op'>&gt;</span> <span class='number'>0</span>,
+                <span class='string'>&quot;All serials should be positive&quot;</span>);
     }
 }
 </pre>
@@ -1411,40 +1460,49 @@
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -1456,6 +1514,6 @@
     <script src="../../../jquery.js"></script>
     <script src="../../../main.js"></script>
     
-    <script async src="../../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

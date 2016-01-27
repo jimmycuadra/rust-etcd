@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["CountStats","Statistics about the number of successful and failed Raft RPC requests to an etcd node."],["FollowerStats","Statistics on the health of a single etcd follower node."],["LatencyStats","Statistics about the network latency to an etcd node."],["LeaderStats","Statistics about an etcd cluster leader."]]});

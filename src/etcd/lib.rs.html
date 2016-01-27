@@ -9,6 +9,7 @@
 
     <title>lib.rs.html -- source</title>
 
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
 
     
@@ -24,17 +25,17 @@
 
     
 
-    <section class="sidebar">
+    <nav class="sidebar">
         
         
-    </section>
+    </nav>
 
     <nav class="sub">
         <form class="search-form js-only">
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
@@ -65,86 +66,81 @@
 <span id="23">23</span>
 <span id="24">24</span>
 <span id="25">25</span>
-<span id="26">26</span>
-<span id="27">27</span>
-<span id="28">28</span>
-<span id="29">29</span>
-<span id="30">30</span>
-<span id="31">31</span>
-<span id="32">32</span>
 </pre><pre class='rust '>
-<span class='doccomment'>//! Crate etcd provides a client for the [etcd](https://github.com/coreos/etcd) API.</span>
+<span class='doccomment'>//! Crate etcd provides a client for [etcd](https://github.com/coreos/etcd), a distributed</span>
+<span class='doccomment'>//! key-value store from [CoreOS](https://coreos.com/).</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! All of the public types are rexported and available directly from the crate root. `Client` is</span>
-<span class='doccomment'>//! the entry point for all API calls.</span>
+<span class='doccomment'>//! `Client` is the entry point for all API calls. Types for primary key space operations are</span>
+<span class='doccomment'>//! reexported to the crate root. Other categories of operations have public types in their</span>
+<span class='doccomment'>//! respective modules.</span>
+
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>hyper</span>;
-<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rustc_serialize</span>;
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>serde</span>;
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>serde_json</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>url</span>;
 
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>client</span>::<span class='ident'>Client</span>;
 <span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>error</span>::<span class='ident'>Error</span>;
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>responses</span>::{
-    <span class='comment'>// Key space operations</span>
-    <span class='ident'>KeySpaceInfo</span>,
-    <span class='ident'>KeySpaceResult</span>,
-    <span class='ident'>Node</span>,
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>keys</span>::{<span class='ident'>KeySpaceInfo</span>, <span class='ident'>KeySpaceResult</span>};
 
-    <span class='comment'>// Stats operations</span>
-    <span class='ident'>LeaderStats</span>,
-    <span class='ident'>FollowerStats</span>,
-    <span class='ident'>CountStats</span>,
-    <span class='ident'>LatencyStats</span>,
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>client</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>error</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>keys</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>stats</span>;
+<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>version</span>;
 
-    <span class='comment'>// Version operations</span>
-    <span class='ident'>VersionInfo</span>,
-};
-
-<span class='kw'>mod</span> <span class='ident'>client</span>;
-<span class='kw'>mod</span> <span class='ident'>error</span>;
 <span class='kw'>mod</span> <span class='ident'>http</span>;
 <span class='kw'>mod</span> <span class='ident'>options</span>;
 <span class='kw'>mod</span> <span class='ident'>query_pairs</span>;
-<span class='kw'>mod</span> <span class='ident'>responses</span>;
 </pre>
 </section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
 
-    <div id="help" class="hidden">
-        <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
-            <dl>
-                <dt>?</dt>
-                <dd>Show this help dialog</dd>
-                <dt>S</dt>
-                <dd>Focus the search field</dd>
-                <dt>&larrb;</dt>
-                <dd>Move up in search results</dd>
-                <dt>&rarrb;</dt>
-                <dd>Move down in search results</dd>
-                <dt>&#9166;</dt>
-                <dd>Go to active search result</dd>
-            </dl>
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code>)
+                </p>
+            </div>
         </div>
-        <div class="infos">
-            <h1>Search tricks</h1>
-            <p>
-                Prefix searches with a type followed by a colon (e.g.
-                <code>fn:</code>) to restrict the search to a given type.
-            </p>
-            <p>
-                Accepted types are: <code>fn</code>, <code>mod</code>,
-                <code>struct</code>, <code>enum</code>,
-                <code>trait</code>, <code>typedef</code> (or
-                <code>tdef</code>).
-            </p>
-            <p>
-                Search functions by type signature (e.g.
-                <code>vec -> usize</code>)
-            </p>
-        </div>
-    </div>
+    </aside>
 
     
 
@@ -156,6 +152,6 @@
     <script src="../../jquery.js"></script>
     <script src="../../main.js"></script>
     
-    <script async src="../../search-index.js"></script>
+    <script defer src="../../search-index.js"></script>
 </body>
 </html>
