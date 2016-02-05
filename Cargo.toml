@@ -11,15 +11,26 @@ readme = "README.md"
 repository = "https://github.com/jimmycuadra/rust-etcd"
 version = "0.3.0"
 
-[build-dependencies]
-serde_codegen = "0.6.13"
-syntex = "0.28.0"
-
 [dependencies]
 hyper = "0.7.2"
-serde = "0.6.13"
+serde = "0.6.14"
 serde_json = "0.6.0"
-url = "0.5.3"
+url = "0.5.4"
+
+[dependencies.serde_macros]
+optional = true
+version = "0.6.14"
+
+[build-dependencies]
+syntex = "0.29.0"
+
+[build-dependencies.serde_codegen]
+optional = true
+version = "0.6.14"
+
+[features]
+default = ["serde_codegen"]
+nightly = ["serde_macros"]
 
 [lib]
 doctest = false

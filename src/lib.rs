@@ -5,6 +5,9 @@
 //! reexported to the crate root. Other categories of operations have public types in their
 //! respective modules.
 
+#![cfg_attr(feature = "serde_macros", feature(custom_derive, plugin))]
+#![cfg_attr(feature = "serde_macros", plugin(serde_macros))]
+
 extern crate hyper;
 extern crate serde;
 extern crate serde_json;
