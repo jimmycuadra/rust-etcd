@@ -12,12 +12,12 @@ repository = "https://github.com/jimmycuadra/rust-etcd"
 version = "0.3.0"
 
 [build-dependencies]
-serde_codegen = "0.6.11"
-syntex = "0.26.0"
+serde_codegen = "0.6.13"
+syntex = "0.28.0"
 
 [dependencies]
 hyper = "0.7.2"
-serde = "0.6.11"
+serde = "0.6.13"
 serde_json = "0.6.0"
 url = "0.5.3"
 
