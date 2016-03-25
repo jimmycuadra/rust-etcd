@@ -30,6 +30,9 @@ pub struct EtcdError {
     pub message: String,
 }
 
+/// The result type returned by `Client` methods.
+pub type EtcdResult<T> = Result<T, Error>;
+
 impl From<HttpError> for Error {
     fn from(error: HttpError) -> Error {
         Error::Http(error)

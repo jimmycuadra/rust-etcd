@@ -7,7 +7,7 @@ use serde_json::from_str;
 use url::{form_urlencoded, ParseError, Url};
 
 use keys::KeySpaceResult;
-use error::Error;
+use error::{EtcdResult, Error};
 use http;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
@@ -209,7 +209,7 @@ impl Client {
     /// # Failures
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn leader_stats(&self) -> Result<LeaderStats, Error> {
+    pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
         let url = format!("{}v2/stats/leader", self.root_url);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
@@ -292,7 +292,7 @@ impl Client {
     }
 
     /// Returns the versions of the etcd cluster and server.
-    pub fn version(&self) -> Result<VersionInfo, Error> {
+    pub fn version(&self) -> EtcdResult<VersionInfo> {
         let url = format!("{}version", self.root_url);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();

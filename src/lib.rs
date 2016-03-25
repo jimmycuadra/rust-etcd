@@ -14,7 +14,7 @@ extern crate serde_json;
 extern crate url;
 
 pub use client::Client;
-pub use error::Error;
+pub use error::{EtcdResult, Error};
 pub use keys::{KeySpaceInfo, KeySpaceResult};
 
 pub mod client;

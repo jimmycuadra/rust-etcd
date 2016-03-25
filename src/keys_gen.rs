@@ -1,7 +1,7 @@
-use error::Error;
+use error::EtcdResult;
 
 /// Returned by key space API calls.
-pub type KeySpaceResult = Result<KeySpaceInfo, Error>;
+pub type KeySpaceResult = EtcdResult<KeySpaceInfo>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize)]
