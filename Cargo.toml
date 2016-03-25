@@ -12,21 +12,21 @@ repository = "https://github.com/jimmycuadra/rust-etcd"
 version = "0.3.1"
 
 [dependencies]
-hyper = "0.7.2"
-serde = "0.6.14"
-serde_json = "0.6.0"
-url = "0.5.4"
+hyper = "0.8.0"
+serde = "0.7.0"
+serde_json = "0.7.0"
+url = "0.5.7"
 
 [dependencies.serde_macros]
 optional = true
-version = "0.6.14"
+version = "0.7.0"
 
 [build-dependencies]
-syntex = "0.29.0"
+syntex = "0.30.0"
 
 [build-dependencies.serde_codegen]
 optional = true
-version = "0.6.14"
+version = "0.7.1"
 
 [features]
 default = ["serde_codegen"]
