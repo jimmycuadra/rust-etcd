@@ -42,3 +42,50 @@ pub struct LatencyStats {
     #[serde(rename="standardDeviation")]
     pub standard_deviation: Option<f64>,
 }
+
+/// Statistics about an etcd cluster member.
+#[derive(Clone, Debug, Deserialize)]
+pub struct SelfStats {
+    /// The unique Raft ID of the member.
+    pub id: String,
+    /// The member's name.
+    pub name: String,
+    #[serde(rename="leaderInfo")]
+    pub leader_info: LeaderInfo,
+    /// The number of received requests.
+    #[serde(rename="recvAppendRequestCnt")]
+    pub received_append_request_count: u64,
+    /// The bandwidth rate of received requests.
+    #[serde(rename="recvBandwidthRate")]
+    pub received_bandwidth_rate: Option<f64>,
+    #[serde(rename="recvPkgRate")]
+    /// The package rate of received requests.
+    pub received_package_rate: Option<f64>,
+    /// The number of sent requests.
+    #[serde(rename="sendAppendRequestCnt")]
+    pub sent_append_request_count: u64,
+    /// The bandwidth rate of sent requests.
+    #[serde(rename="sendBandwidthRate")]
+    pub sent_bandwidth_rate: Option<f64>,
+    /// The package rate of sent requests.
+    #[serde(rename="sendPkgRate")]
+    pub sent_package_rate: Option<f64>,
+    /// The time the member started.
+    #[serde(rename="startTime")]
+    pub start_time: String,
+    /// The Raft state of the member.
+    pub state: String,
+}
+
+/// A small amount of information about the leader of the cluster.
+#[derive(Clone, Debug, Deserialize)]
+pub struct LeaderInfo {
+    /// The unique Raft ID of the leader.
+    #[serde(rename="leader")]
+    pub id: String,
+    /// The time the leader started.
+    #[serde(rename="startTime")]
+    pub start_time: String,
+    /// The amount of time the leader has been up.
+    pub uptime: String,
+}

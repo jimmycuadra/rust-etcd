@@ -279,6 +279,13 @@ fn leader_stats() {
 }
 
 #[test]
+fn self_stats() {
+    let client = TestClient::new();
+
+    client.self_stats().unwrap();
+}
+
+#[test]
 fn set() {
     let client = TestClient::new();
 

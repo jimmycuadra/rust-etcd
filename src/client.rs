@@ -11,7 +11,7 @@ use error::{EtcdResult, Error};
 use http;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
-use stats::LeaderStats;
+use stats::{LeaderStats, SelfStats};
 use version::VersionInfo;
 
 /// API client for etcd. All API calls are made via the client.
@@ -211,6 +211,23 @@ impl Client {
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
         let url = format!("{}v2/stats/leader", self.root_url);
+        let mut response = try!(http::get(url));
+        let mut response_body = String::new();
+        try!(response.read_to_string(&mut response_body));
+
+        match response.status {
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+        }
+    }
+
+    /// Returns statistics on a cluster member.
+    ///
+    /// # Failures
+    ///
+    /// Fails if JSON decoding fails, which suggests a bug in our schema.
+    pub fn self_stats(&self) -> EtcdResult<SelfStats> {
+        let url = format!("{}v2/stats/self", self.root_url);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
