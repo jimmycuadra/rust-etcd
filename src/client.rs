@@ -11,7 +11,7 @@ use error::{EtcdResult, Error};
 use http;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
-use stats::{LeaderStats, SelfStats};
+use stats::{LeaderStats, SelfStats, StoreStats};
 use version::VersionInfo;
 
 /// API client for etcd. All API calls are made via the client.
@@ -270,6 +270,23 @@ impl Client {
                 ..Default::default()
             },
         )
+    }
+
+    /// Returns statistics on operations handled by an etcd member.
+    ///
+    /// # Failures
+    ///
+    /// Fails if JSON decoding fails, which suggests a bug in our schema.
+    pub fn store_stats(&self) -> EtcdResult<StoreStats> {
+        let url = format!("{}v2/stats/store", self.root_url);
+        let mut response = try!(http::get(url));
+        let mut response_body = String::new();
+        try!(response.read_to_string(&mut response_body));
+
+        match response.status {
+            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+        }
     }
 
     /// Updates the given key to the given value and time to live in seconds.

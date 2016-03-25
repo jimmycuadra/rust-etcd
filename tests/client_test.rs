@@ -309,6 +309,13 @@ fn set_dir() {
 }
 
 #[test]
+fn store_stats() {
+    let client = TestClient::new();
+
+    client.store_stats().unwrap();
+}
+
+#[test]
 fn update() {
     let client = TestClient::new();
     client.create("/test/foo", "bar", None).ok().unwrap();

@@ -89,3 +89,55 @@ pub struct LeaderInfo {
     /// The amount of time the leader has been up.
     pub uptime: String,
 }
+
+/// Statistics about the operations handled by an etcd member.
+#[derive(Clone, Debug, Deserialize)]
+pub struct StoreStats {
+    /// The number of failed compare and delete operations.
+    #[serde(rename="compareAndDeleteFail")]
+    pub compare_and_delete_fail: u64,
+    /// The number of successful compare and delete operations.
+    #[serde(rename="compareAndDeleteSuccess")]
+    pub compare_and_delete_success: u64,
+    /// The number of failed compare and swap operations.
+    #[serde(rename="compareAndSwapFail")]
+    pub compare_and_swap_fail: u64,
+    /// The number of successful compare and swap operations.
+    #[serde(rename="compareAndSwapSuccess")]
+    pub compare_and_swap_success: u64,
+    /// The number of failed create operations.
+    #[serde(rename="createFail")]
+    pub create_fail: u64,
+    /// The number of successful create operations.
+    #[serde(rename="createSuccess")]
+    pub create_success: u64,
+    /// The number of failed delete operations.
+    #[serde(rename="deleteFail")]
+    pub delete_fail: u64,
+    /// The number of successful delete operations.
+    #[serde(rename="deleteSuccess")]
+    pub delete_success: u64,
+    /// The number of expire operations.
+    #[serde(rename="expireCount")]
+    pub expire_count: u64,
+    /// The number of failed get operations.
+    #[serde(rename="getsFail")]
+    pub get_fail: u64,
+    /// The number of successful get operations.
+    #[serde(rename="getsSuccess")]
+    pub get_success: u64,
+    /// The number of failed set operations.
+    #[serde(rename="setsFail")]
+    pub set_fail: u64,
+    /// The number of successful set operations.
+    #[serde(rename="setsSuccess")]
+    pub set_success: u64,
+    /// The number of failed update operations.
+    #[serde(rename="updateFail")]
+    pub update_fail: u64,
+    /// The number of successful update operations.
+    #[serde(rename="updateSuccess")]
+    pub update_success: u64,
+    /// The number of watchers.
+    pub watchers: u64,
+}
