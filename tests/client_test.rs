@@ -1,5 +1,6 @@
 extern crate etcd;
 
+use std::ops::Deref;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
@@ -22,7 +23,15 @@ impl TestClient {
 impl Drop for TestClient {
     #[allow(unused_must_use)]
     fn drop(&mut self) {
-        self.c.delete("/test", true);
+        self.delete("/test", true);
+    }
+}
+
+impl Deref for TestClient {
+    type Target = Client;
+
+    fn deref(&self) -> &Self::Target {
+        &self.c
     }
 }
 
@@ -30,7 +39,7 @@ impl Drop for TestClient {
 fn create() {
     let client = TestClient::new();
 
-    let response = match client.c.create("/test/foo", "bar", Some(60)) {
+    let response = match client.create("/test/foo", "bar", Some(60)) {
         Ok(response) => response,
         Err(error) => panic!("{:?}", error),
     };
@@ -44,9 +53,9 @@ fn create() {
 fn create_does_not_replace_existing_key() {
     let client = TestClient::new();
 
-    client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
+    client.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    match client.c.create("/test/foo", "bar", None).err().unwrap() {
+    match client.create("/test/foo", "bar", None).err().unwrap() {
         Error::Etcd(error) => assert_eq!(error.message, "Key already exists".to_string()),
         _ => panic!("expected EtcdError due to pre-existing key"),
     };
@@ -57,7 +66,7 @@ fn create_in_order() {
     let client = TestClient::new();
 
     let keys: Vec<String> = (1..4).map(|ref _key| {
-        client.c.create_in_order(
+        client.create_in_order(
             "/test/foo",
             "bar",
             None,
@@ -72,22 +81,22 @@ fn create_in_order() {
 fn create_in_order_must_operate_on_a_directory() {
     let client = TestClient::new();
 
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    assert!(client.c.create_in_order("/test/foo", "baz", None).is_err());
+    assert!(client.create_in_order("/test/foo", "baz", None).is_err());
 }
 
 #[test]
 fn compare_and_delete() {
     let client = TestClient::new();
 
-    let modified_index = client.c.create(
+    let modified_index = client.create(
         "/test/foo",
         "bar",
         None
     ).ok().unwrap().node.modified_index.unwrap();
 
-    let response = client.c.compare_and_delete(
+    let response = client.compare_and_delete(
         "/test/foo",
         Some("bar"),
         Some(modified_index)
@@ -100,13 +109,13 @@ fn compare_and_delete() {
 fn compare_and_delete_only_index() {
     let client = TestClient::new();
 
-    let modified_index = client.c.create(
+    let modified_index = client.create(
         "/test/foo",
         "bar",
         None
     ).ok().unwrap().node.modified_index.unwrap();
 
-    let response = client.c.compare_and_delete(
+    let response = client.compare_and_delete(
         "/test/foo",
         None,
         Some(modified_index)
@@ -118,9 +127,9 @@ fn compare_and_delete_only_index() {
 #[test]
 fn compare_and_delete_only_value() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.compare_and_delete(
+    let response = client.compare_and_delete(
         "/test/foo",
         Some("bar"),
         None,
@@ -132,9 +141,9 @@ fn compare_and_delete_only_value() {
 #[test]
 fn compare_and_delete_requires_conditions() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    match client.c.compare_and_delete("/test/foo", None, None).err().unwrap() {
+    match client.compare_and_delete("/test/foo", None, None).err().unwrap() {
         Error::InvalidConditions(message) => assert_eq!(
             message,
             "Current value or modified index is required."
@@ -147,13 +156,13 @@ fn compare_and_delete_requires_conditions() {
 fn compare_and_swap() {
     let client = TestClient::new();
 
-    let modified_index = client.c.create(
+    let modified_index = client.create(
         "/test/foo",
         "bar",
         None
     ).ok().unwrap().node.modified_index.unwrap();
 
-    let response = client.c.compare_and_swap(
+    let response = client.compare_and_swap(
         "/test/foo",
         "baz",
         Some(100),
@@ -168,13 +177,13 @@ fn compare_and_swap() {
 fn compare_and_swap_only_index() {
     let client = TestClient::new();
 
-    let modified_index = client.c.create(
+    let modified_index = client.create(
         "/test/foo",
         "bar",
         None
     ).ok().unwrap().node.modified_index.unwrap();
 
-    let response = client.c.compare_and_swap(
+    let response = client.compare_and_swap(
         "/test/foo",
         "baz",
         None,
@@ -188,9 +197,9 @@ fn compare_and_swap_only_index() {
 #[test]
 fn compare_and_swap_only_value() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.compare_and_swap(
+    let response = client.compare_and_swap(
         "/test/foo",
         "bar",
         None,
@@ -204,9 +213,9 @@ fn compare_and_swap_only_value() {
 #[test]
 fn compare_and_swap_requires_conditions() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    match client.c.compare_and_swap("/test/foo", "bar", None, None, None).err().unwrap() {
+    match client.compare_and_swap("/test/foo", "bar", None, None, None).err().unwrap() {
         Error::InvalidConditions(message) => assert_eq!(
             message,
             "Current value or modified index is required."
@@ -218,9 +227,9 @@ fn compare_and_swap_requires_conditions() {
 #[test]
 fn get() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", Some(60)).ok().unwrap();
+    client.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    let response = client.c.get("/test/foo", false, false, false).ok().unwrap();
+    let response = client.get("/test/foo", false, false, false).ok().unwrap();
 
     assert_eq!(response.action, "get".to_string());
     assert_eq!(response.node.value.unwrap(), "bar".to_string());
@@ -232,10 +241,10 @@ fn get() {
 fn get_non_recursive() {
     let client = TestClient::new();
 
-    client.c.set("/test/dir/baz", "blah", None).ok();
-    client.c.set("/test/foo", "bar", None).ok();
+    client.set("/test/dir/baz", "blah", None).ok();
+    client.set("/test/foo", "bar", None).ok();
 
-    let response = client.c.get("/test", true, false, false).ok().unwrap();
+    let response = client.get("/test", true, false, false).ok().unwrap();
 
     assert_eq!(response.node.dir.unwrap(), true);
 
@@ -251,9 +260,9 @@ fn get_non_recursive() {
 fn get_recursive() {
     let client = TestClient::new();
 
-    client.c.set("/test/dir/baz", "blah", None).ok();
+    client.set("/test/dir/baz", "blah", None).ok();
 
-    let response = client.c.get("/test", true, true, false).ok().unwrap();
+    let response = client.get("/test", true, true, false).ok().unwrap();
     let nodes = response.node.nodes.unwrap();
 
     assert_eq!(
@@ -266,14 +275,14 @@ fn get_recursive() {
 fn leader_stats() {
     let client = TestClient::new();
 
-    client.c.leader_stats().unwrap();
+    client.leader_stats().unwrap();
 }
 
 #[test]
 fn set() {
     let client = TestClient::new();
 
-    let response = client.c.set("/test/foo", "baz", None).ok().unwrap();
+    let response = client.set("/test/foo", "baz", None).ok().unwrap();
 
     assert_eq!(response.action, "set".to_string());
     assert_eq!(response.node.value.unwrap(), "baz".to_string());
@@ -284,20 +293,20 @@ fn set() {
 fn set_dir() {
     let client = TestClient::new();
 
-    assert!(client.c.set_dir("/test", None).is_ok());
-    assert!(client.c.set_dir("/test", None).is_err());
+    assert!(client.set_dir("/test", None).is_ok());
+    assert!(client.set_dir("/test", None).is_err());
 
-    client.c.set("/test/foo", "bar", None).ok().unwrap();
+    client.set("/test/foo", "bar", None).ok().unwrap();
 
-    assert!(client.c.set_dir("/test/foo", None).is_ok());
+    assert!(client.set_dir("/test/foo", None).is_ok());
 }
 
 #[test]
 fn update() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.update("/test/foo", "blah", Some(30)).ok().unwrap();
+    let response = client.update("/test/foo", "blah", Some(30)).ok().unwrap();
 
     assert_eq!(response.action, "update".to_string());
     assert_eq!(response.node.value.unwrap(), "blah".to_string());
@@ -308,7 +317,7 @@ fn update() {
 fn update_requires_existing_key() {
     let client = TestClient::new();
 
-    match client.c.update("/test/foo", "bar", None).err().unwrap() {
+    match client.update("/test/foo", "bar", None).err().unwrap() {
         Error::Etcd(error) => assert_eq!(error.message, "Key not found".to_string()),
         _ => panic!("expected EtcdError due to missing key"),
     };
@@ -318,9 +327,9 @@ fn update_requires_existing_key() {
 fn update_dir() {
     let client = TestClient::new();
 
-    client.c.create_dir("/test", None).ok().unwrap();
+    client.create_dir("/test", None).ok().unwrap();
 
-    let response = client.c.update_dir("/test", Some(60)).ok().unwrap();
+    let response = client.update_dir("/test", Some(60)).ok().unwrap();
 
     assert_eq!(response.node.ttl.unwrap(), 60);
 }
@@ -329,9 +338,9 @@ fn update_dir() {
 fn update_dir_replaces_key() {
     let client = TestClient::new();
 
-    client.c.set("/test/foo", "bar", None).ok().unwrap();
+    client.set("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.update_dir("/test/foo", Some(60)).ok().unwrap();
+    let response = client.update_dir("/test/foo", Some(60)).ok().unwrap();
 
     assert_eq!(response.node.value.unwrap(), "");
     assert_eq!(response.node.ttl.unwrap(), 60);
@@ -341,15 +350,15 @@ fn update_dir_replaces_key() {
 fn update_dir_requires_existing_dir() {
     let client = TestClient::new();
 
-    assert!(client.c.update_dir("/test", None).is_err());
+    assert!(client.update_dir("/test", None).is_err());
 }
 
 #[test]
 fn delete() {
     let client = TestClient::new();
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.delete("/test/foo", false).ok().unwrap();
+    let response = client.delete("/test/foo", false).ok().unwrap();
 
     assert_eq!(response.action, "delete");
 }
@@ -358,7 +367,7 @@ fn delete() {
 fn create_dir() {
     let client = TestClient::new();
 
-    let response = client.c.create_dir("/test/dir", None).ok().unwrap();
+    let response = client.create_dir("/test/dir", None).ok().unwrap();
 
     assert_eq!(response.action, "create".to_string());
     assert!(response.node.dir.unwrap());
@@ -368,9 +377,9 @@ fn create_dir() {
 #[test]
 fn delete_dir() {
     let client = TestClient::new();
-    client.c.create_dir("/test/dir", None).ok().unwrap();
+    client.create_dir("/test/dir", None).ok().unwrap();
 
-    let response = client.c.delete_dir("/test/dir").ok().unwrap();
+    let response = client.delete_dir("/test/dir").ok().unwrap();
 
     assert_eq!(response.action, "delete");
 }
@@ -387,9 +396,9 @@ fn watch() {
 
     let client = TestClient::new();
 
-    client.c.create("/test/foo", "bar", None).ok().unwrap();
+    client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.c.watch("/test/foo", None, false).ok().unwrap();
+    let response = client.watch("/test/foo", None, false).ok().unwrap();
 
     assert_eq!(response.node.value.unwrap(), "baz".to_string());
 
@@ -400,9 +409,9 @@ fn watch() {
 fn watch_index() {
     let client = TestClient::new();
 
-    let index = client.c.set("/test/foo", "bar", None).ok().unwrap().node.modified_index.unwrap();
+    let index = client.set("/test/foo", "bar", None).ok().unwrap().node.modified_index.unwrap();
 
-    let response = client.c.watch("/test/foo", Some(index), false).ok().unwrap();
+    let response = client.watch("/test/foo", Some(index), false).ok().unwrap();
 
     assert_eq!(response.node.modified_index.unwrap(), index);
     assert_eq!(response.node.value.unwrap(), "bar".to_string());
@@ -420,7 +429,7 @@ fn watch_recursive() {
 
     let client = TestClient::new();
 
-    let response = client.c.watch("/test", None, true).ok().unwrap();
+    let response = client.watch("/test", None, true).ok().unwrap();
 
     assert_eq!(response.node.key.unwrap(), "/test/foo/bar".to_string());
     assert_eq!(response.node.value.unwrap(), "baz".to_string());
@@ -432,7 +441,7 @@ fn watch_recursive() {
 fn version() {
     let client = TestClient::new();
 
-    let version = client.c.version().ok().unwrap();
+    let version = client.version().ok().unwrap();
 
     assert_eq!(version.etcdcluster.unwrap(), "2.3.0".to_string());
     assert_eq!(version.etcdserver.unwrap(), "2.3.0".to_string());
