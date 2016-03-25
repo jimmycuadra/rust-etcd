@@ -2,14 +2,14 @@
 
 [![Build Status](https://travis-ci.org/jimmycuadra/rust-etcd.svg?branch=master)](https://travis-ci.org/jimmycuadra/rust-etcd)
 
-A Rust client library for [etcd](https://github.com/coreos/etcd).
+An [etcd](https://github.com/coreos/etcd) client library for Rust.
 
 * [etcd](https://crates.io/crates/etcd) on crates.io
 * [Documentation](http://jimmycuadra.github.io/rust-etcd/etcd/) for the latest crates.io release
 
 ## Nightly Rust
 
-If you're using etcd in program that is building on nightly Rust, use this feature profile:
+If you're using etcd in a program that is building on nightly Rust, use this feature profile:
 
 ``` toml
 [dependencies.etcd]
