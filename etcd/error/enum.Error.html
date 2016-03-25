@@ -43,23 +43,23 @@
 
     <section id='main' class="content enum">
 <h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>etcd</a>::<wbr><a href='index.html'>error</a>::<wbr><a class='enum' href=''>Error</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-197' class='srclink' href='../../src/etcd///Users/jimmy/Code/rust-etcd/target/debug/build/etcd-69859b631fee9248/out/error.rs.html#6-20' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-219' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/error.rs.html#7-21' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum Error {
     Etcd(<a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a>),
-    Http(<a class='enum' href='../../hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>),
+    Http(<a class='enum' href='https://hyperium.github.io/hyper/hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>),
     Io(<a class='struct' href='https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html' title='std::io::error::Error'>IoError</a>),
     InvalidConditions(&amp;'static <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>),
 }</pre><div class='docblock'><p>An error returned by <code>Client</code> when an API call fails.</p>
 </div><h2 class='variants'>Variants</h2>
-<table><tr><td id='variant.Etcd'><code>Etcd</code></td><td><div class='docblock'><p>An error returned by etcd.</p>
-</div></td></tr><tr><td id='variant.Http'><code>Http</code></td><td><div class='docblock'><p>An HTTP error from attempting to connect to etcd.</p>
-</div></td></tr><tr><td id='variant.Io'><code>Io</code></td><td><div class='docblock'><p>An IO error, which can happen when reading the HTTP response.</p>
-</div></td></tr><tr><td id='variant.InvalidConditions'><code>InvalidConditions</code></td><td><div class='docblock'><p>An error returned when invalid conditions have been provided for a compare-and-delete or
+<table class='variants_table'><tr><td id='variant.Etcd'><code>Etcd</code></td><td><div class='docblock'><p>An error returned by etcd.</p>
+</div></td><td></td></tr><tr><td id='variant.Http'><code>Http</code></td><td><div class='docblock'><p>An HTTP error from attempting to connect to etcd.</p>
+</div></td><td></td></tr><tr><td id='variant.Io'><code>Io</code></td><td><div class='docblock'><p>An IO error, which can happen when reading the HTTP response.</p>
+</div></td><td></td></tr><tr><td id='variant.InvalidConditions'><code>InvalidConditions</code></td><td><div class='docblock'><p>An error returned when invalid conditions have been provided for a compare-and-delete or
 compare-and-swap operation.</p>
-</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html' title='core::convert::From'>From</a>&lt;<a class='enum' href='../../hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>&gt; for <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h3><div class='impl-items'><h4 id='method.from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html#method.from' class='fnname'>from</a>(error: <a class='enum' href='../../hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>) -&gt; <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h4>
+</div></td><td></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html' title='core::convert::From'>From</a>&lt;<a class='enum' href='https://hyperium.github.io/hyper/hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>&gt; for <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h3><div class='impl-items'><h4 id='method.from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html#method.from' class='fnname'>from</a>(error: <a class='enum' href='https://hyperium.github.io/hyper/hyper/error/enum.Error.html' title='hyper::error::Error'>HttpError</a>) -&gt; <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h4>
 </div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html' title='core::convert::From'>From</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html' title='std::io::error::Error'>IoError</a>&gt; for <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h3><div class='impl-items'><h4 id='method.from-1' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/convert/trait.From.html#method.from' class='fnname'>from</a>(error: <a class='struct' href='https://doc.rust-lang.org/nightly/std/io/error/struct.Error.html' title='std::io::error::Error'>IoError</a>) -&gt; <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h4>
 </div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
 </div></section>
@@ -105,7 +105,7 @@ compare-and-swap operation.</p>
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

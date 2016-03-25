@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `KeySpaceResult` type in crate `etcd`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, KeySpaceResult">
+    <meta name="description" content="API documentation for the Rust `EtcdResult` type in crate `etcd`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, EtcdResult">
 
-    <title>etcd::keys::KeySpaceResult - Rust</title>
+    <title>etcd::error::EtcdResult - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
     <link rel="stylesheet" type="text/css" href="../../main.css">
@@ -27,7 +27,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>keys</a></p><script>window.sidebarCurrent = {name: 'KeySpaceResult', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+        <p class='location'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>error</a></p><script>window.sidebarCurrent = {name: 'EtcdResult', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -42,12 +42,12 @@
     </nav>
 
     <section id='main' class="content type">
-<h1 class='fqn'><span class='in-band'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>keys</a>::<wbr><a class='type' href=''>KeySpaceResult</a></span><span class='out-of-band'><span id='render-detail'>
+<h1 class='fqn'><span class='in-band'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>error</a>::<wbr><a class='type' href=''>EtcdResult</a></span><span class='out-of-band'><span id='render-detail'>
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-375' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/keys.rs.html#4' title='goto source code'>[src]</a></span></h1>
-<pre class='rust typedef'>type KeySpaceResult = <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/keys/struct.KeySpaceInfo.html' title='etcd::keys::KeySpaceInfo'>KeySpaceInfo</a>&gt;;</pre><div class='docblock'><p>Returned by key space API calls.</p>
+               </span><a id='src-364' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/error.rs.html#234' title='goto source code'>[src]</a></span></h1>
+<pre class='rust typedef'>type EtcdResult&lt;T&gt; = <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;T, <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a>&gt;;</pre><div class='docblock'><p>The result type returned by <code>Client</code> methods.</p>
 </div></section>
     <section id='search' class="content hidden"></section>
 

@@ -43,10 +43,10 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>etcd</a>::<wbr><a href='index.html'>keys</a>::<wbr><a class='struct' href=''>Node</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-462' class='srclink' href='../../src/etcd///Users/jimmy/Code/rust-etcd/target/debug/build/etcd-69859b631fee9248/out/keys.rs.html#177-194' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-490' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/keys.rs.html#189-206' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Node {
     pub created_index: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;,
     pub dir: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>&gt;,
@@ -59,25 +59,25 @@
 }</pre><div class='docblock'><p>An etcd key-value pair or directory.</p>
 </div><h2 class='fields'>Fields</h2>
 <table><tr class='stab '>
-                                  <td id='structfield.created_index'><code>created_index</code></td><td><div class='docblock'><p>The new value of the etcd creation index.</p>
+                             <td id='structfield.created_index'><code>created_index</code></td><td><div class='docblock'><p>The new value of the etcd creation index.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.dir'><code>dir</code></td><td><div class='docblock'><p>Whether or not the node is a directory.</p>
+                             <td id='structfield.dir'><code>dir</code></td><td><div class='docblock'><p>Whether or not the node is a directory.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.expiration'><code>expiration</code></td><td><div class='docblock'><p>An ISO 8601 timestamp for when the key will expire.</p>
+                             <td id='structfield.expiration'><code>expiration</code></td><td><div class='docblock'><p>An ISO 8601 timestamp for when the key will expire.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.key'><code>key</code></td><td><div class='docblock'><p>The name of the key.</p>
+                             <td id='structfield.key'><code>key</code></td><td><div class='docblock'><p>The name of the key.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.modified_index'><code>modified_index</code></td><td><div class='docblock'><p>The new value of the etcd modification index.</p>
+                             <td id='structfield.modified_index'><code>modified_index</code></td><td><div class='docblock'><p>The new value of the etcd modification index.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.nodes'><code>nodes</code></td><td><div class='docblock'><p>Child nodes of a directory.</p>
+                             <td id='structfield.nodes'><code>nodes</code></td><td><div class='docblock'><p>Child nodes of a directory.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.ttl'><code>ttl</code></td><td><div class='docblock'><p>The key&#39;s time to live in seconds.</p>
+                             <td id='structfield.ttl'><code>ttl</code></td><td><div class='docblock'><p>The key&#39;s time to live in seconds.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.value'><code>value</code></td><td><div class='docblock'><p>The value of the key.</p>
-</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='../../serde/de/trait.Deserialize.html' title='serde::de::Deserialize'>Deserialize</a> for <a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a></code></h3><div class='impl-items'><h4 id='method.deserialize' class='method'><code>fn <a href='../../serde/de/trait.Deserialize.html#method.deserialize' class='fnname'>deserialize</a>&lt;__D&gt;(deserializer: &amp;mut __D) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a>, __D::Error&gt; <span class='where'>where __D: <a class='trait' href='../../serde/de/trait.Deserializer.html' title='serde::de::Deserializer'>Deserializer</a></span></code></h4>
+                             <td id='structfield.value'><code>value</code></td><td><div class='docblock'><p>The value of the key.</p>
+</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserialize.html' title='serde::de::Deserialize'>Deserialize</a> for <a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a></code></h3><div class='impl-items'><h4 id='method.deserialize' class='method'><code>fn <a href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserialize.html#method.deserialize' class='fnname'>deserialize</a>&lt;__D&gt;(deserializer: &amp;mut __D) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a>, __D::Error&gt; <span class='where'>where __D: <a class='trait' href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserializer.html' title='serde::de::Deserializer'>Deserializer</a></span></code></h4>
 </div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
 </div><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a> for <a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a></code></h3><div class='impl-items'><h4 id='method.clone' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone' class='fnname'>clone</a>(&amp;self) -&gt; <a class='struct' href='../../etcd/keys/struct.Node.html' title='etcd::keys::Node'>Node</a></code></h4>
-<h4 id='method.clone_from' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
+<h4 id='method.clone_from' class='method'><span class="since">1.0.0</span><code>fn <a href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html#method.clone_from' class='fnname'>clone_from</a>(&amp;mut self, source: &amp;Self)</code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
 
@@ -121,7 +121,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

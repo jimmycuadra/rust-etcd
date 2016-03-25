@@ -43,10 +43,10 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>etcd</a>::<wbr><a href='index.html'>error</a>::<wbr><a class='struct' href=''>EtcdError</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-218' class='srclink' href='../../src/etcd///Users/jimmy/Code/rust-etcd/target/debug/build/etcd-69859b631fee9248/out/error.rs.html#23-32' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-240' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/error.rs.html#25-34' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct EtcdError {
     pub cause: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='struct' href='https://doc.rust-lang.org/nightly/collections/string/struct.String.html' title='collections::string::String'>String</a>&gt;,
     pub error_code: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>,
@@ -55,14 +55,14 @@
 }</pre><div class='docblock'><p>An error returned by etcd.</p>
 </div><h2 class='fields'>Fields</h2>
 <table><tr class='stab '>
-                                  <td id='structfield.cause'><code>cause</code></td><td><div class='docblock'><p>The key that was being operated upon or reason for the failure.</p>
+                             <td id='structfield.cause'><code>cause</code></td><td><div class='docblock'><p>The key that was being operated upon or reason for the failure.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.error_code'><code>error_code</code></td><td><div class='docblock'><p>The etcd error code.</p>
+                             <td id='structfield.error_code'><code>error_code</code></td><td><div class='docblock'><p>The etcd error code.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.index'><code>index</code></td><td><div class='docblock'><p>The etcd index.</p>
+                             <td id='structfield.index'><code>index</code></td><td><div class='docblock'><p>The etcd index.</p>
 </div></td></tr><tr class='stab '>
-                                  <td id='structfield.message'><code>message</code></td><td><div class='docblock'><p>A human-friendly description of the error.</p>
-</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='../../serde/de/trait.Deserialize.html' title='serde::de::Deserialize'>Deserialize</a> for <a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a></code></h3><div class='impl-items'><h4 id='method.deserialize' class='method'><code>fn <a href='../../serde/de/trait.Deserialize.html#method.deserialize' class='fnname'>deserialize</a>&lt;__D&gt;(deserializer: &amp;mut __D) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a>, __D::Error&gt; <span class='where'>where __D: <a class='trait' href='../../serde/de/trait.Deserializer.html' title='serde::de::Deserializer'>Deserializer</a></span></code></h4>
+                             <td id='structfield.message'><code>message</code></td><td><div class='docblock'><p>A human-friendly description of the error.</p>
+</div></td></tr></table><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl <a class='trait' href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserialize.html' title='serde::de::Deserialize'>Deserialize</a> for <a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a></code></h3><div class='impl-items'><h4 id='method.deserialize' class='method'><code>fn <a href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserialize.html#method.deserialize' class='fnname'>deserialize</a>&lt;__D&gt;(deserializer: &amp;mut __D) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a>, __D::Error&gt; <span class='where'>where __D: <a class='trait' href='https://serde-rs.github.io/serde/serde/serde/de/trait.Deserializer.html' title='serde::de::Deserializer'>Deserializer</a></span></code></h4>
 </div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../etcd/error/struct.EtcdError.html' title='etcd::error::EtcdError'>EtcdError</a></code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#method.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
 </div></section>
     <section id='search' class="content hidden"></section>
@@ -107,7 +107,7 @@
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

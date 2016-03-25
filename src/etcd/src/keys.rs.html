@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `KeySpaceResult` type in crate `etcd`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, KeySpaceResult">
+    <meta name="description" content="Source to the Rust file `src/keys.rs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang">
 
-    <title>etcd::keys::KeySpaceResult - Rust</title>
+    <title>keys.rs.html -- source</title>
 
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
-    <link rel="stylesheet" type="text/css" href="../../main.css">
+    <link rel="stylesheet" type="text/css" href="../../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../../main.css">
 
     
     
@@ -27,7 +27,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>keys</a></p><script>window.sidebarCurrent = {name: 'KeySpaceResult', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+        
     </nav>
 
     <nav class="sub">
@@ -41,14 +41,23 @@
         </form>
     </nav>
 
-    <section id='main' class="content type">
-<h1 class='fqn'><span class='in-band'><a href='../index.html'>etcd</a>::<wbr><a href='index.html'>keys</a>::<wbr><a class='type' href=''>KeySpaceResult</a></span><span class='out-of-band'><span id='render-detail'>
-                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                       [<span class='inner'>&#x2212;</span>]
-                   </a>
-               </span><a id='src-375' class='srclink' href='../../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-4d7c55ff591c78b2/out/keys.rs.html#4' title='goto source code'>[src]</a></span></h1>
-<pre class='rust typedef'>type KeySpaceResult = <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/keys/struct.KeySpaceInfo.html' title='etcd::keys::KeySpaceInfo'>KeySpaceInfo</a>&gt;;</pre><div class='docblock'><p>Returned by key space API calls.</p>
-</div></section>
+    <section id='main' class="content source"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+</pre><pre class='rust '>
+<span class='doccomment'>//! Types for the primary key space operations.</span>
+
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;serde_macros&quot;</span>)]</span>
+<span class='macro'>include</span><span class='macro'>!</span>(<span class='string'>&quot;keys_gen.rs&quot;</span>);
+
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>not</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;serde_macros&quot;</span>))]</span>
+<span class='macro'>include</span><span class='macro'>!</span>(<span class='macro'>concat</span><span class='macro'>!</span>(<span class='macro'>env</span><span class='macro'>!</span>(<span class='string'>&quot;OUT_DIR&quot;</span>), <span class='string'>&quot;/keys.rs&quot;</span>));
+</pre>
+</section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -100,13 +109,13 @@
     
 
     <script>
-        window.rootPath = "../../";
+        window.rootPath = "../../../";
         window.currentCrate = "etcd";
         window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
-    <script src="../../main.js"></script>
+    <script src="../../../jquery.js"></script>
+    <script src="../../../main.js"></script>
     
-    <script defer src="../../search-index.js"></script>
+    <script defer src="../../../search-index.js"></script>
 </body>
 </html>

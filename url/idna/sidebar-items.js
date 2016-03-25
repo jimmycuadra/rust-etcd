@@ -1,1 +1,0 @@
-initSidebarItems({"enum":[["Error",""],["Mapping",""]],"fn":[["domain_to_ascii","https://url.spec.whatwg.org/#concept-domain-to-ascii"],["uts46_to_ascii","http://www.unicode.org/reports/tr46/#ToASCII"]],"struct":[["Range",""],["Uts46Flags",""]]});

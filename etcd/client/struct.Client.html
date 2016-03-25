@@ -43,15 +43,15 @@
 
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>etcd</a>::<wbr><a href='index.html'>client</a>::<wbr><a class='struct' href=''>Client</a></span><span class='out-of-band'><span id='render-detail'>
-            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                [<span class='inner'>&#x2212;</span>]
-            </a>
-        </span><a id='src-25' class='srclink' href='../../src/etcd/client.rs.html#19-21' title='goto source code'>[src]</a></span></h1>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-25' class='srclink' href='../../src/etcd/src/client.rs.html#19-21' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Client {
     // some fields omitted
 }</pre><div class='docblock'><p>API client for etcd. All API calls are made via the client.</p>
 </div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl <a class='struct' href='../../etcd/client/struct.Client.html' title='etcd::client::Client'>Client</a></code></h3><div class='docblock'><p>The entry point for all etcd API calls.</p>
-</div><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(root_url: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/client/struct.Client.html' title='etcd::client::Client'>Client</a>, <a class='enum' href='../../url/parser/enum.ParseError.html' title='url::parser::ParseError'>ParseError</a>&gt;</code></h4>
+</div><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(root_url: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/client/struct.Client.html' title='etcd::client::Client'>Client</a>, ParseError&gt;</code></h4>
 <div class='docblock'><p>Constructs a new client.</p>
 </div><h4 id='method.default' class='method'><code>fn <a href='#method.default' class='fnname'>default</a>() -&gt; <a class='struct' href='../../etcd/client/struct.Client.html' title='etcd::client::Client'>Client</a></code></h4>
 <div class='docblock'><p>Constructs a client that will connect to <a href="http://127.0.0.1:2379/">http://127.0.0.1:2379/</a>.</p>
@@ -107,36 +107,46 @@ be returned as well.</p>
 <p>If <code>strong_consistency</code> is <code>true</code>, the etcd node serving the response will synchronize with
 the quorum before returning the value. This is slower but avoids possibly stale data from
 being returned.</p>
-</div><h4 id='method.leader_stats' class='method'><code>fn <a href='#method.leader_stats' class='fnname'>leader_stats</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/stats/struct.LeaderStats.html' title='etcd::stats::LeaderStats'>LeaderStats</a>, <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a>&gt;</code></h4>
+</div><h4 id='method.leader_stats' class='method'><code>fn <a href='#method.leader_stats' class='fnname'>leader_stats</a>(&amp;self) -&gt; <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/stats/struct.LeaderStats.html' title='etcd::stats::LeaderStats'>LeaderStats</a>&gt;</code></h4>
 <div class='docblock'><p>Returns statistics on the leader member of a cluster.</p>
 
 <h1 id='failures-7' class='section-header'><a href='#failures-7'>Failures</a></h1>
+<p>Fails if JSON decoding fails, which suggests a bug in our schema.</p>
+</div><h4 id='method.self_stats' class='method'><code>fn <a href='#method.self_stats' class='fnname'>self_stats</a>(&amp;self) -&gt; <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/stats/struct.SelfStats.html' title='etcd::stats::SelfStats'>SelfStats</a>&gt;</code></h4>
+<div class='docblock'><p>Returns statistics on a cluster member.</p>
+
+<h1 id='failures-8' class='section-header'><a href='#failures-8'>Failures</a></h1>
 <p>Fails if JSON decoding fails, which suggests a bug in our schema.</p>
 </div><h4 id='method.set' class='method'><code>fn <a href='#method.set' class='fnname'>set</a>(&amp;self, key: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, value: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, ttl: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;) -&gt; <a class='type' href='../../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a></code></h4>
 <div class='docblock'><p>Sets the key to the given value with the given time to live in seconds. Any previous value
 and TTL will be replaced.</p>
 
-<h1 id='failures-8' class='section-header'><a href='#failures-8'>Failures</a></h1>
+<h1 id='failures-9' class='section-header'><a href='#failures-9'>Failures</a></h1>
 <p>Fails if the key is a directory.</p>
 </div><h4 id='method.set_dir' class='method'><code>fn <a href='#method.set_dir' class='fnname'>set_dir</a>(&amp;self, key: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, ttl: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;) -&gt; <a class='type' href='../../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a></code></h4>
 <div class='docblock'><p>Sets the key to an empty directory with the given time to live in seconds. An existing
 key-value will be replaced, but an existing directory will not.</p>
 
-<h1 id='failures-9' class='section-header'><a href='#failures-9'>Failures</a></h1>
+<h1 id='failures-10' class='section-header'><a href='#failures-10'>Failures</a></h1>
 <p>Fails if the key is an existing directory.</p>
+</div><h4 id='method.store_stats' class='method'><code>fn <a href='#method.store_stats' class='fnname'>store_stats</a>(&amp;self) -&gt; <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/stats/struct.StoreStats.html' title='etcd::stats::StoreStats'>StoreStats</a>&gt;</code></h4>
+<div class='docblock'><p>Returns statistics on operations handled by an etcd member.</p>
+
+<h1 id='failures-11' class='section-header'><a href='#failures-11'>Failures</a></h1>
+<p>Fails if JSON decoding fails, which suggests a bug in our schema.</p>
 </div><h4 id='method.update' class='method'><code>fn <a href='#method.update' class='fnname'>update</a>(&amp;self, key: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, value: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, ttl: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;) -&gt; <a class='type' href='../../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a></code></h4>
 <div class='docblock'><p>Updates the given key to the given value and time to live in seconds.</p>
 
-<h1 id='failures-10' class='section-header'><a href='#failures-10'>Failures</a></h1>
+<h1 id='failures-12' class='section-header'><a href='#failures-12'>Failures</a></h1>
 <p>Fails if the key does not exist.</p>
 </div><h4 id='method.update_dir' class='method'><code>fn <a href='#method.update_dir' class='fnname'>update_dir</a>(&amp;self, key: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, ttl: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;) -&gt; <a class='type' href='../../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a></code></h4>
 <div class='docblock'><p>Updates the given key to a directory with the given time to live in seconds. If the
 directory already existed, only the TTL is updated. If the key was a key-value pair, its
 value is removed and its TTL is updated.</p>
 
-<h1 id='failures-11' class='section-header'><a href='#failures-11'>Failures</a></h1>
+<h1 id='failures-13' class='section-header'><a href='#failures-13'>Failures</a></h1>
 <p>Fails if the key does not exist.</p>
-</div><h4 id='method.version' class='method'><code>fn <a href='#method.version' class='fnname'>version</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='struct' href='../../etcd/version/struct.VersionInfo.html' title='etcd::version::VersionInfo'>VersionInfo</a>, <a class='enum' href='../../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a>&gt;</code></h4>
+</div><h4 id='method.version' class='method'><code>fn <a href='#method.version' class='fnname'>version</a>(&amp;self) -&gt; <a class='type' href='../../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>&lt;<a class='struct' href='../../etcd/version/struct.VersionInfo.html' title='etcd::version::VersionInfo'>VersionInfo</a>&gt;</code></h4>
 <div class='docblock'><p>Returns the versions of the etcd cluster and server.</p>
 </div><h4 id='method.watch' class='method'><code>fn <a href='#method.watch' class='fnname'>watch</a>(&amp;self, key: &amp;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.str.html'>str</a>, index: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.u64.html'>u64</a>&gt;, recursive: <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.bool.html'>bool</a>) -&gt; <a class='type' href='../../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a></code></h4>
 <div class='docblock'><p>Watches etcd for changes to the given key (including all child keys if <code>recursive</code> is
@@ -145,7 +155,7 @@ value is removed and its TTL is updated.</p>
 <p>The watch will return the first change indexed with <code>index</code> or greater, if specified,
 allowing you to watch for changes that happened in the past.</p>
 
-<h1 id='failures-12' class='section-header'><a href='#failures-12'>Failures</a></h1>
+<h1 id='failures-14' class='section-header'><a href='#failures-14'>Failures</a></h1>
 <p>Fails if a supplied <code>index</code> value is too old and has been flushed out of etcd&#39;s internal
 store of the most recent change events. In this case, the key should be queried for its
 latest &quot;modified index&quot; value and that should be used as the new <code>index</code> on a subsequent
@@ -194,7 +204,7 @@ latest &quot;modified index&quot; value and that should be used as the new <code
 
                 <p>
                     Search functions by type signature (e.g.
-                    <code>vec -> usize</code>)
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
                 </p>
             </div>
         </div>

@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["VersionInfo","Versions of the etcd cluster and server.#[derive_Debug]"]]});
+initSidebarItems({"struct":[["VersionInfo","Versions of the etcd cluster and server."]]});
