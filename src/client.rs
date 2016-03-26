@@ -25,12 +25,23 @@ pub struct Client {
 }
 
 /// Options for configuring the behavior of a `Client`.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ClientOptions {
     /// The username to use for authentication.
     pub username: Option<String>,
     /// The password to use for authentication.
     pub password: Option<String>,
+    /// A client certificate and private key for HTTPS connections.
+    pub ssl: Option<SslOptions>,
+}
+
+/// Options for configuring HTTPS.
+#[derive(Debug)]
+pub struct SslOptions {
+    /// File path to the client certificate to use.
+    cert: String,
+    /// File path to the private key to use.
+    key: String,
 }
 
 impl Client {
@@ -45,7 +56,8 @@ impl Client {
     /// members to use.
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn with_options(endpoints: &[&str], options: ClientOptions) -> EtcdResult<Client> {
+    pub fn with_options(endpoints: &[&str], options: ClientOptions) ->
+    EtcdResult<Client> {
         if endpoints.len() < 1 {
             return Err(Error::NoEndpoints);
         }
@@ -56,8 +68,13 @@ impl Client {
             members.push(try!(Member::new(endpoint)));
         }
 
+        let http_client = match options.ssl {
+            Some(ref ssl_options) => try!(HttpClient::https(&ssl_options.cert, &ssl_options.key)),
+            None => HttpClient::new(),
+        };
+
         Ok(Client {
-            http_client: HttpClient::new(),
+            http_client: http_client,
             members: members,
             options: options,
         })
@@ -539,14 +556,5 @@ impl Client {
                 _ => Err(Error::Api(from_str(&response_body).unwrap())),
             }
         })
-    }
-}
-
-impl Default for ClientOptions {
-    fn default() -> Self {
-        ClientOptions {
-            username: None,
-            password: None,
-        }
     }
 }

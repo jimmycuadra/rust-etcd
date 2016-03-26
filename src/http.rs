@@ -2,6 +2,7 @@ use hyper::{Client, Error};
 use hyper::client::Response;
 use hyper::header::ContentType;
 use hyper::method::Method;
+use hyper::net::{HttpsConnector, Openssl};
 
 #[derive(Debug)]
 pub struct HttpClient {
@@ -14,6 +15,15 @@ impl HttpClient {
         HttpClient {
             client: Client::new(),
         }
+    }
+
+    pub fn https(cert: &str, key: &str) -> Result<Self, Error> {
+        let openssl = try!(Openssl::with_cert_and_key(cert, key));
+        let connector = HttpsConnector::new(openssl);
+
+        Ok(HttpClient {
+            client: Client::with_connector(connector),
+        })
     }
 
     /// Makes a DELETE request to etcd.
