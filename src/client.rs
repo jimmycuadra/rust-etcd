@@ -217,7 +217,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+            _ => Err(Error::Api(from_str(&response_body).unwrap()))
         }
     }
 
@@ -234,7 +234,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+            _ => Err(Error::Api(from_str(&response_body).unwrap()))
         }
     }
 
@@ -285,7 +285,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+            _ => Err(Error::Api(from_str(&response_body).unwrap()))
         }
     }
 
@@ -334,7 +334,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap()))
+            _ => Err(Error::Api(from_str(&response_body).unwrap()))
         }
     }
 
@@ -414,7 +414,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
+            _ => Err(Error::Api(from_str(&response_body).unwrap())),
         }
     }
 
@@ -447,7 +447,7 @@ impl Client {
 
         match response.status {
             StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
+            _ => Err(Error::Api(from_str(&response_body).unwrap())),
         }
     }
 
@@ -511,7 +511,7 @@ impl Client {
 
         match response.status {
             StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Etcd(from_str(&response_body).unwrap())),
+            _ => Err(Error::Api(from_str(&response_body).unwrap())),
         }
     }
 }

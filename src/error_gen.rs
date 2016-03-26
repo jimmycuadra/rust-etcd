@@ -6,7 +6,7 @@ use std::io::Error as IoError;
 #[derive(Debug)]
 pub enum Error {
     /// An error returned by etcd.
-    Etcd(EtcdError),
+    Api(ApiError),
     /// An HTTP error from attempting to connect to etcd.
     Http(HttpError),
     /// An IO error, which can happen when reading the HTTP response.
@@ -18,7 +18,7 @@ pub enum Error {
 
 /// An error returned by etcd.
 #[derive(Debug, Deserialize)]
-pub struct EtcdError {
+pub struct ApiError {
     /// The key that was being operated upon or reason for the failure.
     pub cause: Option<String>,
     /// The etcd error code.

@@ -56,7 +56,7 @@ fn create_does_not_replace_existing_key() {
     client.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
     match client.create("/test/foo", "bar", None).err().unwrap() {
-        Error::Etcd(error) => assert_eq!(error.message, "Key already exists".to_string()),
+        Error::Api(error) => assert_eq!(error.message, "Key already exists".to_string()),
         _ => panic!("expected EtcdError due to pre-existing key"),
     };
 }
@@ -332,7 +332,7 @@ fn update_requires_existing_key() {
     let client = TestClient::new();
 
     match client.update("/test/foo", "bar", None).err().unwrap() {
-        Error::Etcd(error) => assert_eq!(error.message, "Key not found".to_string()),
+        Error::Api(error) => assert_eq!(error.message, "Key not found".to_string()),
         _ => panic!("expected EtcdError due to missing key"),
     };
 }
