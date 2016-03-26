@@ -282,7 +282,9 @@ fn leader_stats() {
 fn self_stats() {
     let client = TestClient::new();
 
-    client.self_stats().unwrap();
+    for result in client.self_stats().iter() {
+        assert!(result.is_ok());
+    }
 }
 
 #[test]
@@ -312,7 +314,9 @@ fn set_dir() {
 fn store_stats() {
     let client = TestClient::new();
 
-    client.store_stats().unwrap();
+    for result in client.store_stats() {
+        assert!(result.is_ok())
+    }
 }
 
 #[test]
@@ -452,11 +456,13 @@ fn watch_recursive() {
 }
 
 #[test]
-fn version() {
+fn versions() {
     let client = TestClient::new();
 
-    let version = client.version().ok().unwrap();
+    for result in client.versions().into_iter() {
+        let version = result.ok().unwrap();
 
-    assert_eq!(version.etcdcluster.unwrap(), "2.3.0".to_string());
-    assert_eq!(version.etcdserver.unwrap(), "2.3.0".to_string());
+        assert_eq!(version.cluster_version.unwrap(), "2.3.0".to_string());
+        assert_eq!(version.server_version.unwrap(), "2.3.0".to_string());
+    }
 }

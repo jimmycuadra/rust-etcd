@@ -35,8 +35,6 @@ pub struct ClientOptions {
 impl Client {
     /// Constructs a new client. `endpoints` are URLs to the etcd cluster members to use.
     ///
-    /// # Failures
-    ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn new(endpoints: &[&str]) -> EtcdResult<Client> {
         Client::with_options(endpoints, ClientOptions::default())
@@ -44,8 +42,6 @@ impl Client {
 
     /// Constructs a new client with the given options. `endpoints` are URLs to the etcd cluster
     /// members to use.
-    ///
-    /// # Failures
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn with_options(endpoints: &[&str], options: ClientOptions) -> EtcdResult<Client> {
@@ -66,8 +62,6 @@ impl Client {
     }
 
     /// Deletes a key only if the given current value and/or current modified index match.
-    ///
-    /// # Failures
     ///
     /// Fails if the conditions didn't match or if no conditions were given.
     pub fn compare_and_delete(
@@ -90,8 +84,6 @@ impl Client {
 
     /// Updates the value of a key only if the given current value and/or current modified index
     /// match.
-    ///
-    /// # Failures
     ///
     /// Fails if the conditions didn't match or if no conditions were given.
     pub fn compare_and_swap(
@@ -118,8 +110,6 @@ impl Client {
 
     /// Creates a new key-value pair with any given time to live in seconds.
     ///
-    /// # Failures
-    ///
     /// Fails if the key already exists.
     pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
@@ -134,8 +124,6 @@ impl Client {
     }
 
     /// Creates a new empty directory at the given key with the given time to live in seconds.
-    ///
-    /// # Failures
     ///
     /// Fails if the key already exists.
     pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
@@ -152,8 +140,6 @@ impl Client {
 
     /// Creates a new key-value pair in the given directory with any given time to live in seconds
     /// and a key name guaranteed to be greater than all existing keys in the directory.
-    ///
-    /// # Failures
     ///
     /// Fails if the key already exists and is not a directory.
     pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
@@ -173,8 +159,6 @@ impl Client {
     /// If `recursive` is `true` and the key is a directory, the directory and all child key-value
     /// pairs and directories will be deleted.
     ///
-    /// # Failures
-    ///
     /// Fails if the key is a directory and `recursive` is `false`.
     pub fn delete(&self, key: &str, recursive: bool) -> KeySpaceResult {
         self.raw_delete(
@@ -187,8 +171,6 @@ impl Client {
     }
 
     /// Deletes an empty directory or a key-value pair at the given key.
-    ///
-    /// # Failures
     ///
     /// Fails if the directory is not empty.
     pub fn delete_dir(&self, key: &str) -> KeySpaceResult {
@@ -232,8 +214,6 @@ impl Client {
 
     /// Returns statistics about the leader member of a cluster.
     ///
-    /// # Failures
-    ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
         let url = format!("{}v2/stats/leader", self.members[0].endpoint);
@@ -247,27 +227,25 @@ impl Client {
         }
     }
 
-    /// Returns statistics about a cluster member.
-    ///
-    /// # Failures
+    /// Returns statistics about each cluster member the client was initialized with.
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn self_stats(&self) -> EtcdResult<SelfStats> {
-        let url = format!("{}v2/stats/self", self.members[0].endpoint);
-        let mut response = try!(http::get(url));
-        let mut response_body = String::new();
-        try!(response.read_to_string(&mut response_body));
+    pub fn self_stats(&self) -> Vec<EtcdResult<SelfStats>> {
+        self.members.iter().map(|member| {
+            let url = format!("{}v2/stats/self", member.endpoint);
+            let mut response = try!(http::get(url));
+            let mut response_body = String::new();
+            try!(response.read_to_string(&mut response_body));
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap()))
-        }
+            match response.status {
+                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap()))
+            }
+        }).collect()
     }
 
     /// Sets the key to the given value with the given time to live in seconds. Any previous value
     /// and TTL will be replaced.
-    ///
-    /// # Failures
     ///
     /// Fails if the key is a directory.
     pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
@@ -284,8 +262,6 @@ impl Client {
     /// Sets the key to an empty directory with the given time to live in seconds. An existing
     /// key-value will be replaced, but an existing directory will not.
     ///
-    /// # Failures
-    ///
     /// Fails if the key is an existing directory.
     pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
@@ -298,26 +274,25 @@ impl Client {
         )
     }
 
-    /// Returns statistics about operations handled by an etcd member.
-    ///
-    /// # Failures
+    /// Returns statistics about operations handled by each etcd member the client was initialized
+    /// with.
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn store_stats(&self) -> EtcdResult<StoreStats> {
-        let url = format!("{}v2/stats/store", self.members[0].endpoint);
-        let mut response = try!(http::get(url));
-        let mut response_body = String::new();
-        try!(response.read_to_string(&mut response_body));
+    pub fn store_stats(&self) -> Vec<EtcdResult<StoreStats>> {
+        self.members.iter().map(|member| {
+            let url = format!("{}v2/stats/store", member.endpoint);
+            let mut response = try!(http::get(url));
+            let mut response_body = String::new();
+            try!(response.read_to_string(&mut response_body));
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap()))
-        }
+            match response.status {
+                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap()))
+            }
+        }).collect()
     }
 
     /// Updates the given key to the given value and time to live in seconds.
-    ///
-    /// # Failures
     ///
     /// Fails if the key does not exist.
     pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
@@ -336,8 +311,6 @@ impl Client {
     /// directory already existed, only the TTL is updated. If the key was a key-value pair, its
     /// value is removed and its TTL is updated.
     ///
-    /// # Failures
-    ///
     /// Fails if the key does not exist.
     pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
         self.raw_set(
@@ -351,17 +324,19 @@ impl Client {
         )
     }
 
-    /// Returns the versions of the etcd cluster and server.
-    pub fn version(&self) -> EtcdResult<VersionInfo> {
-        let url = format!("{}version", self.members[0].endpoint);
-        let mut response = try!(http::get(url));
-        let mut response_body = String::new();
-        try!(response.read_to_string(&mut response_body));
+    /// Returns version information from each etcd cluster member the client was initialized with.
+    pub fn versions(&self) -> Vec<EtcdResult<VersionInfo>> {
+        self.members.iter().map(|member| {
+            let url = format!("{}version", member.endpoint);
+            let mut response = try!(http::get(url));
+            let mut response_body = String::new();
+            try!(response.read_to_string(&mut response_body));
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap()))
-        }
+            match response.status {
+                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap()))
+            }
+        }).collect()
     }
 
     /// Watches etcd for changes to the given key (including all child keys if `recursive` is
@@ -369,8 +344,6 @@ impl Client {
     ///
     /// The watch will return the first change indexed with `index` or greater, if specified,
     /// allowing you to watch for changes that happened in the past.
-    ///
-    /// # Failures
     ///
     /// Fails if a supplied `index` value is too old and has been flushed out of etcd's internal
     /// store of the most recent change events. In this case, the key should be queried for its

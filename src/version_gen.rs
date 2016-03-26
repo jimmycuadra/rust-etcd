@@ -2,7 +2,9 @@
 #[derive(Debug, Deserialize)]
 pub struct VersionInfo {
     /// The version of the etcd cluster.
-    pub etcdcluster: Option<String>,
+    #[serde(rename="etcdcluster")]
+    pub cluster_version: Option<String>,
     /// The version of the etcd server.
-    pub etcdserver: Option<String>,
+    #[serde(rename="etcdserver")]
+    pub server_version: Option<String>,
 }
