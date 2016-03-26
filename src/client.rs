@@ -1,14 +1,16 @@
 //! Contains the etcd client. All API calls are made via the client.
 use std::collections::HashMap;
+use std::default::Default;
 use std::io::Read;
 
 use hyper::status::StatusCode;
 use serde_json::from_str;
-use url::{form_urlencoded, ParseError, Url};
+use url::form_urlencoded;
 
-use keys::KeySpaceResult;
 use error::{EtcdResult, Error};
 use http;
+use keys::KeySpaceResult;
+use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
 use stats::{LeaderStats, SelfStats, StoreStats};
@@ -17,26 +19,50 @@ use version::VersionInfo;
 /// API client for etcd. All API calls are made via the client.
 #[derive(Debug)]
 pub struct Client {
-    root_url: String,
+    members: Vec<Member>,
+    options: ClientOptions,
 }
 
-/// The entry point for all etcd API calls.
-impl Client {
-    /// Constructs a new client.
-    pub fn new(root_url: &str) -> Result<Client, ParseError> {
-        let url = try!(Url::parse(root_url));
-        let client = Client {
-            root_url: format!("{}", url.serialize()),
-        };
+/// Options for configuring the behavior of a `Client`.
+#[derive(Debug)]
+pub struct ClientOptions {
+    /// The username to use for authentication.
+    pub username: Option<String>,
+    /// The password to use for authentication.
+    pub password: Option<String>,
+}
 
-        Ok(client)
+impl Client {
+    /// Constructs a new client. `endpoints` are URLs to the etcd cluster members to use.
+    ///
+    /// # Failures
+    ///
+    /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
+    pub fn new(endpoints: &[&str]) -> EtcdResult<Client> {
+        Client::with_options(endpoints, ClientOptions::default())
     }
 
-    /// Constructs a client that will connect to http://127.0.0.1:2379/.
-    pub fn default() -> Client {
-        Client {
-            root_url: "http://127.0.0.1:2379/".to_string(),
+    /// Constructs a new client with the given options. `endpoints` are URLs to the etcd cluster
+    /// members to use.
+    ///
+    /// # Failures
+    ///
+    /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
+    pub fn with_options(endpoints: &[&str], options: ClientOptions) -> EtcdResult<Client> {
+        if endpoints.len() < 1 {
+            return Err(Error::NoEndpoints);
         }
+
+        let mut members = Vec::with_capacity(endpoints.len());
+
+        for endpoint in endpoints {
+            members.push(try!(Member::new(endpoint)));
+        }
+
+        Ok(Client {
+            members: members,
+            options: options,
+        })
     }
 
     /// Deletes a key only if the given current value and/or current modified index match.
@@ -204,13 +230,13 @@ impl Client {
         )
     }
 
-    /// Returns statistics on the leader member of a cluster.
+    /// Returns statistics about the leader member of a cluster.
     ///
     /// # Failures
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
-        let url = format!("{}v2/stats/leader", self.root_url);
+        let url = format!("{}v2/stats/leader", self.members[0].endpoint);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
@@ -221,13 +247,13 @@ impl Client {
         }
     }
 
-    /// Returns statistics on a cluster member.
+    /// Returns statistics about a cluster member.
     ///
     /// # Failures
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn self_stats(&self) -> EtcdResult<SelfStats> {
-        let url = format!("{}v2/stats/self", self.root_url);
+        let url = format!("{}v2/stats/self", self.members[0].endpoint);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
@@ -272,13 +298,13 @@ impl Client {
         )
     }
 
-    /// Returns statistics on operations handled by an etcd member.
+    /// Returns statistics about operations handled by an etcd member.
     ///
     /// # Failures
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn store_stats(&self) -> EtcdResult<StoreStats> {
-        let url = format!("{}v2/stats/store", self.root_url);
+        let url = format!("{}v2/stats/store", self.members[0].endpoint);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
@@ -327,7 +353,7 @@ impl Client {
 
     /// Returns the versions of the etcd cluster and server.
     pub fn version(&self) -> EtcdResult<VersionInfo> {
-        let url = format!("{}version", self.root_url);
+        let url = format!("{}version", self.members[0].endpoint);
         let mut response = try!(http::get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
@@ -366,7 +392,7 @@ impl Client {
 
     /// Constructs the full URL for an API call.
     fn build_url(&self, path: &str) -> String {
-        format!("{}v2/keys{}", self.root_url, path)
+        format!("{}v2/keys{}", self.members[0].endpoint, path)
     }
 
     /// Handles all delete operations.
@@ -512,6 +538,15 @@ impl Client {
         match response.status {
             StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
             _ => Err(Error::Api(from_str(&response_body).unwrap())),
+        }
+    }
+}
+
+impl Default for ClientOptions {
+    fn default() -> Self {
+        ClientOptions {
+            username: None,
+            password: None,
         }
     }
 }

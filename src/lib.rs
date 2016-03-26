@@ -11,7 +11,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate url;
 
-pub use client::Client;
+pub use client::{Client, ClientOptions};
 pub use error::{ApiError, EtcdResult, Error};
 pub use keys::{KeySpaceInfo, KeySpaceResult, Node};
 pub use stats::{
@@ -29,6 +29,7 @@ mod client;
 mod error;
 mod http;
 mod keys;
+mod member;
 mod options;
 mod query_pairs;
 mod stats;

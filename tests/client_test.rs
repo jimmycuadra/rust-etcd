@@ -15,7 +15,7 @@ impl TestClient {
     /// Creates a new client for a test.
     fn new() -> TestClient {
         TestClient {
-            c: Client::new("http://etcd:2379").unwrap(),
+            c: Client::new(&["http://etcd:2379"]).unwrap(),
         }
     }
 }
@@ -401,7 +401,7 @@ fn delete_dir() {
 #[test]
 fn watch() {
     let child = spawn(|| {
-        let client = Client::new("http://etcd:2379").unwrap();
+        let client = Client::new(&["http://etcd:2379"]).unwrap();
 
         sleep(Duration::from_millis(50));
 
@@ -434,7 +434,7 @@ fn watch_index() {
 #[test]
 fn watch_recursive() {
     let child = spawn(|| {
-        let client = Client::new("http://etcd:2379").unwrap();
+        let client = Client::new(&["http://etcd:2379"]).unwrap();
 
         sleep(Duration::from_millis(50));
 

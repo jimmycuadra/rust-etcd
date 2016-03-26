@@ -9,7 +9,7 @@ pub struct LeaderStats {
     pub followers: HashMap<String, FollowerStats>,
 }
 
-/// Statistics on the health of a single etcd follower node.
+/// Statistics about the health of a single etcd follower node.
 #[derive(Clone, Debug, Deserialize)]
 pub struct FollowerStats {
     /// Counts of Raft RPC request successes and failures to this follower.

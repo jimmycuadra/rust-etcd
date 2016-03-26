@@ -1,8 +1,10 @@
 use std::convert::From;
-use hyper::Error as HttpError;
 use std::io::Error as IoError;
 
-/// An error returned by `Client` when an API call fails.
+use hyper::Error as HttpError;
+use url::ParseError;
+
+/// An error returned by `Client` method failures.
 #[derive(Debug)]
 pub enum Error {
     /// An error returned by etcd.
@@ -14,6 +16,10 @@ pub enum Error {
     /// An error returned when invalid conditions have been provided for a compare-and-delete or
     /// compare-and-swap operation.
     InvalidConditions(&'static str),
+    /// An error if an etcd cluster member's endpoint is not a valid URL.
+    InvalidUrl(ParseError),
+    /// An error when attempting to create a client without at least one member endpoint.
+    NoEndpoints,
 }
 
 /// An error returned by etcd.
@@ -42,5 +48,11 @@ impl From<HttpError> for Error {
 impl From<IoError> for Error {
     fn from(error: IoError) -> Error {
         Error::Io(error)
+    }
+}
+
+impl From<ParseError> for Error {
+    fn from(error: ParseError) -> Error {
+        Error::InvalidUrl(error)
     }
 }
