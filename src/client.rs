@@ -9,7 +9,7 @@ use url::form_urlencoded;
 
 use error::{EtcdResult, Error};
 use http;
-use keys::KeySpaceResult;
+use keys::{KeySpaceResult, SingleMemberKeySpaceResult};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use query_pairs::UrlWithQueryPairs;
@@ -364,8 +364,27 @@ impl Client {
     // private
 
     /// Constructs the full URL for an API call.
-    fn build_url(&self, path: &str) -> String {
-        format!("{}v2/keys{}", self.members[0].endpoint, path)
+    fn build_url(&self, member: &Member, path: &str) -> String {
+        format!("{}v2/keys{}", member.endpoint, path)
+    }
+
+    /// Executes the given closure with each cluster member and short-circuit returns the first
+    /// successful result. If all members are exhausted without success, the final error is
+    /// returned.
+    fn first_ok<F>(&self, callback: F) -> KeySpaceResult
+    where F: Fn(&Member) -> SingleMemberKeySpaceResult {
+        let mut errors = Vec::with_capacity(self.members.len());
+
+        for member in self.members.iter() {
+            let result = callback(member);
+
+            match result {
+                Ok(node) => return Ok(node),
+                Err(error) => errors.push(error),
+            }
+        }
+
+        Err(errors)
     }
 
     /// Handles all delete operations.
@@ -389,7 +408,7 @@ impl Client {
 
             if conditions.is_empty() {
                 return Err(
-                    Error::InvalidConditions("Current value or modified index is required.")
+                    vec![Error::InvalidConditions("Current value or modified index is required.")]
                 );
             }
 
@@ -402,19 +421,21 @@ impl Client {
             }
         }
 
-        let url = UrlWithQueryPairs {
-            pairs: &query_pairs,
-            url: self.build_url(key),
-        }.parse();
+        self.first_ok(|member| {
+            let url = UrlWithQueryPairs {
+                pairs: &query_pairs,
+                url: self.build_url(member, key),
+            }.parse();
 
-        let mut response = try!(http::delete(format!("{}", url)));
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
+            let mut response = try!(http::delete(format!("{}", url)));
+            let mut response_body = String::new();
+            response.read_to_string(&mut response_body).unwrap();
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap())),
-        }
+            match response.status {
+                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap())),
+            }
+        })
     }
 
     /// Handles all get operations.
@@ -435,19 +456,21 @@ impl Client {
             query_pairs.insert("waitIndex", format!("{}", options.wait_index.unwrap()));
         }
 
-        let url = UrlWithQueryPairs {
-            pairs: &query_pairs,
-            url: self.build_url(key),
-        }.parse();
+        self.first_ok(|member| {
+            let url = UrlWithQueryPairs {
+                pairs: &query_pairs,
+                url: self.build_url(member, key),
+            }.parse();
 
-        let mut response = try!(http::get(format!("{}", url)));
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
+            let mut response = try!(http::get(format!("{}", url)));
+            let mut response_body = String::new();
+            response.read_to_string(&mut response_body).unwrap();
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap())),
-        }
+            match response.status {
+                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap())),
+            }
+        })
     }
 
     /// Handles all set operations.
@@ -456,7 +479,6 @@ impl Client {
         key: &str,
         options: SetOptions,
     ) -> KeySpaceResult {
-        let url = self.build_url(key);
         let mut http_options = vec![];
 
         if options.value.is_some() {
@@ -478,11 +500,11 @@ impl Client {
         }
 
         if options.conditions.is_some() {
-            let conditions = options.conditions.unwrap();
+            let conditions = options.conditions.as_ref().unwrap();
 
             if conditions.is_empty() {
                 return Err(
-                    Error::InvalidConditions("Current value or modified index is required.")
+                    vec![Error::InvalidConditions("Current value or modified index is required.")]
                 );
             }
 
@@ -497,21 +519,24 @@ impl Client {
             }
         }
 
-        let body = form_urlencoded::serialize(&http_options);
+        self.first_ok(|member| {
+            let url = self.build_url(member, key);
+            let body = form_urlencoded::serialize(&http_options);
 
-        let mut response = if options.create_in_order {
-            try!(http::post(url, body))
-        } else {
-            try!(http::put(url, body))
-        };
+            let mut response = if options.create_in_order {
+                try!(http::post(url, body))
+            } else {
+                try!(http::put(url, body))
+            };
 
-        let mut response_body = String::new();
-        response.read_to_string(&mut response_body).unwrap();
+            let mut response_body = String::new();
+            response.read_to_string(&mut response_body).unwrap();
 
-        match response.status {
-            StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap())),
-        }
+            match response.status {
+                StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
+                _ => Err(Error::Api(from_str(&response_body).unwrap())),
+            }
+        })
     }
 }
 

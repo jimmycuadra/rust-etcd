@@ -1,7 +1,11 @@
-use error::EtcdResult;
+use error::Error;
 
-/// Returned by key space API calls.
-pub type KeySpaceResult = EtcdResult<KeySpaceInfo>;
+/// Returned by key space API calls. On success, information about the result of the operation. On
+/// failure, an error for each cluster member that failed.
+pub type KeySpaceResult = Result<KeySpaceInfo, Vec<Error>>;
+
+/// A KeySpaceResult for a single etcd cluster member.
+pub type SingleMemberKeySpaceResult = Result<KeySpaceInfo, Error>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize)]

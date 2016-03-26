@@ -55,9 +55,11 @@ fn create_does_not_replace_existing_key() {
 
     client.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
-    match client.create("/test/foo", "bar", None).err().unwrap() {
-        Error::Api(error) => assert_eq!(error.message, "Key already exists".to_string()),
-        _ => panic!("expected EtcdError due to pre-existing key"),
+    for error in client.create("/test/foo", "bar", None).err().unwrap().iter() {
+        match error {
+            &Error::Api(ref error) => assert_eq!(error.message, "Key already exists".to_string()),
+            _ => panic!("expected EtcdError due to pre-existing key"),
+        }
     };
 }
 
@@ -143,12 +145,14 @@ fn compare_and_delete_requires_conditions() {
     let client = TestClient::new();
     client.create("/test/foo", "bar", None).ok().unwrap();
 
-    match client.compare_and_delete("/test/foo", None, None).err().unwrap() {
-        Error::InvalidConditions(message) => assert_eq!(
-            message,
-            "Current value or modified index is required."
-        ),
-        _ => panic!("expected Error::InvalidConditions"),
+    for error in client.compare_and_delete("/test/foo", None, None).err().unwrap().iter() {
+        match error {
+            &Error::InvalidConditions(message) => assert_eq!(
+                message,
+                "Current value or modified index is required."
+            ),
+            _ => panic!("expected Error::InvalidConditions"),
+        }
     }
 }
 
@@ -215,12 +219,20 @@ fn compare_and_swap_requires_conditions() {
     let client = TestClient::new();
     client.create("/test/foo", "bar", None).ok().unwrap();
 
-    match client.compare_and_swap("/test/foo", "bar", None, None, None).err().unwrap() {
-        Error::InvalidConditions(message) => assert_eq!(
-            message,
-            "Current value or modified index is required."
-        ),
-        _ => panic!("expected Error::InvalidConditions"),
+    for error in client.compare_and_swap(
+        "/test/foo",
+        "bar",
+        None,
+        None,
+        None,
+    ).err().unwrap().iter() {
+        match error {
+            &Error::InvalidConditions(message) => assert_eq!(
+                message,
+                "Current value or modified index is required."
+            ),
+            _ => panic!("expected Error::InvalidConditions"),
+        }
     }
 }
 
@@ -335,9 +347,11 @@ fn update() {
 fn update_requires_existing_key() {
     let client = TestClient::new();
 
-    match client.update("/test/foo", "bar", None).err().unwrap() {
-        Error::Api(error) => assert_eq!(error.message, "Key not found".to_string()),
-        _ => panic!("expected EtcdError due to missing key"),
+    for error in client.update("/test/foo", "bar", None).err().unwrap().iter() {
+        match error {
+            &Error::Api(ref error) => assert_eq!(error.message, "Key not found".to_string()),
+            _ => panic!("expected EtcdError due to missing key"),
+        }
     };
 }
 
