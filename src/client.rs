@@ -417,7 +417,7 @@ impl Client {
             }
 
             if conditions.value.is_some() {
-                query_pairs.insert("prevValue", conditions.value.unwrap().to_string());
+                query_pairs.insert("prevValue", conditions.value.unwrap().to_owned());
             }
         }
 
@@ -449,7 +449,7 @@ impl Client {
         }
 
         if options.wait {
-            query_pairs.insert("wait", "true".to_string());
+            query_pairs.insert("wait", "true".to_owned());
         }
 
         if options.wait_index.is_some() {
@@ -482,20 +482,20 @@ impl Client {
         let mut http_options = vec![];
 
         if options.value.is_some() {
-            http_options.push(("value".to_string(), options.value.unwrap().to_string()));
+            http_options.push(("value".to_owned(), options.value.unwrap().to_owned()));
         }
 
         if options.ttl.is_some() {
-            http_options.push(("ttl".to_string(), format!("{}", options.ttl.unwrap())));
+            http_options.push(("ttl".to_owned(), format!("{}", options.ttl.unwrap())));
         }
 
         if options.dir.is_some() {
-            http_options.push(("dir".to_string(), format!("{}", options.dir.unwrap())));
+            http_options.push(("dir".to_owned(), format!("{}", options.dir.unwrap())));
         }
 
         if options.prev_exist.is_some() {
             http_options.push(
-                ("prevExist".to_string(), format!("{}", options.prev_exist.unwrap()))
+                ("prevExist".to_owned(), format!("{}", options.prev_exist.unwrap()))
             );
         }
 
@@ -510,12 +510,12 @@ impl Client {
 
             if conditions.modified_index.is_some() {
                 http_options.push(
-                    ("prevIndex".to_string(), format!("{}", conditions.modified_index.unwrap()))
+                    ("prevIndex".to_owned(), format!("{}", conditions.modified_index.unwrap()))
                 );
             }
 
             if conditions.value.is_some() {
-                http_options.push(("prevValue".to_string(), conditions.value.unwrap().to_string()));
+                http_options.push(("prevValue".to_owned(), conditions.value.unwrap().to_owned()));
             }
         }
 

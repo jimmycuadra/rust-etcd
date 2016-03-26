@@ -44,8 +44,8 @@ fn create() {
         Err(error) => panic!("{:?}", error),
     };
 
-    assert_eq!(response.action, "create".to_string());
-    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+    assert_eq!(response.action, "create");
+    assert_eq!(response.node.value.unwrap(), "bar");
     assert_eq!(response.node.ttl.unwrap(), 60);
 }
 
@@ -57,7 +57,7 @@ fn create_does_not_replace_existing_key() {
 
     for error in client.create("/test/foo", "bar", None).err().unwrap().iter() {
         match error {
-            &Error::Api(ref error) => assert_eq!(error.message, "Key already exists".to_string()),
+            &Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
             _ => panic!("expected EtcdError due to pre-existing key"),
         }
     };
@@ -104,7 +104,7 @@ fn compare_and_delete() {
         Some(modified_index)
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndDelete".to_string());
+    assert_eq!(response.action, "compareAndDelete");
 }
 
 #[test]
@@ -123,7 +123,7 @@ fn compare_and_delete_only_index() {
         Some(modified_index)
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndDelete".to_string());
+    assert_eq!(response.action, "compareAndDelete");
 }
 
 #[test]
@@ -137,7 +137,7 @@ fn compare_and_delete_only_value() {
         None,
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndDelete".to_string());
+    assert_eq!(response.action, "compareAndDelete");
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn compare_and_swap() {
         Some(modified_index)
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndSwap".to_string());
+    assert_eq!(response.action, "compareAndSwap");
 }
 
 #[test]
@@ -195,7 +195,7 @@ fn compare_and_swap_only_index() {
         Some(modified_index)
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndSwap".to_string());
+    assert_eq!(response.action, "compareAndSwap");
 }
 
 #[test]
@@ -211,7 +211,7 @@ fn compare_and_swap_only_value() {
         None,
     ).ok().unwrap();
 
-    assert_eq!(response.action, "compareAndSwap".to_string());
+    assert_eq!(response.action, "compareAndSwap");
 }
 
 #[test]
@@ -243,8 +243,8 @@ fn get() {
 
     let response = client.get("/test/foo", false, false, false).ok().unwrap();
 
-    assert_eq!(response.action, "get".to_string());
-    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+    assert_eq!(response.action, "get");
+    assert_eq!(response.node.value.unwrap(), "bar");
     assert_eq!(response.node.ttl.unwrap(), 60);
 
 }
@@ -262,10 +262,10 @@ fn get_non_recursive() {
 
     let nodes = response.node.nodes.unwrap();
 
-    assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir".to_string());
+    assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir");
     assert_eq!(nodes[0].clone().dir.unwrap(), true);
-    assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo".to_string());
-    assert_eq!(nodes[1].clone().value.unwrap(), "bar".to_string());
+    assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo");
+    assert_eq!(nodes[1].clone().value.unwrap(), "bar");
 }
 
 #[test]
@@ -277,10 +277,7 @@ fn get_recursive() {
     let response = client.get("/test", true, true, false).ok().unwrap();
     let nodes = response.node.nodes.unwrap();
 
-    assert_eq!(
-        nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(),
-        "blah".to_string()
-    );
+    assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
 }
 
 #[test]
@@ -305,8 +302,8 @@ fn set() {
 
     let response = client.set("/test/foo", "baz", None).ok().unwrap();
 
-    assert_eq!(response.action, "set".to_string());
-    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+    assert_eq!(response.action, "set");
+    assert_eq!(response.node.value.unwrap(), "baz");
     assert!(response.node.ttl.is_none());
 }
 
@@ -338,8 +335,8 @@ fn update() {
 
     let response = client.update("/test/foo", "blah", Some(30)).ok().unwrap();
 
-    assert_eq!(response.action, "update".to_string());
-    assert_eq!(response.node.value.unwrap(), "blah".to_string());
+    assert_eq!(response.action, "update");
+    assert_eq!(response.node.value.unwrap(), "blah");
     assert_eq!(response.node.ttl.unwrap(), 30);
 }
 
@@ -349,7 +346,7 @@ fn update_requires_existing_key() {
 
     for error in client.update("/test/foo", "bar", None).err().unwrap().iter() {
         match error {
-            &Error::Api(ref error) => assert_eq!(error.message, "Key not found".to_string()),
+            &Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
             _ => panic!("expected EtcdError due to missing key"),
         }
     };
@@ -401,7 +398,7 @@ fn create_dir() {
 
     let response = client.create_dir("/test/dir", None).ok().unwrap();
 
-    assert_eq!(response.action, "create".to_string());
+    assert_eq!(response.action, "create");
     assert!(response.node.dir.unwrap());
     assert!(response.node.value.is_none());
 }
@@ -432,7 +429,7 @@ fn watch() {
 
     let response = client.watch("/test/foo", None, false).ok().unwrap();
 
-    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+    assert_eq!(response.node.value.unwrap(), "baz");
 
     child.join().ok().unwrap();
 }
@@ -446,7 +443,7 @@ fn watch_index() {
     let response = client.watch("/test/foo", Some(index), false).ok().unwrap();
 
     assert_eq!(response.node.modified_index.unwrap(), index);
-    assert_eq!(response.node.value.unwrap(), "bar".to_string());
+    assert_eq!(response.node.value.unwrap(), "bar");
 }
 
 #[test]
@@ -463,8 +460,8 @@ fn watch_recursive() {
 
     let response = client.watch("/test", None, true).ok().unwrap();
 
-    assert_eq!(response.node.key.unwrap(), "/test/foo/bar".to_string());
-    assert_eq!(response.node.value.unwrap(), "baz".to_string());
+    assert_eq!(response.node.key.unwrap(), "/test/foo/bar");
+    assert_eq!(response.node.value.unwrap(), "baz");
 
     child.join().ok().unwrap();
 }
@@ -476,7 +473,7 @@ fn versions() {
     for result in client.versions().into_iter() {
         let version = result.ok().unwrap();
 
-        assert_eq!(version.cluster_version.unwrap(), "2.3.0".to_string());
-        assert_eq!(version.server_version.unwrap(), "2.3.0".to_string());
+        assert_eq!(version.cluster_version.unwrap(), "2.3.0");
+        assert_eq!(version.server_version.unwrap(), "2.3.0");
     }
 }
