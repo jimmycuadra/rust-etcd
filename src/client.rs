@@ -8,7 +8,7 @@ use serde_json::from_str;
 use url::form_urlencoded;
 
 use error::{EtcdResult, Error};
-use http;
+use http::HttpClient;
 use keys::{KeySpaceResult, SingleMemberKeySpaceResult};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
@@ -19,6 +19,7 @@ use version::VersionInfo;
 /// API client for etcd. All API calls are made via the client.
 #[derive(Debug)]
 pub struct Client {
+    http_client: HttpClient,
     members: Vec<Member>,
     options: ClientOptions,
 }
@@ -56,6 +57,7 @@ impl Client {
         }
 
         Ok(Client {
+            http_client: HttpClient::new(),
             members: members,
             options: options,
         })
@@ -217,7 +219,7 @@ impl Client {
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
     pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
         let url = format!("{}v2/stats/leader", self.members[0].endpoint);
-        let mut response = try!(http::get(url));
+        let mut response = try!(self.http_client.get(url));
         let mut response_body = String::new();
         try!(response.read_to_string(&mut response_body));
 
@@ -233,7 +235,7 @@ impl Client {
     pub fn self_stats(&self) -> Vec<EtcdResult<SelfStats>> {
         self.members.iter().map(|member| {
             let url = format!("{}v2/stats/self", member.endpoint);
-            let mut response = try!(http::get(url));
+            let mut response = try!(self.http_client.get(url));
             let mut response_body = String::new();
             try!(response.read_to_string(&mut response_body));
 
@@ -281,7 +283,7 @@ impl Client {
     pub fn store_stats(&self) -> Vec<EtcdResult<StoreStats>> {
         self.members.iter().map(|member| {
             let url = format!("{}v2/stats/store", member.endpoint);
-            let mut response = try!(http::get(url));
+            let mut response = try!(self.http_client.get(url));
             let mut response_body = String::new();
             try!(response.read_to_string(&mut response_body));
 
@@ -328,7 +330,7 @@ impl Client {
     pub fn versions(&self) -> Vec<EtcdResult<VersionInfo>> {
         self.members.iter().map(|member| {
             let url = format!("{}version", member.endpoint);
-            let mut response = try!(http::get(url));
+            let mut response = try!(self.http_client.get(url));
             let mut response_body = String::new();
             try!(response.read_to_string(&mut response_body));
 
@@ -427,7 +429,7 @@ impl Client {
                 url: self.build_url(member, key),
             }.parse();
 
-            let mut response = try!(http::delete(format!("{}", url)));
+            let mut response = try!(self.http_client.delete(format!("{}", url)));
             let mut response_body = String::new();
             response.read_to_string(&mut response_body).unwrap();
 
@@ -462,7 +464,7 @@ impl Client {
                 url: self.build_url(member, key),
             }.parse();
 
-            let mut response = try!(http::get(format!("{}", url)));
+            let mut response = try!(self.http_client.get(format!("{}", url)));
             let mut response_body = String::new();
             response.read_to_string(&mut response_body).unwrap();
 
@@ -524,9 +526,9 @@ impl Client {
             let body = form_urlencoded::serialize(&http_options);
 
             let mut response = if options.create_in_order {
-                try!(http::post(url, body))
+                try!(self.http_client.post(url, body))
             } else {
-                try!(http::put(url, body))
+                try!(self.http_client.put(url, body))
             };
 
             let mut response_body = String::new();
