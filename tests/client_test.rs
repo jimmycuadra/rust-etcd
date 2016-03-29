@@ -312,6 +312,13 @@ fn https() {
 }
 
 #[test]
+fn https_without_valid_client_certificate() {
+    let client = Client::new(&["https://etcdsecure:2379"]).unwrap();
+
+    assert!(client.get("/test/foo", false, false, false).is_err());
+}
+
+#[test]
 fn leader_stats() {
     let client = TestClient::new();
 
