@@ -28,9 +28,11 @@ impl TestClient {
                     username: None,
                     password: None,
                     ssl: Some(SslOptions {
-                        ca: "/source/tests/ssl/ca.pem".to_owned(),
-                        cert: "/source/tests/ssl/client.pem".to_owned(),
-                        key: "/source/tests/ssl/client-key.pem".to_owned(),
+                        ca: Some("/source/tests/ssl/ca.pem".to_owned()),
+                        cert_and_key: Some((
+                            "/source/tests/ssl/client.pem".to_owned(),
+                            "/source/tests/ssl/client-key.pem".to_owned(),
+                        ))
                     }),
                 },
             ).unwrap(),

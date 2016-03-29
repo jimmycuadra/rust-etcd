@@ -31,7 +31,7 @@ pub struct ClientOptions {
     pub username: Option<String>,
     /// The password to use for authentication.
     pub password: Option<String>,
-    /// A client certificate and private key for HTTPS connections.
+    /// Options for HTTPS connections.
     pub ssl: Option<SslOptions>,
 }
 
@@ -39,11 +39,13 @@ pub struct ClientOptions {
 #[derive(Debug)]
 pub struct SslOptions {
     /// File path to the PEM-encoded CA certificate to use.
-    pub ca: String,
-    /// File path to the PEM-encoded client certificate to use.
-    pub cert: String,
-    /// File path to the PEM-encoded private key to use.
-    pub key: String,
+    ///
+    /// Useful if the server's certificate is signed by a private CA.
+    pub ca: Option<String>,
+    /// File paths to the PEM-encoded client certificate and private key to use.
+    ///
+    /// Used to enable client certificate authentication with the etcd server.
+    pub cert_and_key: Option<(String, String)>,
 }
 
 impl Client {
@@ -71,9 +73,7 @@ impl Client {
         }
 
         let http_client = match options.ssl {
-            Some(ref ssl_options) => try!(
-                HttpClient::https(&ssl_options.ca, &ssl_options.cert, &ssl_options.key)
-            ),
+            Some(ref ssl_options) => try!(HttpClient::https(ssl_options)),
             None => HttpClient::new(),
         };
 

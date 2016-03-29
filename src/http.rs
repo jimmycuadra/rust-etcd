@@ -8,6 +8,8 @@ use hyper::net::{HttpsConnector, Openssl};
 use openssl::ssl::{SSL_VERIFY_PEER, SslContext, SslMethod};
 use openssl::x509::X509FileType;
 
+use client::SslOptions;
+
 #[derive(Debug)]
 pub struct HttpClient {
     client: Client,
@@ -21,11 +23,18 @@ impl HttpClient {
         }
     }
 
-    pub fn https(ca: &str, cert: &str, key: &str) -> Result<Self, Error> {
+    pub fn https(options: &SslOptions) -> Result<Self, Error> {
         let mut ctx = try!(SslContext::new(SslMethod::Sslv23));
-        try!(ctx.set_CA_file(ca));
-        try!(ctx.set_certificate_file(cert, X509FileType::PEM));
-        try!(ctx.set_private_key_file(key, X509FileType::PEM));
+
+        if let Some(ref ca) = options.ca {
+            try!(ctx.set_CA_file(ca));
+        }
+
+        if let Some((ref cert, ref key)) = options.cert_and_key {
+            try!(ctx.set_certificate_file(cert, X509FileType::PEM));
+            try!(ctx.set_private_key_file(key, X509FileType::PEM));
+        }
+
         ctx.set_verify(SSL_VERIFY_PEER, None);
 
         let openssl = Openssl { context: Arc::new(ctx) };
