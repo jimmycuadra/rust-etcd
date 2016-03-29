@@ -7,6 +7,7 @@
 #![cfg_attr(feature = "serde_macros", plugin(serde_macros))]
 
 extern crate hyper;
+extern crate openssl;
 extern crate serde;
 extern crate serde_json;
 extern crate url;

@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
 use hyper::{Client, Error};
 use hyper::client::Response;
 use hyper::header::ContentType;
 use hyper::method::Method;
 use hyper::net::{HttpsConnector, Openssl};
+use openssl::ssl::{SSL_VERIFY_PEER, SslContext, SslMethod};
+use openssl::x509::X509FileType;
 
 #[derive(Debug)]
 pub struct HttpClient {
@@ -17,8 +21,14 @@ impl HttpClient {
         }
     }
 
-    pub fn https(cert: &str, key: &str) -> Result<Self, Error> {
-        let openssl = try!(Openssl::with_cert_and_key(cert, key));
+    pub fn https(ca: &str, cert: &str, key: &str) -> Result<Self, Error> {
+        let mut ctx = try!(SslContext::new(SslMethod::Sslv23));
+        try!(ctx.set_CA_file(ca));
+        try!(ctx.set_certificate_file(cert, X509FileType::PEM));
+        try!(ctx.set_private_key_file(key, X509FileType::PEM));
+        ctx.set_verify(SSL_VERIFY_PEER, None);
+
+        let openssl = Openssl { context: Arc::new(ctx) };
         let connector = HttpsConnector::new(openssl);
 
         Ok(HttpClient {

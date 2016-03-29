@@ -38,9 +38,11 @@ pub struct ClientOptions {
 /// Options for configuring HTTPS.
 #[derive(Debug)]
 pub struct SslOptions {
-    /// File path to the client certificate to use.
+    /// File path to the PEM-encoded CA certificate to use.
+    ca: String,
+    /// File path to the PEM-encoded client certificate to use.
     cert: String,
-    /// File path to the private key to use.
+    /// File path to the PEM-encoded private key to use.
     key: String,
 }
 
@@ -69,7 +71,9 @@ impl Client {
         }
 
         let http_client = match options.ssl {
-            Some(ref ssl_options) => try!(HttpClient::https(&ssl_options.cert, &ssl_options.key)),
+            Some(ref ssl_options) => try!(
+                HttpClient::https(&ssl_options.ca, &ssl_options.cert, &ssl_options.key)
+            ),
             None => HttpClient::new(),
         };
 
@@ -556,5 +560,12 @@ impl Client {
                 _ => Err(Error::Api(from_str(&response_body).unwrap())),
             }
         })
+    }
+}
+
+impl Default for Client {
+    /// Constructs a new client that connects to http://127.0.0.1:2379.
+    fn default() -> Self {
+        Client::new(&["http://127.0.0.1:2379"]).expect("default client was invalid")
     }
 }
