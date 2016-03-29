@@ -39,11 +39,11 @@ pub struct ClientOptions {
 #[derive(Debug)]
 pub struct SslOptions {
     /// File path to the PEM-encoded CA certificate to use.
-    ca: String,
+    pub ca: String,
     /// File path to the PEM-encoded client certificate to use.
-    cert: String,
+    pub cert: String,
     /// File path to the PEM-encoded private key to use.
-    key: String,
+    pub key: String,
 }
 
 impl Client {

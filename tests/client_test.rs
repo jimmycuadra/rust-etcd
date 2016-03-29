@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use etcd::{Client, Error};
+use etcd::{Client, ClientOptions, SslOptions, Error};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient {
@@ -16,6 +16,24 @@ impl TestClient {
     fn new() -> TestClient {
         TestClient {
             c: Client::new(&["http://etcd:2379"]).unwrap(),
+        }
+    }
+
+    /// Creates a new HTTPS client for a test.
+    fn https() -> TestClient {
+        TestClient {
+            c: Client::with_options(
+                &["https://etcdsecure:2379"],
+                ClientOptions {
+                    username: None,
+                    password: None,
+                    ssl: Some(SslOptions {
+                        ca: "/source/tests/ssl/ca.pem".to_owned(),
+                        cert: "/source/tests/ssl/client.pem".to_owned(),
+                        key: "/source/tests/ssl/client-key.pem".to_owned(),
+                    }),
+                },
+            ).unwrap(),
         }
     }
 }
@@ -278,6 +296,19 @@ fn get_recursive() {
     let nodes = response.node.nodes.unwrap();
 
     assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
+}
+
+#[test]
+fn https() {
+    let client = TestClient::https();
+
+    client.create("/test/foo", "bar", Some(60)).ok().unwrap();
+
+    let response = client.get("/test/foo", false, false, false).ok().unwrap();
+
+    assert_eq!(response.action, "get");
+    assert_eq!(response.node.value.unwrap(), "bar");
+    assert_eq!(response.node.ttl.unwrap(), 60);
 }
 
 #[test]

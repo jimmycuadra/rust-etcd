@@ -12,7 +12,7 @@ extern crate serde;
 extern crate serde_json;
 extern crate url;
 
-pub use client::{Client, ClientOptions};
+pub use client::{Client, ClientOptions, SslOptions};
 pub use error::{ApiError, EtcdResult, Error};
 pub use keys::{KeySpaceInfo, KeySpaceResult, Node};
 pub use stats::{
