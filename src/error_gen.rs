@@ -38,7 +38,7 @@ pub struct ApiError {
     pub message: String,
 }
 
-/// The result type returned by `Client` methods.
+/// A generic result type returned by non-key space `Client` methods.
 pub type EtcdResult<T> = Result<T, Error>;
 
 impl Display for Error {
@@ -82,7 +82,6 @@ impl From<ParseError> for Error {
         Error::InvalidUrl(error)
     }
 }
-
 
 impl Display for ApiError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {

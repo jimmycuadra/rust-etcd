@@ -1,7 +1,9 @@
 use error::Error;
 
-/// Returned by key space API calls. On success, information about the result of the operation. On
-/// failure, an error for each cluster member that failed.
+/// The result type returned by all key space API calls.
+///
+/// On success, information about the result of the operation. On failure, an error for each cluster
+/// member that failed.
 pub type KeySpaceResult = Result<KeySpaceInfo, Vec<Error>>;
 
 /// A KeySpaceResult for a single etcd cluster member.
