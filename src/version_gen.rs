@@ -3,8 +3,8 @@
 pub struct VersionInfo {
     /// The version of the etcd cluster.
     #[serde(rename="etcdcluster")]
-    pub cluster_version: Option<String>,
+    pub cluster_version: String,
     /// The version of the etcd server.
     #[serde(rename="etcdserver")]
-    pub server_version: Option<String>,
+    pub server_version: String,
 }

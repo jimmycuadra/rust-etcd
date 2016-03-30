@@ -15,7 +15,7 @@ pub struct KeySpaceInfo {
     /// The action that was taken, e.g. `get`, `set`.
     pub action: String,
     /// The etcd `Node` that was operated upon.
-    pub node: Node,
+    pub node: Option<Node>,
     /// The previous state of the target node.
     #[serde(rename="prevNode")]
     pub prev_node: Option<Node>,
