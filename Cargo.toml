@@ -32,7 +32,3 @@ version = "0.7.0"
 [features]
 default = ["serde_codegen"]
 nightly = ["serde_macros"]
-
-[lib]
-doctest = false
-name = "etcd"

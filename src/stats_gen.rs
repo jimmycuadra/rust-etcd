@@ -50,6 +50,7 @@ pub struct SelfStats {
     pub id: String,
     /// The member's name.
     pub name: String,
+    /// A small amount of information about the leader of the cluster.
     #[serde(rename="leaderInfo")]
     pub leader_info: LeaderInfo,
     /// The number of received requests.
