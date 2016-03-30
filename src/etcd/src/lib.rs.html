@@ -69,33 +69,141 @@
 <span id="26">26</span>
 <span id="27">27</span>
 <span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
 </pre><pre class='rust '>
 <span class='doccomment'>//! Crate etcd provides a client for [etcd](https://github.com/coreos/etcd), a distributed</span>
 <span class='doccomment'>//! key-value store from [CoreOS](https://coreos.com/).</span>
 <span class='doccomment'>//!</span>
-<span class='doccomment'>//! `Client` is the entry point for all API calls. Types for primary key space operations are</span>
-<span class='doccomment'>//! reexported to the crate root. Other categories of operations have public types in their</span>
-<span class='doccomment'>//! respective modules.</span>
+<span class='doccomment'>//! `Client` is the entry point for all API calls. Types for etcd&#39;s primary key space operations</span>
+<span class='doccomment'>//! are reexported to the crate root. Types for other etcd operations are found in the crate&#39;s</span>
+<span class='doccomment'>//! public modules.</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! # Examples</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! Basic usage:</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```no_run</span>
+<span class='doccomment'>//! extern crate etcd;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! use std::default::Default;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! use etcd::Client;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! fn main() {</span>
+<span class='doccomment'>//!     // Creates a client that will make API calls to http://127.0.0.1:2379.</span>
+<span class='doccomment'>//!     let client = Client::default();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     assert!(client.set(&quot;/foo&quot;, &quot;bar&quot;, None).is_ok());</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     let value = client.get(&quot;/foo&quot;, false, false, false)</span>
+<span class='doccomment'>//!                       .ok().unwrap().node.unwrap().value.unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     assert_eq!(value, &quot;bar&quot;.to_owned());</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//! ```</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! Using HTTPS with client certificate authentication and a username and password for HTTP Basic</span>
+<span class='doccomment'>//! Authorization:</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! ```no_run</span>
+<span class='doccomment'>//! extern crate etcd;</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! use etcd::{Client, ClientOptions};</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//! fn main() {</span>
+<span class='doccomment'>//!     let client = Client::with_options(&amp;[&quot;https://example.com:2379&quot;], ClientOptions {</span>
+<span class='doccomment'>//!         ca: Some(&quot;/path/to/ca_cert.pem&quot;.to_owned()),</span>
+<span class='doccomment'>//!         cert_and_key: Some((</span>
+<span class='doccomment'>//!             &quot;/path/to/client_cert.pem&quot;.to_owned(),</span>
+<span class='doccomment'>//!             &quot;/path/to/client_key.pem&quot;.to_owned(),</span>
+<span class='doccomment'>//!         )),</span>
+<span class='doccomment'>//!         username_and_password: Some((&quot;jimmy&quot;.to_owned(), &quot;secret&quot;.to_owned())),</span>
+<span class='doccomment'>//!     }).unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     assert!(client.set(&quot;/foo&quot;, &quot;bar&quot;, None).is_ok());</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     let value = client.get(&quot;/foo&quot;, false, false, false)</span>
+<span class='doccomment'>//!                       .ok().unwrap().node.unwrap().value.unwrap();</span>
+<span class='doccomment'>//!</span>
+<span class='doccomment'>//!     assert_eq!(value, &quot;bar&quot;.to_owned());</span>
+<span class='doccomment'>//! }</span>
+<span class='doccomment'>//! ```</span>
 
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>cfg_attr</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;serde_macros&quot;</span>, <span class='ident'>feature</span>(<span class='ident'>custom_derive</span>, <span class='ident'>plugin</span>))]</span>
 <span class='attribute'>#<span class='op'>!</span>[<span class='ident'>cfg_attr</span>(<span class='ident'>feature</span> <span class='op'>=</span> <span class='string'>&quot;serde_macros&quot;</span>, <span class='ident'>plugin</span>(<span class='ident'>serde_macros</span>))]</span>
+<span class='attribute'>#<span class='op'>!</span>[<span class='ident'>deny</span>(<span class='ident'>missing_docs</span>)]</span>
 
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>hyper</span>;
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>openssl</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>serde</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>serde_json</span>;
 <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>url</span>;
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>client</span>::<span class='ident'>Client</span>;
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>error</span>::{<span class='ident'>EtcdResult</span>, <span class='ident'>Error</span>};
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>keys</span>::{<span class='ident'>KeySpaceInfo</span>, <span class='ident'>KeySpaceResult</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>client</span>::{<span class='ident'>Client</span>, <span class='ident'>ClientOptions</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>error</span>::{<span class='ident'>ApiError</span>, <span class='ident'>EtcdResult</span>, <span class='ident'>Error</span>};
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>keys</span>::{<span class='ident'>KeySpaceInfo</span>, <span class='ident'>KeySpaceResult</span>, <span class='ident'>Node</span>};
 
-<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>client</span>;
-<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>error</span>;
-<span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>keys</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>stats</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>version</span>;
 
+<span class='kw'>mod</span> <span class='ident'>client</span>;
+<span class='kw'>mod</span> <span class='ident'>error</span>;
 <span class='kw'>mod</span> <span class='ident'>http</span>;
+<span class='kw'>mod</span> <span class='ident'>keys</span>;
+<span class='kw'>mod</span> <span class='ident'>member</span>;
 <span class='kw'>mod</span> <span class='ident'>options</span>;
 <span class='kw'>mod</span> <span class='ident'>query_pairs</span>;
 </pre>

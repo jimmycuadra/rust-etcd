@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["Error","An error returned by `Client` when an API call fails."]],"struct":[["EtcdError","An error returned by etcd."]],"type":[["EtcdResult","The result type returned by `Client` methods."]]});
+initSidebarItems({"enum":[["Error","An error returned by `Client` method failures."]],"struct":[["ApiError","An error returned by etcd."]],"type":[["EtcdResult","A generic result type returned by non-key space `Client` methods."]]});

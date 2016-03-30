@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["Client","API client for etcd. All API calls are made via the client."]]});
+initSidebarItems({"struct":[["Client","API client for etcd. All API calls are made via the client."],["ClientOptions","Options for configuring the behavior of a `Client`."]]});

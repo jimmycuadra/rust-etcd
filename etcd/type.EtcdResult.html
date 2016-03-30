@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `version` mod in crate `etcd`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, version">
+    <meta name="description" content="API documentation for the Rust `EtcdResult` type in crate `etcd`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, EtcdResult">
 
-    <title>etcd::version - Rust</title>
+    <title>etcd::EtcdResult - Rust</title>
 
-    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
-    <link rel="stylesheet" type="text/css" href="../../main.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
 
     
     
@@ -27,7 +27,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>etcd</a></p><script>window.sidebarCurrent = {name: 'version', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+        <p class='location'><a href='index.html'>etcd</a></p><script>window.sidebarCurrent = {name: 'EtcdResult', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -41,23 +41,14 @@
         </form>
     </nav>
 
-    <section id='main' class="content mod">
-<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>etcd</a>::<wbr><a class='mod' href=''>version</a></span><span class='out-of-band'><span id='render-detail'>
+    <section id='main' class="content type">
+<h1 class='fqn'><span class='in-band'><a href='index.html'>etcd</a>::<wbr><a class='type' href=''>EtcdResult</a></span><span class='out-of-band'><span id='render-detail'>
             <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                 [<span class='inner'>&#x2212;</span>]
             </a>
-        </span><a id='src-1153' class='srclink' href='../../src/etcd/src/version.rs.html#1-7' title='goto source code'>[src]</a></span></h1>
-<div class='docblock'><p>Types for the version endpoint.</p>
-</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
-<table>
-                    <tr class=' module-item'>
-                        <td><a class='struct' href='struct.VersionInfo.html'
-                               title='etcd::version::VersionInfo'>VersionInfo</a></td>
-                        <td class='docblock short'>
-                             <p>Versions of the etcd cluster and server.</p>
-                        </td>
-                    </tr>
-                </table></section>
+        </span><a id='src-1657' class='srclink' href='../src/etcd/Users/jimmy/Code/rust-etcd/target/debug/build/etcd-cc1bf8d288ad8824/out/error.rs.html#249' title='goto source code'>[src]</a></span></h1>
+<pre class='rust typedef'>type EtcdResult&lt;T&gt; = <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;T, <a class='enum' href='../etcd/enum.Error.html' title='etcd::Error'>Error</a>&gt;;</pre><div class='docblock'><p>A generic result type returned by non-key space <code>Client</code> methods.</p>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
@@ -109,13 +100,13 @@
     
 
     <script>
-        window.rootPath = "../../";
+        window.rootPath = "../";
         window.currentCrate = "etcd";
         window.playgroundUrl = "";
     </script>
-    <script src="../../jquery.js"></script>
-    <script src="../../main.js"></script>
+    <script src="../jquery.js"></script>
+    <script src="../main.js"></script>
     
-    <script defer src="../../search-index.js"></script>
+    <script defer src="../search-index.js"></script>
 </body>
 </html>

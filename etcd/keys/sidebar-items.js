@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["KeySpaceInfo","Information about the result of a successful key space operation."],["Node","An etcd key-value pair or directory."]],"type":[["KeySpaceResult","Returned by key space API calls."]]});
+initSidebarItems({"struct":[["KeySpaceInfo","Information about the result of a successful key space operation."],["Node","An etcd key-value pair or directory."]],"type":[["KeySpaceResult","The result type returned by all key space API calls."]]});

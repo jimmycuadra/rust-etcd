@@ -42,55 +42,150 @@
     </nav>
 
     <section id='main' class="content mod">
-<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>etcd</a> (0.4.0)</span><span class='out-of-band'><span id='render-detail'>
-                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
-                       [<span class='inner'>&#x2212;</span>]
-                   </a>
-               </span><a id='src-0' class='srclink' href='../src/etcd/src/lib.rs.html#1-28' title='goto source code'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Crate <a class='mod' href=''>etcd</a> (0.5.0)</span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-0' class='srclink' href='../src/etcd/src/lib.rs.html#1-82' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Crate etcd provides a client for <a href="https://github.com/coreos/etcd">etcd</a>, a distributed
 key-value store from <a href="https://coreos.com/">CoreOS</a>.</p>
 
-<p><code>Client</code> is the entry point for all API calls. Types for primary key space operations are
-reexported to the crate root. Other categories of operations have public types in their
-respective modules.</p>
-</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
-<table><tr><td><code>pub use client::<a class='struct' href='../etcd/client/struct.Client.html' title='etcd::client::Client'>Client</a>;</code></td></tr><tr><td><code>pub use error::{<a class='type' href='../etcd/error/type.EtcdResult.html' title='etcd::error::EtcdResult'>EtcdResult</a>, <a class='enum' href='../etcd/error/enum.Error.html' title='etcd::error::Error'>Error</a>};</code></td></tr><tr><td><code>pub use keys::{<a class='struct' href='../etcd/keys/struct.KeySpaceInfo.html' title='etcd::keys::KeySpaceInfo'>KeySpaceInfo</a>, <a class='type' href='../etcd/keys/type.KeySpaceResult.html' title='etcd::keys::KeySpaceResult'>KeySpaceResult</a>};</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<p><code>Client</code> is the entry point for all API calls. Types for etcd&#39;s primary key space operations
+are reexported to the crate root. Types for other etcd operations are found in the crate&#39;s
+public modules.</p>
+
+<h1 id='examples' class='section-header'><a href='#examples'>Examples</a></h1>
+<p>Basic usage:</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>etcd</span>;
+
+<span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>default</span>::<span class='ident'>Default</span>;
+
+<span class='kw'>use</span> <span class='ident'>etcd</span>::<span class='ident'>Client</span>;
+
+<span class='kw'>fn</span> <span class='ident'>main</span>() {
+    <span class='comment'>// Creates a client that will make API calls to http://127.0.0.1:2379.</span>
+    <span class='kw'>let</span> <span class='ident'>client</span> <span class='op'>=</span> <span class='ident'>Client</span>::<span class='ident'>default</span>();
+
+    <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>client</span>.<span class='ident'>set</span>(<span class='string'>&quot;/foo&quot;</span>, <span class='string'>&quot;bar&quot;</span>, <span class='prelude-val'>None</span>).<span class='ident'>is_ok</span>());
+
+    <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>client</span>.<span class='ident'>get</span>(<span class='string'>&quot;/foo&quot;</span>, <span class='boolval'>false</span>, <span class='boolval'>false</span>, <span class='boolval'>false</span>)
+                      .<span class='ident'>ok</span>().<span class='ident'>unwrap</span>().<span class='ident'>node</span>.<span class='ident'>unwrap</span>().<span class='ident'>value</span>.<span class='ident'>unwrap</span>();
+
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>value</span>, <span class='string'>&quot;bar&quot;</span>.<span class='ident'>to_owned</span>());
+}</pre>
+
+<p>Using HTTPS with client certificate authentication and a username and password for HTTP Basic
+Authorization:</p>
+
+<pre class='rust rust-example-rendered'>
+<span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>etcd</span>;
+
+<span class='kw'>use</span> <span class='ident'>etcd</span>::{<span class='ident'>Client</span>, <span class='ident'>ClientOptions</span>};
+
+<span class='kw'>fn</span> <span class='ident'>main</span>() {
+    <span class='kw'>let</span> <span class='ident'>client</span> <span class='op'>=</span> <span class='ident'>Client</span>::<span class='ident'>with_options</span>(<span class='kw-2'>&amp;</span>[<span class='string'>&quot;https://example.com:2379&quot;</span>], <span class='ident'>ClientOptions</span> {
+        <span class='ident'>ca</span>: <span class='prelude-val'>Some</span>(<span class='string'>&quot;/path/to/ca_cert.pem&quot;</span>.<span class='ident'>to_owned</span>()),
+        <span class='ident'>cert_and_key</span>: <span class='prelude-val'>Some</span>((
+            <span class='string'>&quot;/path/to/client_cert.pem&quot;</span>.<span class='ident'>to_owned</span>(),
+            <span class='string'>&quot;/path/to/client_key.pem&quot;</span>.<span class='ident'>to_owned</span>(),
+        )),
+        <span class='ident'>username_and_password</span>: <span class='prelude-val'>Some</span>((<span class='string'>&quot;jimmy&quot;</span>.<span class='ident'>to_owned</span>(), <span class='string'>&quot;secret&quot;</span>.<span class='ident'>to_owned</span>())),
+    }).<span class='ident'>unwrap</span>();
+
+    <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>client</span>.<span class='ident'>set</span>(<span class='string'>&quot;/foo&quot;</span>, <span class='string'>&quot;bar&quot;</span>, <span class='prelude-val'>None</span>).<span class='ident'>is_ok</span>());
+
+    <span class='kw'>let</span> <span class='ident'>value</span> <span class='op'>=</span> <span class='ident'>client</span>.<span class='ident'>get</span>(<span class='string'>&quot;/foo&quot;</span>, <span class='boolval'>false</span>, <span class='boolval'>false</span>, <span class='boolval'>false</span>)
+                      .<span class='ident'>ok</span>().<span class='ident'>unwrap</span>().<span class='ident'>node</span>.<span class='ident'>unwrap</span>().<span class='ident'>value</span>.<span class='ident'>unwrap</span>();
+
+    <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>value</span>, <span class='string'>&quot;bar&quot;</span>.<span class='ident'>to_owned</span>());
+}</pre>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
-                       <tr class=' module-item'>
-                           <td><a class='mod' href='client/index.html'
-                                  title='etcd::client'>client</a></td>
-                           <td class='docblock short'>
-                                <p>Contains the etcd client. All API calls are made via the client.</p>
-                           </td>
-                       </tr>
-                       <tr class=' module-item'>
-                           <td><a class='mod' href='error/index.html'
-                                  title='etcd::error'>error</a></td>
-                           <td class='docblock short'>
-                                <p>Contains etcd error types.</p>
-                           </td>
-                       </tr>
-                       <tr class=' module-item'>
-                           <td><a class='mod' href='keys/index.html'
-                                  title='etcd::keys'>keys</a></td>
-                           <td class='docblock short'>
-                                <p>Types for the primary key space operations.</p>
-                           </td>
-                       </tr>
-                       <tr class=' module-item'>
-                           <td><a class='mod' href='stats/index.html'
-                                  title='etcd::stats'>stats</a></td>
-                           <td class='docblock short'>
-                                <p>Types for statistics operations.</p>
-                           </td>
-                       </tr>
-                       <tr class=' module-item'>
-                           <td><a class='mod' href='version/index.html'
-                                  title='etcd::version'>version</a></td>
-                           <td class='docblock short'>
-                                <p>Types for the version endpoint.</p>
-                           </td>
-                       </tr></table></section>
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='stats/index.html'
+                               title='etcd::stats'>stats</a></td>
+                        <td class='docblock short'>
+                             <p>Types for statistics operations.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='mod' href='version/index.html'
+                               title='etcd::version'>version</a></td>
+                        <td class='docblock short'>
+                             <p>Types for the version endpoint.</p>
+                        </td>
+                    </tr>
+                </table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.ApiError.html'
+                               title='etcd::ApiError'>ApiError</a></td>
+                        <td class='docblock short'>
+                             <p>An error returned by etcd.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.Client.html'
+                               title='etcd::Client'>Client</a></td>
+                        <td class='docblock short'>
+                             <p>API client for etcd. All API calls are made via the client.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.ClientOptions.html'
+                               title='etcd::ClientOptions'>ClientOptions</a></td>
+                        <td class='docblock short'>
+                             <p>Options for configuring the behavior of a <code>Client</code>.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.KeySpaceInfo.html'
+                               title='etcd::KeySpaceInfo'>KeySpaceInfo</a></td>
+                        <td class='docblock short'>
+                             <p>Information about the result of a successful key space operation.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='struct' href='struct.Node.html'
+                               title='etcd::Node'>Node</a></td>
+                        <td class='docblock short'>
+                             <p>An etcd key-value pair or directory.</p>
+                        </td>
+                    </tr>
+                </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='enum' href='enum.Error.html'
+                               title='etcd::Error'>Error</a></td>
+                        <td class='docblock short'>
+                             <p>An error returned by <code>Client</code> method failures.</p>
+                        </td>
+                    </tr>
+                </table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table>
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.EtcdResult.html'
+                               title='etcd::EtcdResult'>EtcdResult</a></td>
+                        <td class='docblock short'>
+                             <p>A generic result type returned by non-key space <code>Client</code> methods.</p>
+                        </td>
+                    </tr>
+
+                    <tr class=' module-item'>
+                        <td><a class='type' href='type.KeySpaceResult.html'
+                               title='etcd::KeySpaceResult'>KeySpaceResult</a></td>
+                        <td class='docblock short'>
+                             <p>The result type returned by all key space API calls.</p>
+                        </td>
+                    </tr>
+                </table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>
