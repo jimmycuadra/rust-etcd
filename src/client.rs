@@ -21,23 +21,11 @@ use version::VersionInfo;
 pub struct Client {
     http_client: HttpClient,
     members: Vec<Member>,
-    options: ClientOptions,
 }
 
 /// Options for configuring the behavior of a `Client`.
 #[derive(Debug, Default)]
 pub struct ClientOptions {
-    /// The username to use for authentication.
-    pub username: Option<String>,
-    /// The password to use for authentication.
-    pub password: Option<String>,
-    /// Options for HTTPS connections.
-    pub ssl: Option<SslOptions>,
-}
-
-/// Options for configuring HTTPS.
-#[derive(Debug)]
-pub struct SslOptions {
     /// File path to the PEM-encoded CA certificate to use.
     ///
     /// Useful if the server's certificate is signed by a private CA.
@@ -46,6 +34,8 @@ pub struct SslOptions {
     ///
     /// Used to enable client certificate authentication with the etcd server.
     pub cert_and_key: Option<(String, String)>,
+    /// The username and password to use for authentication.
+    pub username_and_password: Option<(String, String)>,
 }
 
 impl Client {
@@ -72,15 +62,9 @@ impl Client {
             members.push(try!(Member::new(endpoint)));
         }
 
-        let http_client = match options.ssl {
-            Some(ref ssl_options) => try!(HttpClient::https(ssl_options)),
-            None => HttpClient::new(),
-        };
-
         Ok(Client {
-            http_client: http_client,
+            http_client: try!(HttpClient::new(options)),
             members: members,
-            options: options,
         })
     }
 
