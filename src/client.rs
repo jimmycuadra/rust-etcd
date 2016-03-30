@@ -26,28 +26,27 @@ pub struct Client {
 /// Options for configuring the behavior of a `Client`.
 #[derive(Debug, Default)]
 pub struct ClientOptions {
-    /// File path to the PEM-encoded CA certificate to use.
-    ///
-    /// Useful if the server's certificate is signed by a private CA.
+    /// File path to the PEM-encoded CA certificate to use. Useful if the server's certificate is
+    /// signed by a private CA.
     pub ca: Option<String>,
-    /// File paths to the PEM-encoded client certificate and private key to use.
-    ///
-    /// Used to enable client certificate authentication with the etcd server.
+    /// File paths to the PEM-encoded client certificate and private key to use. Used to enable
+    /// client certificate authentication with the etcd server.
     pub cert_and_key: Option<(String, String)>,
     /// The username and password to use for authentication.
     pub username_and_password: Option<(String, String)>,
 }
 
 impl Client {
-    /// Constructs a new client. `endpoints` are URLs to the etcd cluster members to use.
+    /// Constructs a new client. `endpoints` are URLs for the etcd cluster members to the client
+    /// will make API calls to.
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn new(endpoints: &[&str]) -> EtcdResult<Client> {
         Client::with_options(endpoints, ClientOptions::default())
     }
 
-    /// Constructs a new client with the given options. `endpoints` are URLs to the etcd cluster
-    /// members to use.
+    /// Constructs a new client with the given options. `endpoints` are URLs for the etcd cluster
+    /// members to the client will make API calls to.
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn with_options(endpoints: &[&str], options: ClientOptions) ->
