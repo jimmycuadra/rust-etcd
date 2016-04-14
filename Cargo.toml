@@ -9,14 +9,15 @@ license = "MIT"
 name = "etcd"
 readme = "README.md"
 repository = "https://github.com/jimmycuadra/rust-etcd"
-version = "0.5.1"
-
-[build-dependencies]
-syntex = "0.31.0"
+version = "0.5.2"
 
 [build-dependencies.serde_codegen]
 optional = true
 version = "0.7.2"
+
+[build-dependencies.syntex]
+optional = true
+version = "0.31.0"
 
 [dependencies]
 hyper = "0.8.1"
@@ -30,5 +31,5 @@ optional = true
 version = "0.7.2"
 
 [features]
-default = ["serde_codegen"]
+default = ["serde_codegen", "syntex"]
 nightly = ["serde_macros"]
