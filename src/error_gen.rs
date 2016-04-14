@@ -45,9 +45,11 @@ impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         match *self {
             Error::Api(ref error) => write!(f, "{}", error),
+            Error::Http(ref error) => write!(f, "{}", error),
             Error::InvalidConditions(reason) => write!(f, "{}", reason),
-            Error::NoEndpoints => write!(f, "At least one endpoint is required to create a Client"),
-            ref error => write!(f, "{}", error),
+            Error::InvalidUrl(ref error) => write!(f, "{}", error),
+            Error::Io(ref error) => write!(f, "{}", error),
+            Error::NoEndpoints => f.write_str("At least one endpoint is required to create a Client"),
         }
     }
 }
