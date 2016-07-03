@@ -13,22 +13,22 @@ version = "0.5.4"
 
 [build-dependencies.serde_codegen]
 optional = true
-version = "0.7.7"
+version = "=0.7.7"
 
 [build-dependencies.syntex]
 optional = true
-version = "0.33.0"
+version = "=0.33.0"
 
 [dependencies]
 hyper = "0.8.1"
 openssl = "0.7.13"
-serde = "0.7.7"
-serde_json = "0.7.1"
+serde = "=0.7.7"
+serde_json = "=0.7.1"
 url = "0.5.9"
 
 [dependencies.serde_macros]
 optional = true
-version = "0.7.7"
+version = "=0.7.7"
 
 [features]
 default = ["serde_codegen", "syntex"]
