@@ -1,7 +1,6 @@
 #[cfg(not(feature = "serde_macros"))]
 mod inner {
     extern crate serde_codegen;
-    extern crate syntex;
 
     use std::env;
     use std::path::Path;
@@ -22,10 +21,7 @@ mod inner {
             let dst = format!("{}.rs", module);
             let dst_path = Path::new(&out_dir).join(&dst);
 
-            let mut registry = syntex::Registry::new();
-
-            serde_codegen::register(&mut registry);
-            registry.expand("", &src_path, &dst_path).unwrap();
+            serde_codegen::expand(&src_path, &dst_path).unwrap();
         }
     }
 }
