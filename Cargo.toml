@@ -13,7 +13,7 @@ version = "0.5.4"
 
 [build-dependencies.serde_codegen]
 optional = true
-version = "0.7.7"
+version = "0.7.12"
 
 [build-dependencies.syntex]
 optional = true
