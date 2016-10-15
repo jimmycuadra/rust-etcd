@@ -55,14 +55,15 @@
 //!     assert_eq!(value, "bar".to_owned());
 //! }
 //! ```
-
-#![cfg_attr(feature = "serde_macros", feature(custom_derive, plugin))]
-#![cfg_attr(feature = "serde_macros", plugin(serde_macros))]
+#![cfg_attr(feature = "serde_derive", feature(proc_macro))]
 #![deny(missing_docs)]
 
 extern crate hyper;
 extern crate openssl;
 extern crate serde;
+#[cfg(feature = "serde_derive")]
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate url;
 
