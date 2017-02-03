@@ -1,7 +1,12 @@
 //! Types for the version endpoint.
 
-#[cfg(feature = "serde_derive")]
-include!("version_gen.rs");
-
-#[cfg(not(feature = "serde_derive"))]
-include!(concat!(env!("OUT_DIR"), "/version.rs"));
+/// Versions of the etcd cluster and server.
+#[derive(Debug, Deserialize)]
+pub struct VersionInfo {
+    /// The version of the etcd cluster.
+    #[serde(rename="etcdcluster")]
+    pub cluster_version: String,
+    /// The version of the etcd server.
+    #[serde(rename="etcdserver")]
+    pub server_version: String,
+}

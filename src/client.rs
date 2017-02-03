@@ -1,37 +1,36 @@
 //! Contains the etcd client. All API calls are made via the client.
+
 use std::collections::HashMap;
 use std::default::Default;
 use std::io::Read;
 
+pub use hyper_native_tls::native_tls::Pkcs12;
+
 use hyper::status::StatusCode;
 use serde_json::from_str;
-use url::form_urlencoded;
+use url::Url;
+use url::form_urlencoded::Serializer;
 
 use error::{EtcdResult, Error};
 use http::HttpClient;
 use keys::{KeySpaceResult, SingleMemberKeySpaceResult};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
-use query_pairs::UrlWithQueryPairs;
 use stats::{LeaderStats, SelfStats, StoreStats};
 use version::VersionInfo;
 
 /// API client for etcd. All API calls are made via the client.
-#[derive(Debug)]
 pub struct Client {
     http_client: HttpClient,
     members: Vec<Member>,
 }
 
 /// Options for configuring the behavior of a `Client`.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct ClientOptions {
-    /// File path to the PEM-encoded CA certificate to use. Useful if the server's certificate is
-    /// signed by a private CA.
-    pub ca: Option<String>,
-    /// File paths to the PEM-encoded client certificate and private key to use. Used to enable
-    /// client certificate authentication with the etcd server.
-    pub cert_and_key: Option<(String, String)>,
+    /// A PKCS #12 archive containing a client certificate, private key, and any intermediate
+    /// certificates needed to authenticate with the server.
+    pub pkcs12: Option<Pkcs12>,
     /// The username and password to use for authentication.
     pub username_and_password: Option<(String, String)>,
 }
@@ -428,11 +427,10 @@ impl Client {
         }
 
         self.first_ok(|member| {
-            let url = UrlWithQueryPairs {
-                pairs: &query_pairs,
-                url: self.build_url(member, key),
-            }.parse();
-
+            let url = Url::parse_with_params(
+                &self.build_url(member, key),
+                query_pairs.clone(),
+            ).unwrap();
             let mut response = try!(self.http_client.delete(format!("{}", url)));
             let mut response_body = String::new();
             response.read_to_string(&mut response_body).unwrap();
@@ -463,10 +461,10 @@ impl Client {
         }
 
         self.first_ok(|member| {
-            let url = UrlWithQueryPairs {
-                pairs: &query_pairs,
-                url: self.build_url(member, key),
-            }.parse();
+            let url = Url::parse_with_params(
+                &self.build_url(member, key),
+                query_pairs.clone(),
+            ).unwrap();
 
             let mut response = try!(self.http_client.get(format!("{}", url)));
             let mut response_body = String::new();
@@ -527,7 +525,9 @@ impl Client {
 
         self.first_ok(|member| {
             let url = self.build_url(member, key);
-            let body = form_urlencoded::serialize(&http_options);
+            let mut serializer = Serializer::new(String::new());
+            serializer.extend_pairs(http_options.clone());
+            let body = serializer.finish();
 
             let mut response = if options.create_in_order {
                 try!(self.http_client.post(url, body))

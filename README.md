@@ -5,20 +5,7 @@
 An [etcd](https://github.com/coreos/etcd) client library for Rust.
 
 * [etcd](https://crates.io/crates/etcd) on crates.io
-* [Documentation](http://jimmycuadra.github.io/rust-etcd/etcd/) for the latest crates.io release
-
-## Nightly Rust
-
-If you're using etcd in a program that is building on nightly Rust, use this feature profile:
-
-``` toml
-[dependencies.etcd]
-default-features = false
-features = ["nightly"]
-version = "whatever version you want"
-```
-
-If you're building etcd directly from source, the equivalent Cargo commmand is `cargo build --no-default-features --features nightly`.
+* [Documentation](https://docs.rs/etcd) for the latest crates.io release
 
 ## Running the tests
 

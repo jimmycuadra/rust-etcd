@@ -1,6 +1,5 @@
 [package]
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
-build = "build.rs"
 description = "A client library for CoreOS's etcd."
 documentation = "http://jimmycuadra.github.io/rust-etcd/etcd/"
 homepage = "https://github.com/jimmycuadra/rust-etcd"
@@ -11,21 +10,10 @@ readme = "README.md"
 repository = "https://github.com/jimmycuadra/rust-etcd"
 version = "0.5.5"
 
-[build-dependencies.serde_codegen]
-optional = true
-version = "0.8"
-
 [dependencies]
-hyper = "0.8.1"
-openssl = "0.7.13"
-serde = "0.8"
-serde_json = "0.8"
-url = "0.5.9"
-
-[dependencies.serde_derive]
-optional = true
-version = "0.8"
-
-[features]
-default = ["serde_codegen"]
-nightly = ["serde_derive"]
+hyper = "0.10.4"
+hyper-native-tls = "0.2.2"
+serde = "0.9.5"
+serde_derive = "0.9.5"
+serde_json = "0.9.4"
+url = "1.4.0"

@@ -55,19 +55,19 @@
 //!     assert_eq!(value, "bar".to_owned());
 //! }
 //! ```
-#![cfg_attr(feature = "serde_derive", feature(proc_macro))]
+
 #![deny(missing_docs)]
+#![deny(warnings)]
 
 extern crate hyper;
-extern crate openssl;
+extern crate hyper_native_tls;
 extern crate serde;
-#[cfg(feature = "serde_derive")]
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate url;
 
-pub use client::{Client, ClientOptions};
+pub use client::{Client, ClientOptions, Pkcs12};
 pub use error::{ApiError, EtcdResult, Error};
 pub use keys::{KeySpaceInfo, KeySpaceResult, Node};
 
@@ -80,4 +80,3 @@ mod http;
 mod keys;
 mod member;
 mod options;
-mod query_pairs;
