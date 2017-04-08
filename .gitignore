@@ -1,2 +1,5 @@
-target
-Cargo.lock
+/Cargo.lock
+/target
+/tests/ssl/*.p12
+/tests/ssl/*.pem
+/tests/ssl/*.srl

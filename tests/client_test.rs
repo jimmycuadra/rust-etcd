@@ -23,7 +23,7 @@ impl TestClient {
 
     /// Creates a new HTTPS client for a test.
     fn https() -> TestClient {
-        let mut file = File::open("/source/tests/ssl/client.pfx").unwrap();
+        let mut file = File::open("/source/tests/ssl/client.p12").unwrap();
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
 
@@ -31,7 +31,7 @@ impl TestClient {
             c: Client::with_options(
                 &["https://etcdsecure:2379"],
                 ClientOptions {
-                    pkcs12: Some(Pkcs12::from_der(&buffer, "rust").unwrap()),
+                    pkcs12: Some(Pkcs12::from_der(&buffer, "secret").unwrap()),
                     username_and_password: None,
                 },
             ).unwrap(),

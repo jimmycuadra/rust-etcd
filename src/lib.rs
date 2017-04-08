@@ -35,15 +35,18 @@
 //! ```no_run
 //! extern crate etcd;
 //!
-//! use etcd::{Client, ClientOptions};
+//! use std::fs::File;
+//! use std::io::Read;
+//!
+//! use etcd::{Client, ClientOptions, Pkcs12};
 //!
 //! fn main() {
+//!     let mut file = File::open("client.p12").unwrap();
+//!     let mut buffer = Vec::new();
+//!     file.read_to_end(&mut buffer).unwrap();
+//!
 //!     let client = Client::with_options(&["https://example.com:2379"], ClientOptions {
-//!         ca: Some("/path/to/ca_cert.pem".to_owned()),
-//!         cert_and_key: Some((
-//!             "/path/to/client_cert.pem".to_owned(),
-//!             "/path/to/client_key.pem".to_owned(),
-//!         )),
+//!         pkcs12: Some(Pkcs12::from_der(&buffer, "secret").unwrap()),
 //!         username_and_password: Some(("jimmy".to_owned(), "secret".to_owned())),
 //!     }).unwrap();
 //!
