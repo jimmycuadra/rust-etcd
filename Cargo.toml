@@ -1,14 +1,14 @@
 [package]
 authors = ["Jimmy Cuadra <jimmy@jimmycuadra.com>"]
 description = "A client library for CoreOS's etcd."
-documentation = "http://jimmycuadra.github.io/rust-etcd/etcd/"
+documentation = "https://docs.rs/etcd"
 homepage = "https://github.com/jimmycuadra/rust-etcd"
 keywords = ["etcd", "coreos", "database"]
 license = "MIT"
 name = "etcd"
 readme = "README.md"
 repository = "https://github.com/jimmycuadra/rust-etcd"
-version = "0.5.5"
+version = "0.6.0"
 
 [dependencies]
 hyper = "0.10.9"
