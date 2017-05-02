@@ -4,9 +4,8 @@ use std::collections::HashMap;
 use std::default::Default;
 use std::io::Read;
 
-pub use hyper_native_tls::native_tls::Pkcs12;
-
 use hyper::status::StatusCode;
+use hyper_native_tls::native_tls::TlsConnector;
 use serde_json::from_str;
 use url::Url;
 use url::form_urlencoded::Serializer;
@@ -28,9 +27,8 @@ pub struct Client {
 /// Options for configuring the behavior of a `Client`.
 #[derive(Default)]
 pub struct ClientOptions {
-    /// A PKCS #12 archive containing a client certificate, private key, and any intermediate
-    /// certificates needed to authenticate with the server.
-    pub pkcs12: Option<Pkcs12>,
+    /// A `native_tls::TlsConnector` configured as desired for HTTPS connections.
+    pub tls_connector: Option<TlsConnector>,
     /// The username and password to use for authentication.
     pub username_and_password: Option<(String, String)>,
 }

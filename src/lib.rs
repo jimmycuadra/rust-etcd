@@ -34,19 +34,32 @@
 //!
 //! ```no_run
 //! extern crate etcd;
+//! extern crate native_tls;
 //!
 //! use std::fs::File;
 //! use std::io::Read;
 //!
-//! use etcd::{Client, ClientOptions, Pkcs12};
+//! use native_tls::{Certificate, Pkcs12, TlsConnector};
+//!
+//! use etcd::{Client, ClientOptions};
 //!
 //! fn main() {
-//!     let mut file = File::open("client.p12").unwrap();
-//!     let mut buffer = Vec::new();
-//!     file.read_to_end(&mut buffer).unwrap();
+//!     let mut ca_cert_file = File::open("ca.der").unwrap();
+//!     let mut ca_cert_buffer = Vec::new();
+//!     ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
+//!
+//!     let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
+//!     let mut pkcs12_buffer = Vec::new();
+//!     pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
+//!
+//!     let mut builder = TlsConnector::builder().unwrap();
+//!     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
+//!     builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+//!
+//!     let tls_connector = builder.build().unwrap();
 //!
 //!     let client = Client::with_options(&["https://example.com:2379"], ClientOptions {
-//!         pkcs12: Some(Pkcs12::from_der(&buffer, "secret").unwrap()),
+//!         tls_connector: Some(tls_connector),
 //!         username_and_password: Some(("jimmy".to_owned(), "secret".to_owned())),
 //!     }).unwrap();
 //!
@@ -70,7 +83,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate url;
 
-pub use client::{Client, ClientOptions, Pkcs12};
+pub use client::{Client, ClientOptions};
 pub use error::{ApiError, EtcdResult, Error};
 pub use keys::{KeySpaceInfo, KeySpaceResult, Node};
 

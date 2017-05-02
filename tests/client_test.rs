@@ -1,4 +1,5 @@
 extern crate etcd;
+extern crate native_tls;
 
 use std::fs::File;
 use std::io::Read;
@@ -6,7 +7,9 @@ use std::ops::Deref;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use etcd::{Client, ClientOptions, Error, Pkcs12};
+use native_tls::{Certificate, Pkcs12, TlsConnector};
+
+use etcd::{Client, ClientOptions, Error};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient {
@@ -23,15 +26,25 @@ impl TestClient {
 
     /// Creates a new HTTPS client for a test.
     fn https() -> TestClient {
-        let mut file = File::open("/source/tests/ssl/client.p12").unwrap();
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
+        let mut ca_cert_file = File::open("/source/tests/ssl/ca.der").unwrap();
+        let mut ca_cert_buffer = Vec::new();
+        ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
+
+        let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
+        let mut pkcs12_buffer = Vec::new();
+        pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
+
+        let mut builder = TlsConnector::builder().unwrap();
+        builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
+        builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+
+        let tls_connector = builder.build().unwrap();
 
         TestClient {
             c: Client::with_options(
                 &["https://etcdsecure:2379"],
                 ClientOptions {
-                    pkcs12: Some(Pkcs12::from_der(&buffer, "secret").unwrap()),
+                    tls_connector: Some(tls_connector),
                     username_and_password: None,
                 },
             ).unwrap(),
@@ -306,9 +319,6 @@ fn get_recursive() {
 fn https() {
     let client = TestClient::https();
 
-    // TODO: Why is this failing? The error printed is:
-    //
-    // ERROR: The OpenSSL library reported an error: The OpenSSL library reported an error: error:14090086:SSL routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed
     if let Err(errors) = client.create("/test/foo", "bar", Some(60)) {
         for error in errors {
             println!("ERROR: {}", error);

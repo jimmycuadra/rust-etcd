@@ -4,7 +4,6 @@ use hyper::header::{Authorization, Basic, ContentType};
 use hyper::method::Method;
 use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
-use hyper_native_tls::native_tls::TlsConnector;
 
 use client::ClientOptions;
 use error::Error;
@@ -17,18 +16,18 @@ pub struct HttpClient {
 impl HttpClient {
     /// Constructs a new `HttpClient`.
     pub fn new(options: ClientOptions) -> Result<Self, Error> {
-        let mut tls_connector_builder = TlsConnector::builder()?;
+        let hyper = match options.tls_connector {
+            Some(tls_connector) => {
+                let native_tls_client = NativeTlsClient::from(tls_connector);
+                let connector = HttpsConnector::new(native_tls_client);
 
-        if let Some(pkcs12) = options.pkcs12 {
-            tls_connector_builder.identity(pkcs12)?;
-        }
-
-        let tls_connector = tls_connector_builder.build()?;
-        let native_tls_client = NativeTlsClient::from(tls_connector);
-        let connector = HttpsConnector::new(native_tls_client);
+                Client::with_connector(connector)
+            }
+            None => Client::new(),
+        };
 
         Ok(HttpClient {
-            hyper: Client::with_connector(connector),
+            hyper: hyper,
             username_and_password: options.username_and_password,
         })
     }

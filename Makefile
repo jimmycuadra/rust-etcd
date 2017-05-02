@@ -15,11 +15,14 @@ ci: ssl
 	docker-compose run --rm rust cargo test --verbose
 
 .PHONY: ssl
-ssl: tests/ssl/client.pem tests/ssl/client.p12 tests/ssl/server.pem
+ssl: tests/ssl/ca.der tests/ssl/client.pem tests/ssl/client.p12 tests/ssl/server.pem
 
 .PHONY: clean-ssl
 clean-ssl:
-	rm -f tests/ssl/*.pem tests/ssl/*.srl tests/ssl/*.p12
+	rm -f tests/ssl/*.der tests/ssl/*.pem tests/ssl/*.srl tests/ssl/*.p12
+
+tests/ssl/ca.der: tests/ssl/ca.pem
+	openssl x509 -in tests/ssl/ca.pem -out tests/ssl/ca.der -outform der
 
 tests/ssl/ca.pem: tests/ssl/ca-key.pem
 	openssl req -x509 -new -nodes -key tests/ssl/ca-key.pem -days 10000 -out tests/ssl/ca.pem -subj "/CN=rust-etcd-test-ca"

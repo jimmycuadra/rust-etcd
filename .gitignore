@@ -1,5 +1,6 @@
 /Cargo.lock
 /target
+/tests/ssl/*.der
 /tests/ssl/*.p12
 /tests/ssl/*.pem
 /tests/ssl/*.srl

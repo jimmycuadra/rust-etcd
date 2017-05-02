@@ -20,3 +20,8 @@ services:
       - etcdsecure
     volumes:
       - .:/source
+      - cargo_git:/root/.cargo/git
+      - cargo_registry:/root/.cargo/registry
+volumes:
+  cargo_git: {}
+  cargo_registry: {}
