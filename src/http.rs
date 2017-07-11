@@ -1,30 +1,33 @@
-use hyper::{Client, Error as HyperError};
-use hyper::client::{RequestBuilder, Response};
+use hyper::{Body, Client, Method, Request, Uri};
+use hyper::client::{FutureResponse, HttpConnector};
 use hyper::header::{Authorization, Basic, ContentType};
-use hyper::method::Method;
-use hyper::net::HttpsConnector;
-use hyper_native_tls::NativeTlsClient;
+use hyper_tls::HttpsConnector;
+use tokio_core::reactor::Handle;
 
 use client::ClientOptions;
 use error::Error;
 
+#[derive(Clone, Debug)]
 pub struct HttpClient {
-    hyper: Client,
+    hyper: Client<HttpsConnector<HttpConnector>, Body>,
     username_and_password: Option<(String, String)>
 }
 
 impl HttpClient {
     /// Constructs a new `HttpClient`.
-    pub fn new(options: ClientOptions) -> Result<Self, Error> {
-        let hyper = match options.tls_connector {
+    pub fn new(handle: &Handle, options: ClientOptions) -> Result<Self, Error> {
+        let connector = match options.tls_connector {
             Some(tls_connector) => {
-                let native_tls_client = NativeTlsClient::from(tls_connector);
-                let connector = HttpsConnector::new(native_tls_client);
+                let mut http_connector = HttpConnector::new(4, handle);
 
-                Client::with_connector(connector)
+                http_connector.enforce_http(false);
+
+                HttpsConnector::from((http_connector, tls_connector))
             }
-            None => Client::new(),
+            None => HttpsConnector::new(4, handle)?,
         };
+
+        let hyper = Client::configure().connector(connector).build(handle);
 
         Ok(HttpClient {
             hyper: hyper,
@@ -33,61 +36,58 @@ impl HttpClient {
     }
 
     /// Makes a DELETE request to etcd.
-    pub fn delete(&self, url: String) -> Result<Response, HyperError> {
-        self.request(Method::Delete, url)
+    pub fn delete(&self, uri: Uri) -> FutureResponse {
+        self.request(Method::Delete, uri)
     }
 
     /// Makes a GET request to etcd.
-    pub fn get(&self, url: String) -> Result<Response, HyperError> {
-        self.request(Method::Get, url)
+    pub fn get(&self, uri: Uri) -> FutureResponse {
+        self.request(Method::Get, uri)
     }
 
     /// Makes a POST request to etcd.
-    pub fn post(&self, url: String, body: String) -> Result<Response, HyperError> {
-        self.request_with_body(Method::Post, url, body)
+    pub fn post(&self, uri: Uri, body: String) -> FutureResponse {
+        self.request_with_body(Method::Post, uri, body)
     }
 
     /// Makes a PUT request to etcd.
-    pub fn put(&self, url: String, body: String) -> Result<Response, HyperError> {
-        self.request_with_body(Method::Put, url, body)
+    pub fn put(&self, uri: Uri, body: String) -> FutureResponse {
+        self.request_with_body(Method::Put, uri, body)
     }
 
     // private
 
     /// Adds the Authorization HTTP header to a request if a credentials were supplied.
-    fn add_auth_header<'a>(&self, request: RequestBuilder<'a>) -> RequestBuilder<'a> {
+    fn add_auth_header<'a>(&self, request: &mut Request) {
         if let Some((ref username, ref password)) = self.username_and_password {
             let authorization = Authorization(Basic {
                 username: username.clone(),
                 password: Some(password.clone()),
             });
 
-            request.header(authorization)
-        } else {
-            request
+            request.headers_mut().set(authorization);
         }
     }
 
     /// Makes a request to etcd.
-    fn request(&self, method: Method, url: String) -> Result<Response, HyperError> {
-        let mut request = self.hyper.request(method, &url);
+    fn request(&self, method: Method, uri: Uri) -> FutureResponse {
+        let mut request = Request::new(method, uri);
 
-        request = self.add_auth_header(request);
+        self.add_auth_header(&mut request);
 
-        request.send()
+        self.hyper.request(request)
     }
 
     /// Makes a request with an HTTP body to etcd.
-    fn request_with_body(&self,
-        method: Method,
-        url: String,
-        body: String,
-    ) -> Result<Response, HyperError> {
+    fn request_with_body(&self, method: Method, uri: Uri, body: String) -> FutureResponse {
         let content_type = ContentType::form_url_encoded();
-        let mut request = self.hyper.request(method, &url).header(content_type).body(&body);
 
-        request = self.add_auth_header(request);
+        let mut request = Request::new(method, uri);
+        request.headers_mut().set(content_type);
+        request.set_body(body);
 
-        request.send()
+        self.add_auth_header(&mut request);
+
+        self.hyper.request(request)
     }
 }

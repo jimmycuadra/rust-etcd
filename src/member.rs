@@ -1,16 +1,17 @@
-use url::{ParseError, Url};
+use hyper::Uri;
+use hyper::error::UriError;
 
 /// An etcd cluster member.
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Member {
-    /// The URL of the member.
-    pub endpoint: Url,
+    /// The URI of the member.
+    pub endpoint: Uri,
 }
 
 impl Member {
-    pub fn new(url: &str) -> Result<Member, ParseError> {
+    pub fn new(uri: &str) -> Result<Member, UriError> {
         Ok(Member {
-            endpoint: try!(Url::parse(url)),
+            endpoint: uri.parse()?,
         })
     }
 }

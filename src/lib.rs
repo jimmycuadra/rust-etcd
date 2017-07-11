@@ -73,23 +73,26 @@
 //! ```
 
 #![deny(missing_docs)]
-#![deny(warnings)]
+// #![deny(warnings)]
 
+extern crate futures;
 extern crate hyper;
-extern crate hyper_native_tls;
+extern crate hyper_tls;
+extern crate native_tls;
 extern crate serde;
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 extern crate serde_json;
+extern crate tokio_core;
 extern crate url;
 
 pub use client::{Client, ClientOptions};
-pub use error::{ApiError, EtcdResult, Error};
-pub use keys::{KeySpaceInfo, KeySpaceResult, Node};
+pub use error::{ApiError, Error};
+pub use keys::{KeySpaceInfo, FutureKeySpaceInfo, Node};
 
 pub mod stats;
 pub mod version;
 
+mod async;
 mod client;
 mod error;
 mod http;

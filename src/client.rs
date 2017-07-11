@@ -2,17 +2,22 @@
 
 use std::collections::HashMap;
 use std::default::Default;
-use std::io::Read;
+use std::str::FromStr;
 
-use hyper::status::StatusCode;
-use hyper_native_tls::native_tls::TlsConnector;
-use serde_json::from_str;
+use futures::{Future, IntoFuture, Stream};
+use futures::future::{err, ok};
+use futures::stream::futures_unordered;
+use hyper::{StatusCode, Uri};
+use native_tls::TlsConnector;
+use serde_json;
+use tokio_core::reactor::Handle;
 use url::Url;
 use url::form_urlencoded::Serializer;
 
-use error::{EtcdResult, Error};
+use async::first_ok;
+use error::{ApiError, Error};
 use http::HttpClient;
-use keys::{KeySpaceResult, SingleMemberKeySpaceResult};
+use keys::{FutureKeySpaceInfo, KeySpaceInfo};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use stats::{LeaderStats, SelfStats, StoreStats};
@@ -38,16 +43,16 @@ impl Client {
     /// will make API calls to.
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn new(endpoints: &[&str]) -> EtcdResult<Client> {
-        Client::with_options(endpoints, ClientOptions::default())
+    pub fn new(endpoints: &[&str], handle: &Handle) -> Result<Client, Error> {
+        Client::with_options(endpoints, handle, ClientOptions::default())
     }
 
     /// Constructs a new client with the given options. `endpoints` are URLs for the etcd cluster
     /// members to the client will make API calls to.
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn with_options(endpoints: &[&str], options: ClientOptions) ->
-    EtcdResult<Client> {
+    pub fn with_options(endpoints: &[&str], handle: &Handle, options: ClientOptions) ->
+    Result<Client, Error> {
         if endpoints.len() < 1 {
             return Err(Error::NoEndpoints);
         }
@@ -55,11 +60,11 @@ impl Client {
         let mut members = Vec::with_capacity(endpoints.len());
 
         for endpoint in endpoints {
-            members.push(try!(Member::new(endpoint)));
+            members.push(Member::new(endpoint)?);
         }
 
         Ok(Client {
-            http_client: try!(HttpClient::new(options)),
+            http_client: HttpClient::new(handle, options)?,
             members: members,
         })
     }
@@ -72,7 +77,7 @@ impl Client {
         key: &str,
         current_value: Option<&str>,
         current_modified_index: Option<u64>
-    ) -> KeySpaceResult {
+    ) -> FutureKeySpaceInfo {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -96,7 +101,7 @@ impl Client {
         ttl: Option<u64>,
         current_value: Option<&str>,
         current_modified_index: Option<u64>,
-    ) -> KeySpaceResult {
+    ) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -114,7 +119,7 @@ impl Client {
     /// Creates a new key-value pair with any given time to live in seconds.
     ///
     /// Fails if the key already exists.
-    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn create(&self, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -129,7 +134,7 @@ impl Client {
     /// Creates a new empty directory at the given key with the given time to live in seconds.
     ///
     /// Fails if the key already exists.
-    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn create_dir(&self, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -145,7 +150,7 @@ impl Client {
     /// and a key name guaranteed to be greater than all existing keys in the directory.
     ///
     /// Fails if the key already exists and is not a directory.
-    pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn create_in_order(&self, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -163,7 +168,7 @@ impl Client {
     /// pairs and directories will be deleted.
     ///
     /// Fails if the key is a directory and `recursive` is `false`.
-    pub fn delete(&self, key: &str, recursive: bool) -> KeySpaceResult {
+    pub fn delete(&self, key: &str, recursive: bool) -> FutureKeySpaceInfo {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -176,7 +181,7 @@ impl Client {
     /// Deletes an empty directory or a key-value pair at the given key.
     ///
     /// Fails if the directory is not empty.
-    pub fn delete_dir(&self, key: &str) -> KeySpaceResult {
+    pub fn delete_dir(&self, key: &str) -> FutureKeySpaceInfo {
         self.raw_delete(
             key,
             DeleteOptions {
@@ -203,7 +208,7 @@ impl Client {
         sort: bool,
         recursive: bool,
         strong_consistency: bool,
-    ) -> KeySpaceResult {
+    ) -> FutureKeySpaceInfo {
         self.raw_get(
             key,
             GetOptions {
@@ -218,40 +223,70 @@ impl Client {
     /// Returns statistics about the leader member of a cluster.
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn leader_stats(&self) -> EtcdResult<LeaderStats> {
+    pub fn leader_stats(&self) -> Box<Future<Item = LeaderStats, Error = Error>> {
         let url = format!("{}v2/stats/leader", self.members[0].endpoint);
-        let mut response = try!(self.http_client.get(url));
-        let mut response_body = String::new();
-        try!(response.read_to_string(&mut response_body));
+        let uri = url.parse().map_err(Error::from).into_future();
+        let cloned_client = self.http_client.clone();
+        let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let body = response.body().concat2().map_err(Error::from);
 
-        match response.status {
-            StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-            _ => Err(Error::Api(from_str(&response_body).unwrap()))
-        }
+            body.and_then(move |ref body| {
+                if status == StatusCode::Ok {
+                    match serde_json::from_slice::<LeaderStats>(body) {
+                        Ok(stats) => ok(stats),
+                        Err(error) => err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => err(Error::Api(error)),
+                        Err(error) => err(Error::Serialization(error)),
+                    }
+                }
+            })
+        });
+
+        Box::new(result)
     }
 
     /// Returns statistics about each cluster member the client was initialized with.
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn self_stats(&self) -> Vec<EtcdResult<SelfStats>> {
-        self.members.iter().map(|member| {
+    pub fn self_stats(&self) -> Box<Stream<Item = SelfStats, Error = Error>> {
+        let futures = self.members.iter().map(|member| {
             let url = format!("{}v2/stats/self", member.endpoint);
-            let mut response = try!(self.http_client.get(url));
-            let mut response_body = String::new();
-            try!(response.read_to_string(&mut response_body));
+            let uri = url.parse().map_err(Error::from).into_future();
+            let cloned_client = self.http_client.clone();
+            let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
+            response.and_then(|response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
 
-            match response.status {
-                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap()))
-            }
-        }).collect()
+                body.and_then(move |ref body| {
+                    if status == StatusCode::Ok {
+                        match serde_json::from_slice::<SelfStats>(body) {
+                            Ok(stats) => ok(stats),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => err(Error::Api(error)),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    }
+                })
+            })
+        });
+
+        Box::new(futures_unordered(futures))
     }
 
     /// Sets the key to the given value with the given time to live in seconds. Any previous value
     /// and TTL will be replaced.
     ///
     /// Fails if the key is a directory.
-    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn set(&self, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -266,7 +301,7 @@ impl Client {
     /// key-value will be replaced, but an existing directory will not.
     ///
     /// Fails if the key is an existing directory.
-    pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn set_dir(&self, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -281,24 +316,39 @@ impl Client {
     /// with.
     ///
     /// Fails if JSON decoding fails, which suggests a bug in our schema.
-    pub fn store_stats(&self) -> Vec<EtcdResult<StoreStats>> {
-        self.members.iter().map(|member| {
+    pub fn store_stats(&self) -> Box<Stream<Item = StoreStats, Error = Error>> {
+        let futures = self.members.iter().map(|member| {
             let url = format!("{}v2/stats/store", member.endpoint);
-            let mut response = try!(self.http_client.get(url));
-            let mut response_body = String::new();
-            try!(response.read_to_string(&mut response_body));
+            let uri = url.parse().map_err(Error::from).into_future();
+            let cloned_client = self.http_client.clone();
+            let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
+            response.and_then(|response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
 
-            match response.status {
-                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap()))
-            }
-        }).collect()
+                body.and_then(move |ref body| {
+                    if status == StatusCode::Ok {
+                        match serde_json::from_slice::<StoreStats>(body) {
+                            Ok(stats) => ok(stats),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => err(Error::Api(error)),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    }
+                })
+            })
+        });
+
+        Box::new(futures_unordered(futures))
     }
 
     /// Updates the given key to the given value and time to live in seconds.
     ///
     /// Fails if the key does not exist.
-    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn update(&self, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -315,7 +365,7 @@ impl Client {
     /// value is removed and its TTL is updated.
     ///
     /// Fails if the key does not exist.
-    pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> KeySpaceResult {
+    pub fn update_dir(&self, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo {
         self.raw_set(
             key,
             SetOptions {
@@ -328,18 +378,33 @@ impl Client {
     }
 
     /// Returns version information from each etcd cluster member the client was initialized with.
-    pub fn versions(&self) -> Vec<EtcdResult<VersionInfo>> {
-        self.members.iter().map(|member| {
+    pub fn versions(&self) -> Box<Stream<Item = VersionInfo, Error = Error>> {
+        let futures = self.members.iter().map(|member| {
             let url = format!("{}version", member.endpoint);
-            let mut response = try!(self.http_client.get(url));
-            let mut response_body = String::new();
-            try!(response.read_to_string(&mut response_body));
+            let uri = url.parse().map_err(Error::from).into_future();
+            let cloned_client = self.http_client.clone();
+            let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
+            response.and_then(|response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
 
-            match response.status {
-                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap()))
-            }
-        }).collect()
+                body.and_then(move |ref body| {
+                    if status == StatusCode::Ok {
+                        match serde_json::from_slice::<VersionInfo>(body) {
+                            Ok(stats) => ok(stats),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => err(Error::Api(error)),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    }
+                })
+            })
+        });
+
+        Box::new(futures_unordered(futures))
     }
 
     /// Watches etcd for changes to the given key (including all child keys if `recursive` is
@@ -352,7 +417,7 @@ impl Client {
     /// store of the most recent change events. In this case, the key should be queried for its
     /// latest "modified index" value and that should be used as the new `index` on a subsequent
     /// `watch`.
-    pub fn watch(&self, key: &str, index: Option<u64>, recursive: bool) -> KeySpaceResult {
+    pub fn watch(&self, key: &str, index: Option<u64>, recursive: bool) -> FutureKeySpaceInfo {
         self.raw_get(
             key,
             GetOptions {
@@ -366,36 +431,12 @@ impl Client {
 
     // private
 
-    /// Constructs the full URL for an API call.
-    fn build_url(&self, member: &Member, path: &str) -> String {
-        format!("{}v2/keys{}", member.endpoint, path)
-    }
-
-    /// Executes the given closure with each cluster member and short-circuit returns the first
-    /// successful result. If all members are exhausted without success, the final error is
-    /// returned.
-    fn first_ok<F>(&self, callback: F) -> KeySpaceResult
-    where F: Fn(&Member) -> SingleMemberKeySpaceResult {
-        let mut errors = Vec::with_capacity(self.members.len());
-
-        for member in self.members.iter() {
-            let result = callback(member);
-
-            match result {
-                Ok(node) => return Ok(node),
-                Err(error) => errors.push(error),
-            }
-        }
-
-        Err(errors)
-    }
-
     /// Handles all delete operations.
     fn raw_delete(
         &self,
         key: &str,
         options: DeleteOptions,
-    ) -> KeySpaceResult {
+    ) -> FutureKeySpaceInfo {
         let mut query_pairs = HashMap::new();
 
         if options.recursive.is_some() {
@@ -410,9 +451,9 @@ impl Client {
             let conditions = options.conditions.unwrap();
 
             if conditions.is_empty() {
-                return Err(
+                return Box::new(Err(
                     vec![Error::InvalidConditions("Current value or modified index is required.")]
-                );
+                ).into_future());
             }
 
             if conditions.modified_index.is_some() {
@@ -424,24 +465,50 @@ impl Client {
             }
         }
 
-        self.first_ok(|member| {
-            let url = Url::parse_with_params(
-                &self.build_url(member, key),
-                query_pairs.clone(),
-            ).unwrap();
-            let mut response = try!(self.http_client.delete(format!("{}", url)));
-            let mut response_body = String::new();
-            response.read_to_string(&mut response_body).unwrap();
+        let http_client = self.http_client.clone();
+        let key = key.to_string();
 
-            match response.status {
-                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap())),
-            }
-        })
+        let result = first_ok(self.members.clone(), move |member| {
+            let url = Url::parse_with_params(
+                &build_url(member, &key),
+                query_pairs.clone(),
+            ).map_err(Error::from).into_future();
+
+            let uri = url.and_then(|url| {
+                Uri::from_str(url.as_str()).map_err(Error::from).into_future()
+            });
+
+            let http_client = http_client.clone();
+
+            let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
+
+            let result = response.and_then(move |response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
+
+                body.and_then(move |ref body| {
+                    if status == StatusCode::Ok {
+                        match serde_json::from_slice::<KeySpaceInfo>(body) {
+                            Ok(key_space_info) => ok(key_space_info),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => err(Error::Api(error)),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    }
+                })
+            });
+
+            Box::new(result)
+        });
+
+        Box::new(result)
     }
 
     /// Handles all get operations.
-    fn raw_get(&self, key: &str, options: GetOptions) -> KeySpaceResult {
+    fn raw_get(&self, key: &str, options: GetOptions) -> FutureKeySpaceInfo {
         let mut query_pairs = HashMap::new();
 
         query_pairs.insert("recursive", format!("{}", options.recursive));
@@ -458,21 +525,46 @@ impl Client {
             query_pairs.insert("waitIndex", format!("{}", options.wait_index.unwrap()));
         }
 
-        self.first_ok(|member| {
+        let http_client = self.http_client.clone();
+        let key = key.to_string();
+
+        let result = first_ok(self.members.clone(), move |member| {
             let url = Url::parse_with_params(
-                &self.build_url(member, key),
+                &build_url(member, &key),
                 query_pairs.clone(),
-            ).unwrap();
+            ).map_err(Error::from).into_future();
 
-            let mut response = try!(self.http_client.get(format!("{}", url)));
-            let mut response_body = String::new();
-            response.read_to_string(&mut response_body).unwrap();
+            let uri = url.and_then(|url| {
+                Uri::from_str(url.as_str()).map_err(Error::from).into_future()
+            });
 
-            match response.status {
-                StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap())),
-            }
-        })
+            let http_client = http_client.clone();
+
+            let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
+
+            let result = response.and_then(|response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
+
+                body.and_then(move |ref body| {
+                    if status == StatusCode::Ok {
+                        match serde_json::from_slice::<KeySpaceInfo>(body) {
+                            Ok(key_space_info) => ok(key_space_info),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => err(Error::Api(error)),
+                            Err(error) => err(Error::Serialization(error)),
+                        }
+                    }
+                })
+            });
+
+            Box::new(result)
+        });
+
+        Box::new(result)
     }
 
     /// Handles all set operations.
@@ -480,73 +572,95 @@ impl Client {
         &self,
         key: &str,
         options: SetOptions,
-    ) -> KeySpaceResult {
+    ) -> FutureKeySpaceInfo {
         let mut http_options = vec![];
 
-        if options.value.is_some() {
-            http_options.push(("value".to_owned(), options.value.unwrap().to_owned()));
+        if let Some(ref value) = options.value {
+            http_options.push(("value".to_owned(), value.to_string()));
         }
 
-        if options.ttl.is_some() {
-            http_options.push(("ttl".to_owned(), format!("{}", options.ttl.unwrap())));
+        if let Some(ref ttl) = options.ttl {
+            http_options.push(("ttl".to_owned(), ttl.to_string()));
         }
 
-        if options.dir.is_some() {
-            http_options.push(("dir".to_owned(), format!("{}", options.dir.unwrap())));
+        if let Some(ref dir) = options.dir {
+            http_options.push(("dir".to_owned(), dir.to_string()));
         }
 
-        if options.prev_exist.is_some() {
+        if let Some(ref prev_exist) = options.prev_exist {
             http_options.push(
-                ("prevExist".to_owned(), format!("{}", options.prev_exist.unwrap()))
+                ("prevExist".to_owned(), prev_exist.to_string())
             );
         }
 
-        if options.conditions.is_some() {
-            let conditions = options.conditions.as_ref().unwrap();
-
+        if let Some(ref conditions) = options.conditions {
             if conditions.is_empty() {
-                return Err(
+                return Box::new(Err(
                     vec![Error::InvalidConditions("Current value or modified index is required.")]
-                );
+                ).into_future());
             }
 
-            if conditions.modified_index.is_some() {
-                http_options.push(
-                    ("prevIndex".to_owned(), format!("{}", conditions.modified_index.unwrap()))
-                );
+            if let Some(ref modified_index) = conditions.modified_index {
+                http_options.push(("prevIndex".to_owned(), modified_index.to_string()));
             }
 
-            if conditions.value.is_some() {
-                http_options.push(("prevValue".to_owned(), conditions.value.unwrap().to_owned()));
+            if let Some(ref value) = conditions.value {
+                http_options.push(("prevValue".to_owned(), value.to_string()));
             }
         }
 
-        self.first_ok(|member| {
-            let url = self.build_url(member, key);
+        let http_client = self.http_client.clone();
+        let key = key.to_string();
+        let create_in_order = options.create_in_order;
+
+        let result = first_ok(self.members.clone(), move |member| {
             let mut serializer = Serializer::new(String::new());
             serializer.extend_pairs(http_options.clone());
             let body = serializer.finish();
 
-            let mut response = if options.create_in_order {
-                try!(self.http_client.post(url, body))
-            } else {
-                try!(self.http_client.put(url, body))
-            };
+            let url = build_url(member, &key);
+            let uri = Uri::from_str(url.as_str()).map_err(Error::from).into_future();
 
-            let mut response_body = String::new();
-            response.read_to_string(&mut response_body).unwrap();
+            let http_client = http_client.clone();
 
-            match response.status {
-                StatusCode::Created | StatusCode::Ok => Ok(from_str(&response_body).unwrap()),
-                _ => Err(Error::Api(from_str(&response_body).unwrap())),
-            }
-        })
+            let response = uri.and_then(move |uri| {
+                if create_in_order {
+                    http_client.post(uri, body).map_err(Error::from)
+                } else {
+                    http_client.put(uri, body).map_err(Error::from)
+                }
+            });
+
+            let result = response.and_then(|response| {
+                let status = response.status();
+                let body = response.body().concat2().map_err(Error::from);
+
+                body.and_then(move |ref body| {
+                    match status {
+                        StatusCode::Created | StatusCode::Ok => {
+                            match serde_json::from_slice::<KeySpaceInfo>(body) {
+                                Ok(key_space_info) => ok(key_space_info),
+                                Err(error) => err(Error::Serialization(error)),
+                            }
+                        }
+                        _ => {
+                            match serde_json::from_slice::<ApiError>(body) {
+                                Ok(error) => err(Error::Api(error)),
+                                Err(error) => err(Error::Serialization(error)),
+                            }
+                        }
+                    }
+                })
+            });
+
+            Box::new(result)
+        });
+
+        Box::new(result)
     }
 }
 
-impl Default for Client {
-    /// Constructs a new client that connects to http://127.0.0.1:2379.
-    fn default() -> Self {
-        Client::new(&["http://127.0.0.1:2379"]).expect("default client was invalid")
-    }
+/// Constructs the full URL for an API call.
+fn build_url(member: &Member, path: &str) -> String {
+    format!("{}v2/keys{}", member.endpoint, path)
 }

@@ -1,15 +1,17 @@
 //! Types for the primary key space operations.
 
+use futures::Future;
+
 use error::Error;
 
-/// The result type returned by all key space API calls.
+/// The future returned by all key space API calls.
 ///
 /// On success, information about the result of the operation. On failure, an error for each cluster
 /// member that failed.
-pub type KeySpaceResult = Result<KeySpaceInfo, Vec<Error>>;
+pub type FutureKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Vec<Error>>>;
 
-/// A KeySpaceResult for a single etcd cluster member.
-pub type SingleMemberKeySpaceResult = Result<KeySpaceInfo, Error>;
+/// A FutureKeySpaceInfo for a single etcd cluster member.
+pub type FutureSingleMemberKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Error>>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize)]
