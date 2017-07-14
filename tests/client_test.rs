@@ -1,5 +1,8 @@
 extern crate etcd;
+extern crate futures;
+extern crate hyper;
 extern crate native_tls;
+extern crate tokio_core;
 
 use std::fs::File;
 use std::io::Read;
@@ -7,60 +10,66 @@ use std::ops::Deref;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
+use futures::Future;
+use hyper::client::{Connect, HttpConnector};
 use native_tls::{Certificate, Pkcs12, TlsConnector};
+use tokio_core::reactor::{Core, Handle};
 
-use etcd::{Client, ClientOptions, Error};
+use etcd::{Client, Error};
+use etcd::kv::{self, KeySpaceInfo};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
-struct TestClient {
-    c: Client,
+struct TestClient<C> where C: Clone + Connect {
+    c: Client<C>,
 }
 
-impl TestClient {
+impl TestClient<HttpConnector> {
     /// Creates a new client for a test.
-    fn new() -> TestClient {
+    fn new(handle: &Handle) -> TestClient<HttpConnector> {
         TestClient {
-            c: Client::new(&["http://etcd:2379"]).unwrap(),
+            c: Client::new(handle, &["http://etcd:2379"], None).unwrap(),
         }
     }
 
-    /// Creates a new HTTPS client for a test.
-    fn https() -> TestClient {
-        let mut ca_cert_file = File::open("/source/tests/ssl/ca.der").unwrap();
-        let mut ca_cert_buffer = Vec::new();
-        ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
+    // /// Creates a new HTTPS client for a test.
+    // fn https() -> TestClient<C> {
+    //     let mut ca_cert_file = File::open("/source/tests/ssl/ca.der").unwrap();
+    //     let mut ca_cert_buffer = Vec::new();
+    //     ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
 
-        let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
-        let mut pkcs12_buffer = Vec::new();
-        pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
+    //     let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
+    //     let mut pkcs12_buffer = Vec::new();
+    //     pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
 
-        let mut builder = TlsConnector::builder().unwrap();
-        builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
-        builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+    //     let mut builder = TlsConnector::builder().unwrap();
+    //     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
+    //     builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
 
-        let tls_connector = builder.build().unwrap();
+    //     let tls_connector = builder.build().unwrap();
 
-        TestClient {
-            c: Client::with_options(
-                &["https://etcdsecure:2379"],
-                ClientOptions {
-                    tls_connector: Some(tls_connector),
-                    username_and_password: None,
-                },
-            ).unwrap(),
-        }
-    }
+    //     TestClient {
+    //         c: Client::with_options(
+    //             &["https://etcdsecure:2379"],
+    //             ClientOptions {
+    //                 tls_connector: Some(tls_connector),
+    //                 username_and_password: None,
+    //             },
+    //         ).unwrap(),
+    //     }
+    // }
 }
 
-impl Drop for TestClient {
+impl<C> Drop for TestClient<C> where C: Clone + Connect {
     #[allow(unused_must_use)]
     fn drop(&mut self) {
-        self.delete("/test", true);
+        let mut core = Core::new().unwrap();
+        let work = kv::delete(&self.c, "/test", true);
+        core.run(work).unwrap();
     }
 }
 
-impl Deref for TestClient {
-    type Target = Client;
+impl<C> Deref for TestClient<C> where C: Clone + Connect {
+    type Target = Client<C>;
 
     fn deref(&self) -> &Self::Target {
         &self.c
@@ -69,36 +78,58 @@ impl Deref for TestClient {
 
 #[test]
 fn create() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
-    let response = match client.create("/test/foo", "bar", Some(60)) {
-        Ok(response) => response,
-        Err(error) => panic!("{:?}", error),
-    };
-    let node = response.node.unwrap();
+    let work = Box::new(kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|response| {
+        let node = response.node.unwrap();
 
-    assert_eq!(response.action, "create");
-    assert_eq!(node.value.unwrap(), "bar");
-    assert_eq!(node.ttl.unwrap(), 60);
+        assert_eq!(response.action, "create");
+        assert_eq!(node.value.unwrap(), "bar");
+        assert_eq!(node.ttl.unwrap(), 60);
+
+        Ok(())
+    }));
+
+    core.run(work).unwrap();
 }
 
 #[test]
 fn create_does_not_replace_existing_key() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
-    client.create("/test/foo", "bar", Some(60)).ok().unwrap();
+    let fut_create = kv::create(&client, "/test/foo", "bar", Some(60));
 
-    for error in client.create("/test/foo", "bar", None).err().unwrap().iter() {
-        match error {
-            &Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
-            _ => panic!("expected EtcdError due to pre-existing key"),
-        }
-    };
+    let work = fut_create.and_then(|_| {
+        let fut_create = kv::create(&client, "/test/foo", "bar", Some(60));
+
+        let work = fut_create.then(|result| {
+            let errors = result.err().unwrap();
+
+            for error in errors {
+                match error {
+                    Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
+                    _ => panic!("expected EtcdError due to pre-existing key"),
+                }
+            }
+
+            result
+        });
+
+        Box::new(work)
+    });
+
+    core.run(work).unwrap();
 }
 
 #[test]
 fn create_in_order() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let keys: Vec<String> = (1..4).map(|ref _key| {
         client.create_in_order(
@@ -114,7 +145,9 @@ fn create_in_order() {
 
 #[test]
 fn create_in_order_must_operate_on_a_directory() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.create("/test/foo", "bar", None).ok().unwrap();
 
@@ -123,7 +156,9 @@ fn create_in_order_must_operate_on_a_directory() {
 
 #[test]
 fn compare_and_delete() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let modified_index = client.create(
         "/test/foo",
@@ -142,7 +177,9 @@ fn compare_and_delete() {
 
 #[test]
 fn compare_and_delete_only_index() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let modified_index = client.create(
         "/test/foo",
@@ -161,7 +198,10 @@ fn compare_and_delete_only_index() {
 
 #[test]
 fn compare_and_delete_only_value() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     let response = client.compare_and_delete(
@@ -175,7 +215,10 @@ fn compare_and_delete_only_value() {
 
 #[test]
 fn compare_and_delete_requires_conditions() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     for error in client.compare_and_delete("/test/foo", None, None).err().unwrap().iter() {
@@ -191,7 +234,9 @@ fn compare_and_delete_requires_conditions() {
 
 #[test]
 fn compare_and_swap() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let modified_index = client.create(
         "/test/foo",
@@ -212,7 +257,9 @@ fn compare_and_swap() {
 
 #[test]
 fn compare_and_swap_only_index() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let modified_index = client.create(
         "/test/foo",
@@ -233,7 +280,10 @@ fn compare_and_swap_only_index() {
 
 #[test]
 fn compare_and_swap_only_value() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     let response = client.compare_and_swap(
@@ -249,7 +299,10 @@ fn compare_and_swap_only_value() {
 
 #[test]
 fn compare_and_swap_requires_conditions() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     for error in client.compare_and_swap(
@@ -271,7 +324,10 @@ fn compare_and_swap_requires_conditions() {
 
 #[test]
 fn get() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", Some(60)).ok().unwrap();
 
     let response = client.get("/test/foo", false, false, false).ok().unwrap();
@@ -285,7 +341,9 @@ fn get() {
 
 #[test]
 fn get_non_recursive() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.set("/test/dir/baz", "blah", None).ok();
     client.set("/test/foo", "bar", None).ok();
@@ -305,7 +363,9 @@ fn get_non_recursive() {
 
 #[test]
 fn get_recursive() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.set("/test/dir/baz", "blah", None).ok();
 
@@ -315,41 +375,45 @@ fn get_recursive() {
     assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
 }
 
-#[test]
-fn https() {
-    let client = TestClient::https();
+// #[test]
+// fn https() {
+//     let client = TestClient::https();
 
-    if let Err(errors) = client.create("/test/foo", "bar", Some(60)) {
-        for error in errors {
-            println!("ERROR: {}", error);
-        }
-    }
+//     if let Err(errors) = client.create("/test/foo", "bar", Some(60)) {
+//         for error in errors {
+//             println!("ERROR: {}", error);
+//         }
+//     }
 
-    let response = client.get("/test/foo", false, false, false).ok().unwrap();
-    let node = response.node.unwrap();
+//     let response = client.get("/test/foo", false, false, false).ok().unwrap();
+//     let node = response.node.unwrap();
 
-    assert_eq!(response.action, "get");
-    assert_eq!(node.value.unwrap(), "bar");
-    assert_eq!(node.ttl.unwrap(), 60);
-}
+//     assert_eq!(response.action, "get");
+//     assert_eq!(node.value.unwrap(), "bar");
+//     assert_eq!(node.ttl.unwrap(), 60);
+// }
 
-#[test]
-fn https_without_valid_client_certificate() {
-    let client = Client::new(&["https://etcdsecure:2379"]).unwrap();
+// #[test]
+// fn https_without_valid_client_certificate() {
+//     let client = Client::new(&["https://etcdsecure:2379"]).unwrap();
 
-    assert!(client.get("/test/foo", false, false, false).is_err());
-}
+//     assert!(client.get("/test/foo", false, false, false).is_err());
+// }
 
 #[test]
 fn leader_stats() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.leader_stats().unwrap();
 }
 
 #[test]
 fn self_stats() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     for result in client.self_stats().iter() {
         assert!(result.is_ok());
@@ -358,7 +422,9 @@ fn self_stats() {
 
 #[test]
 fn set() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let response = client.set("/test/foo", "baz", None).ok().unwrap();
     let node = response.node.unwrap();
@@ -370,7 +436,9 @@ fn set() {
 
 #[test]
 fn set_dir() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     assert!(client.set_dir("/test", None).is_ok());
     assert!(client.set_dir("/test", None).is_err());
@@ -382,7 +450,9 @@ fn set_dir() {
 
 #[test]
 fn store_stats() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     for result in client.store_stats() {
         assert!(result.is_ok())
@@ -391,7 +461,10 @@ fn store_stats() {
 
 #[test]
 fn update() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     let response = client.update("/test/foo", "blah", Some(30)).ok().unwrap();
@@ -404,7 +477,9 @@ fn update() {
 
 #[test]
 fn update_requires_existing_key() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     for error in client.update("/test/foo", "bar", None).err().unwrap().iter() {
         match error {
@@ -416,7 +491,9 @@ fn update_requires_existing_key() {
 
 #[test]
 fn update_dir() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.create_dir("/test", None).ok().unwrap();
 
@@ -427,7 +504,9 @@ fn update_dir() {
 
 #[test]
 fn update_dir_replaces_key() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     client.set("/test/foo", "bar", None).ok().unwrap();
 
@@ -440,14 +519,19 @@ fn update_dir_replaces_key() {
 
 #[test]
 fn update_dir_requires_existing_dir() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     assert!(client.update_dir("/test", None).is_err());
 }
 
 #[test]
 fn delete() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create("/test/foo", "bar", None).ok().unwrap();
 
     let response = client.delete("/test/foo", false).ok().unwrap();
@@ -457,7 +541,9 @@ fn delete() {
 
 #[test]
 fn create_dir() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     let response = client.create_dir("/test/dir", None).ok().unwrap();
     let node = response.node.unwrap();
@@ -469,7 +555,10 @@ fn create_dir() {
 
 #[test]
 fn delete_dir() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
+
     client.create_dir("/test/dir", None).ok().unwrap();
 
     let response = client.delete_dir("/test/dir").ok().unwrap();
@@ -477,64 +566,66 @@ fn delete_dir() {
     assert_eq!(response.action, "delete");
 }
 
-#[test]
-fn watch() {
-    let child = spawn(|| {
-        let client = Client::new(&["http://etcd:2379"]).unwrap();
+// #[test]
+// fn watch() {
+//     let child = spawn(|| {
+//         let client = Client::new(&["http://etcd:2379"]).unwrap();
 
-        sleep(Duration::from_millis(50));
+//         sleep(Duration::from_millis(50));
 
-        client.set("/test/foo", "baz", None).ok().unwrap();
-    });
+//         client.set("/test/foo", "baz", None).ok().unwrap();
+//     });
 
-    let client = TestClient::new();
+//     let client = TestClient::new();
 
-    client.create("/test/foo", "bar", None).ok().unwrap();
+//     client.create("/test/foo", "bar", None).ok().unwrap();
 
-    let response = client.watch("/test/foo", None, false).ok().unwrap();
+//     let response = client.watch("/test/foo", None, false).ok().unwrap();
 
-    assert_eq!(response.node.unwrap().value.unwrap(), "baz");
+//     assert_eq!(response.node.unwrap().value.unwrap(), "baz");
 
-    child.join().ok().unwrap();
-}
+//     child.join().ok().unwrap();
+// }
 
-#[test]
-fn watch_index() {
-    let client = TestClient::new();
+// #[test]
+// fn watch_index() {
+//     let client = TestClient::new();
 
-    let index = client.set("/test/foo", "bar", None).ok().unwrap().node.unwrap().modified_index.unwrap();
+//     let index = client.set("/test/foo", "bar", None).ok().unwrap().node.unwrap().modified_index.unwrap();
 
-    let response = client.watch("/test/foo", Some(index), false).ok().unwrap();
-    let node = response.node.unwrap();
+//     let response = client.watch("/test/foo", Some(index), false).ok().unwrap();
+//     let node = response.node.unwrap();
 
-    assert_eq!(node.modified_index.unwrap(), index);
-    assert_eq!(node.value.unwrap(), "bar");
-}
+//     assert_eq!(node.modified_index.unwrap(), index);
+//     assert_eq!(node.value.unwrap(), "bar");
+// }
 
-#[test]
-fn watch_recursive() {
-    let child = spawn(|| {
-        let client = Client::new(&["http://etcd:2379"]).unwrap();
+// #[test]
+// fn watch_recursive() {
+//     let child = spawn(|| {
+//         let client = Client::new(&["http://etcd:2379"]).unwrap();
 
-        sleep(Duration::from_millis(50));
+//         sleep(Duration::from_millis(50));
 
-        client.set("/test/foo/bar", "baz", None).ok().unwrap();
-    });
+//         client.set("/test/foo/bar", "baz", None).ok().unwrap();
+//     });
 
-    let client = TestClient::new();
+//     let client = TestClient::new();
 
-    let response = client.watch("/test", None, true).ok().unwrap();
-    let node = response.node.unwrap();
+//     let response = client.watch("/test", None, true).ok().unwrap();
+//     let node = response.node.unwrap();
 
-    assert_eq!(node.key.unwrap(), "/test/foo/bar");
-    assert_eq!(node.value.unwrap(), "baz");
+//     assert_eq!(node.key.unwrap(), "/test/foo/bar");
+//     assert_eq!(node.value.unwrap(), "baz");
 
-    child.join().ok().unwrap();
-}
+//     child.join().ok().unwrap();
+// }
 
 #[test]
 fn versions() {
-    let client = TestClient::new();
+    let mut core = Core::new().unwrap();
+    let handle = core.handle();
+    let client = TestClient::new(&handle);
 
     for result in client.versions().into_iter() {
         let version = result.ok().unwrap();
