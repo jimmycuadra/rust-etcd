@@ -7,8 +7,10 @@ use std::str::FromStr;
 use futures::{Future, IntoFuture, Stream};
 use futures::future::{err, ok};
 use futures::stream::futures_unordered;
-use hyper::{StatusCode, Uri};
-use native_tls::TlsConnector;
+use hyper::{Client as Hyper, StatusCode, Uri};
+use hyper::client::{Connect, HttpConnector};
+#[cfg(feature = "tls")]
+use hyper_tls::HttpsConnector;
 use serde_json;
 use tokio_core::reactor::Handle;
 use url::Url;
@@ -24,35 +26,71 @@ use stats::{LeaderStats, SelfStats, StoreStats};
 use version::VersionInfo;
 
 /// API client for etcd. All API calls are made via the client.
-pub struct Client {
-    http_client: HttpClient,
+#[derive(Clone, Debug)]
+pub struct Client<C>
+where
+    C: Clone + Connect
+{
+    http_client: HttpClient<C>,
     members: Vec<Member>,
 }
 
-/// Options for configuring the behavior of a `Client`.
-#[derive(Default)]
-pub struct ClientOptions {
-    /// A `native_tls::TlsConnector` configured as desired for HTTPS connections.
-    pub tls_connector: Option<TlsConnector>,
-    /// The username and password to use for authentication.
-    pub username_and_password: Option<(String, String)>,
+/// A username and password to use for HTTP basic authentication.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct BasicAuth {
+    /// The username to use for authentication.
+    pub username: String,
+    /// The password to use for authentication.
+    pub password: String,
 }
 
-impl Client {
-    /// Constructs a new client. `endpoints` are URLs for the etcd cluster members to the client
-    /// will make API calls to.
+impl Client<HttpConnector> {
+    /// Constructs a new client using the HTTP protocol. `endpoints` are URLs for the etcd cluster
+    /// members the client will make API calls to.
+    ///
+    /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn new(endpoints: &[&str], handle: &Handle) -> Result<Client, Error> {
-        Client::with_options(endpoints, handle, ClientOptions::default())
-    }
+    pub fn new(handle: &Handle, endpoints: &[&str], basic_auth: Option<BasicAuth>)
+    -> Result<Client<HttpConnector>, Error> {
+        let hyper = Hyper::configure().keep_alive(true).build(handle);
 
-    /// Constructs a new client with the given options. `endpoints` are URLs for the etcd cluster
-    /// members to the client will make API calls to.
+        Client::custom(hyper, endpoints, basic_auth)
+    }
+}
+
+#[cfg(feature = "tls")]
+impl Client<HttpsConnector<HttpConnector>> {
+    /// Constructs a new client using the HTTPS protocol. `endpoints` are URLs for the etcd cluster
+    /// members the client will make API calls to.
+    ///
+    /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn with_options(endpoints: &[&str], handle: &Handle, options: ClientOptions) ->
-    Result<Client, Error> {
+    pub fn https(handle: &Handle, endpoints: &[&str], basic_auth: Option<BasicAuth>)
+    -> Result<Client<HttpsConnector<HttpConnector>>, Error> {
+        let connector = HttpsConnector::new(4, handle)?;
+        let hyper = Hyper::configure().connector(connector).keep_alive(true).build(handle);
+
+        Client::custom(hyper, endpoints, basic_auth)
+    }
+}
+
+impl<C> Client<C>
+where
+    C: Clone + Connect
+{
+    /// Constructs a new client using the provided `hyper::Client`. `endpoints` are URLs for the
+    /// etcd cluster members the client will make API calls to.
+    ///
+    /// This method allows the user to configure the details of the underlying HTTP client to their
+    /// liking. It is also necessary when using X.509 client certificate authentication.
+    ///
+    /// # Errors
+    ///
+    /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
+    pub fn custom(hyper: Hyper<C>, endpoints: &[&str], basic_auth: Option<BasicAuth>) ->
+    Result<Client<C>, Error> {
         if endpoints.len() < 1 {
             return Err(Error::NoEndpoints);
         }
@@ -64,7 +102,7 @@ impl Client {
         }
 
         Ok(Client {
-            http_client: HttpClient::new(handle, options)?,
+            http_client: HttpClient::new(hyper, basic_auth),
             members: members,
         })
     }

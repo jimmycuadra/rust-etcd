@@ -13,13 +13,20 @@ version = "0.6.0"
 [dependencies]
 futures = "0.1.14"
 hyper = "0.11.1"
-hyper-tls = "0.1.2"
-native-tls = "0.1.4"
 serde = "1.0.9"
 serde_derive = "1.0.9"
 serde_json = "1.0.2"
 tokio-core = "0.1.8"
 url = "1.5.1"
 
-[dev-dependencies]
-native-tls = "0.1.2"
+[dependencies.hyper-tls]
+optional = true
+version = "0.1.2"
+
+[dependencies.native-tls]
+optional = true
+version = "0.1.4"
+
+[features]
+default = ["tls"]
+tls = ["hyper-tls", "native-tls"]

@@ -72,12 +72,13 @@
 //! }
 //! ```
 
-#![deny(missing_docs)]
-// #![deny(warnings)]
+#![deny(missing_debug_implementations, missing_docs, warnings)]
 
 extern crate futures;
 extern crate hyper;
+#[cfg(feature = "tls")]
 extern crate hyper_tls;
+#[cfg(feature = "tls")]
 extern crate native_tls;
 extern crate serde;
 #[macro_use] extern crate serde_derive;
@@ -85,7 +86,7 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate url;
 
-pub use client::{Client, ClientOptions};
+pub use client::{BasicAuth, Client};
 pub use error::{ApiError, Error};
 pub use keys::{KeySpaceInfo, FutureKeySpaceInfo, Node};
 

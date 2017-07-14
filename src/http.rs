@@ -1,38 +1,28 @@
-use hyper::{Body, Client, Method, Request, Uri};
-use hyper::client::{FutureResponse, HttpConnector};
+use hyper::{Client as Hyper, Method, Request, Uri};
+use hyper::client::{Connect, FutureResponse};
 use hyper::header::{Authorization, Basic, ContentType};
-use hyper_tls::HttpsConnector;
-use tokio_core::reactor::Handle;
 
-use client::ClientOptions;
-use error::Error;
+use client::BasicAuth;
 
 #[derive(Clone, Debug)]
-pub struct HttpClient {
-    hyper: Client<HttpsConnector<HttpConnector>, Body>,
-    username_and_password: Option<(String, String)>
+pub struct HttpClient<C>
+where
+    C: Clone + Connect
+{
+    basic_auth: Option<BasicAuth>,
+    hyper: Hyper<C>,
 }
 
-impl HttpClient {
+impl<C> HttpClient<C>
+where
+    C: Clone + Connect
+{
     /// Constructs a new `HttpClient`.
-    pub fn new(handle: &Handle, options: ClientOptions) -> Result<Self, Error> {
-        let connector = match options.tls_connector {
-            Some(tls_connector) => {
-                let mut http_connector = HttpConnector::new(4, handle);
-
-                http_connector.enforce_http(false);
-
-                HttpsConnector::from((http_connector, tls_connector))
-            }
-            None => HttpsConnector::new(4, handle)?,
-        };
-
-        let hyper = Client::configure().connector(connector).build(handle);
-
-        Ok(HttpClient {
-            hyper: hyper,
-            username_and_password: options.username_and_password,
-        })
+    pub fn new(hyper: Hyper<C>, basic_auth: Option<BasicAuth>) -> Self {
+        HttpClient {
+            basic_auth,
+            hyper,
+        }
     }
 
     /// Makes a DELETE request to etcd.
@@ -59,10 +49,10 @@ impl HttpClient {
 
     /// Adds the Authorization HTTP header to a request if a credentials were supplied.
     fn add_auth_header<'a>(&self, request: &mut Request) {
-        if let Some((ref username, ref password)) = self.username_and_password {
+        if let Some(ref basic_auth) = self.basic_auth {
             let authorization = Authorization(Basic {
-                username: username.clone(),
-                password: Some(password.clone()),
+                username: basic_auth.username.clone(),
+                password: Some(basic_auth.password.clone()),
             });
 
             request.headers_mut().set(authorization);

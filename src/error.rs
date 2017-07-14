@@ -7,6 +7,7 @@ use std::io::Error as IoError;
 
 use hyper::Error as HttpError;
 use hyper::error::UriError;
+#[cfg(feature = "tls")]
 use native_tls::Error as NativeTlsError;
 use serde_json::Error as SerdeJsonError;
 use url::ParseError;
@@ -28,6 +29,7 @@ pub enum Error {
     /// An IO error, which can happen when reading the HTTP response.
     Io(IoError),
     /// An error configuring TLS.
+    #[cfg(feature = "tls")]
     NativeTls(NativeTlsError),
     /// An error deserializing JSON.
     Serialization(SerdeJsonError),
@@ -58,6 +60,7 @@ impl Display for Error {
             Error::InvalidUri(ref error) => write!(f, "{}", error),
             Error::InvalidUrl(ref error) => write!(f, "{}", error),
             Error::Io(ref error) => write!(f, "{}", error),
+            #[cfg(feature = "tls")]
             Error::NativeTls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),
             Error::NoEndpoints => f.write_str("At least one endpoint is required to create a Client"),
@@ -74,6 +77,7 @@ impl StdError for Error {
             Error::InvalidUri(_) => "a supplied endpoint could not be parsed as a URI" ,
             Error::InvalidUrl(_) => "a URL for the request could not be generated",
             Error::Io(_) => "an error occurred trying to read etcd's HTTP response",
+            #[cfg(feature = "tls")]
             Error::NativeTls(_) => "an error occurred configuring TLS",
             Error::Serialization(_) => "an error occurred deserializing JSON",
             Error::NoEndpoints => "at least one endpoint is required to create a Client",
@@ -93,6 +97,7 @@ impl From<IoError> for Error {
     }
 }
 
+#[cfg(feature = "tls")]
 impl From<NativeTlsError> for Error {
     fn from(error: NativeTlsError) -> Error {
         Error::NativeTls(error)
