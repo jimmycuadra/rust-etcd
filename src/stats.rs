@@ -1,4 +1,4 @@
-//! Types for statistics operations.
+//! etcd's statistics API.
 
 use std::collections::HashMap;
 

@@ -88,15 +88,15 @@ extern crate url;
 
 pub use client::{BasicAuth, Client};
 pub use error::{ApiError, Error};
-pub use keys::{KeySpaceInfo, FutureKeySpaceInfo, Node};
+pub use version::VersionInfo;
 
+pub mod kv;
 pub mod stats;
-pub mod version;
 
 mod async;
 mod client;
 mod error;
 mod http;
-mod keys;
 mod member;
 mod options;
+mod version;

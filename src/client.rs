@@ -19,7 +19,7 @@ use url::form_urlencoded::Serializer;
 use async::first_ok;
 use error::{ApiError, Error};
 use http::HttpClient;
-use keys::{FutureKeySpaceInfo, KeySpaceInfo};
+use kv::{FutureKeySpaceInfo, KeySpaceInfo};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use stats::{LeaderStats, SelfStats, StoreStats};

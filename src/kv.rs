@@ -1,4 +1,4 @@
-//! Types for the primary key space operations.
+//! etcd's key-value API.
 
 use futures::Future;
 
@@ -11,7 +11,7 @@ use error::Error;
 pub type FutureKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Vec<Error>>>;
 
 /// A FutureKeySpaceInfo for a single etcd cluster member.
-pub type FutureSingleMemberKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Error>>;
+pub(crate) type FutureSingleMemberKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Error>>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize)]

@@ -4,7 +4,7 @@ use std::vec::IntoIter;
 use futures::{Async, Future, Poll};
 
 use error::Error;
-use keys::{FutureSingleMemberKeySpaceInfo, KeySpaceInfo};
+use kv::{FutureSingleMemberKeySpaceInfo, KeySpaceInfo};
 use member::Member;
 
 /// Executes the given closure with each cluster member and short-circuit returns the first
