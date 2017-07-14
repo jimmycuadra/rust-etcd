@@ -361,7 +361,13 @@ where
 
 /// Constructs the full URL for an API call.
 fn build_url(member: &Member, path: &str) -> String {
-    format!("{}v2/keys{}", member.endpoint, path)
+    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+        ""
+    } else {
+        "/"
+    };
+
+    format!("{}{}v2/keys{}", member.endpoint, maybe_slash, path)
 }
 
 /// Handles all delete operations.
