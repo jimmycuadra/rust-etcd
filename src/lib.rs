@@ -11,37 +11,51 @@
 //!
 //! ```no_run
 //! extern crate etcd;
+//! extern crate futures;
+//! extern crate tokio_core;
 //!
-//! use std::default::Default;
-//!
-//! use etcd::Client;
+//! use etcd::{Client, kv};
+//! use futures::Future;
+//! use tokio_core::reactor::Core;
 //!
 //! fn main() {
-//!     // Creates a client that will make API calls to http://127.0.0.1:2379.
-//!     let client = Client::default();
+//!     let mut core = Core::new().unwrap();
+//!     let handle = core.handle();
+//!     let client = Client::new(&handle, &["http://etcd.example.com:2379"], None).unwrap();
+//!     let work = Box::new(kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!         Box::new(kv::get(&client, "/foo", false, false, false).and_then(|key_space_info| {
+//!             let value = key_space_info.node.unwrap().value.unwrap();
 //!
-//!     assert!(client.set("/foo", "bar", None).is_ok());
+//!             assert_eq!(value, "bar".to_string());
 //!
-//!     let value = client.get("/foo", false, false, false)
-//!                       .ok().unwrap().node.unwrap().value.unwrap();
+//!             Ok(())
+//!         }))
+//!     }));
 //!
-//!     assert_eq!(value, "bar".to_owned());
+//!     core.run(work).unwrap();
 //! }
 //! ```
 //!
-//! Using HTTPS with client certificate authentication and a username and password for HTTP Basic
-//! Authorization:
+//! Using client certificate authentication:
 //!
 //! ```no_run
 //! extern crate etcd;
+//! extern crate futures;
+//! extern crate hyper;
+//! extern crate hyper_tls;
 //! extern crate native_tls;
+//! extern crate tokio_core;
 //!
 //! use std::fs::File;
 //! use std::io::Read;
 //!
+//! use futures::Future;
+//! use hyper::client::HttpConnector;
+//! use hyper_tls::HttpsConnector;
 //! use native_tls::{Certificate, Pkcs12, TlsConnector};
+//! use tokio_core::reactor::Core;
 //!
-//! use etcd::{Client, ClientOptions};
+//! use etcd::{Client, kv};
 //!
 //! fn main() {
 //!     let mut ca_cert_file = File::open("ca.der").unwrap();
@@ -58,17 +72,27 @@
 //!
 //!     let tls_connector = builder.build().unwrap();
 //!
-//!     let client = Client::with_options(&["https://example.com:2379"], ClientOptions {
-//!         tls_connector: Some(tls_connector),
-//!         username_and_password: Some(("jimmy".to_owned(), "secret".to_owned())),
-//!     }).unwrap();
+//!     let mut core = Core::new().unwrap();
+//!     let handle = core.handle();
 //!
-//!     assert!(client.set("/foo", "bar", None).is_ok());
+//!     let http_connector = HttpConnector::new(4, &handle);
+//!     let https_connector = HttpsConnector::from((http_connector, tls_connector));
 //!
-//!     let value = client.get("/foo", false, false, false)
-//!                       .ok().unwrap().node.unwrap().value.unwrap();
+//!     let hyper = hyper::Client::configure().connector(https_connector).build(&handle);
 //!
-//!     assert_eq!(value, "bar".to_owned());
+//!     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
+//!
+//!     let work = Box::new(kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!         Box::new(kv::get(&client, "/foo", false, false, false).and_then(|key_space_info| {
+//!             let value = key_space_info.node.unwrap().value.unwrap();
+//!
+//!             assert_eq!(value, "bar".to_string());
+//!
+//!             Ok(())
+//!         }))
+//!     }));
+//!
+//!     core.run(work).unwrap();
 //! }
 //! ```
 
