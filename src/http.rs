@@ -7,7 +7,7 @@ use client::BasicAuth;
 #[derive(Clone, Debug)]
 pub struct HttpClient<C>
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     basic_auth: Option<BasicAuth>,
     hyper: Hyper<C>,
@@ -15,14 +15,11 @@ where
 
 impl<C> HttpClient<C>
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     /// Constructs a new `HttpClient`.
     pub fn new(hyper: Hyper<C>, basic_auth: Option<BasicAuth>) -> Self {
-        HttpClient {
-            basic_auth,
-            hyper,
-        }
+        HttpClient { basic_auth, hyper }
     }
 
     /// Makes a DELETE request to etcd.

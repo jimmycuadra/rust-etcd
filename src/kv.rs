@@ -34,7 +34,7 @@ pub struct KeySpaceInfo {
     /// The etcd `Node` that was operated upon.
     pub node: Option<Node>,
     /// The previous state of the target node.
-    #[serde(rename="prevNode")]
+    #[serde(rename = "prevNode")]
     pub prev_node: Option<Node>,
 }
 
@@ -42,7 +42,7 @@ pub struct KeySpaceInfo {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Node {
     /// The new value of the etcd creation index.
-    #[serde(rename="createdIndex")]
+    #[serde(rename = "createdIndex")]
     pub created_index: Option<u64>,
     /// Whether or not the node is a directory.
     pub dir: Option<bool>,
@@ -51,7 +51,7 @@ pub struct Node {
     /// The name of the key.
     pub key: Option<String>,
     /// The new value of the etcd modification index.
-    #[serde(rename="modifiedIndex")]
+    #[serde(rename = "modifiedIndex")]
     pub modified_index: Option<u64>,
     /// Child nodes of a directory.
     pub nodes: Option<Vec<Node>>,
@@ -68,10 +68,10 @@ pub fn compare_and_delete<C>(
     client: &Client<C>,
     key: &str,
     current_value: Option<&str>,
-    current_modified_index: Option<u64>
+    current_modified_index: Option<u64>,
 ) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_delete(
         client,
@@ -82,7 +82,7 @@ where
                 modified_index: current_modified_index,
             }),
             ..Default::default()
-        }
+        },
     )
 }
 
@@ -99,7 +99,7 @@ pub fn compare_and_swap<C>(
     current_modified_index: Option<u64>,
 ) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -121,7 +121,7 @@ where
 /// Fails if the key already exists.
 pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -140,7 +140,7 @@ where
 /// Fails if the key already exists.
 pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -158,10 +158,14 @@ where
 /// and a key name guaranteed to be greater than all existing keys in the directory.
 ///
 /// Fails if the key already exists and is not a directory.
-pub fn create_in_order<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>)
--> FutureKeySpaceInfo
+pub fn create_in_order<C>(
+    client: &Client<C>,
+    key: &str,
+    value: &str,
+    ttl: Option<u64>,
+) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -183,7 +187,7 @@ where
 /// Fails if the key is a directory and `recursive` is `false`.
 pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_delete(
         client,
@@ -191,7 +195,7 @@ where
         DeleteOptions {
             recursive: Some(recursive),
             ..Default::default()
-        }
+        },
     )
 }
 
@@ -200,7 +204,7 @@ where
 /// Fails if the directory is not empty.
 pub fn delete_dir<C>(client: &Client<C>, key: &str) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_delete(
         client,
@@ -208,7 +212,7 @@ where
         DeleteOptions {
             dir: Some(true),
             ..Default::default()
-        }
+        },
     )
 }
 
@@ -231,7 +235,7 @@ pub fn get<C>(
     strong_consistency: bool,
 ) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_get(
         client,
@@ -251,7 +255,7 @@ where
 /// Fails if the key is a directory.
 pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -270,7 +274,7 @@ where
 /// Fails if the key is an existing directory.
 pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -288,7 +292,7 @@ where
 /// Fails if the key does not exist.
 pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -309,7 +313,7 @@ where
 /// Fails if the key does not exist.
 pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_set(
         client,
@@ -333,10 +337,14 @@ where
 /// store of the most recent change events. In this case, the key should be queried for its
 /// latest "modified index" value and that should be used as the new `index` on a subsequent
 /// `watch`.
-pub fn watch<C>(client: &Client<C>, key: &str, index: Option<u64>, recursive: bool)
--> FutureKeySpaceInfo
+pub fn watch<C>(
+    client: &Client<C>,
+    key: &str,
+    index: Option<u64>,
+    recursive: bool,
+) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     raw_get(
         client,
@@ -357,13 +365,9 @@ fn build_url(member: &Member, path: &str) -> String {
 }
 
 /// Handles all delete operations.
-fn raw_delete<C>(
-    client: &Client<C>,
-    key: &str,
-    options: DeleteOptions,
-) -> FutureKeySpaceInfo
+fn raw_delete<C>(client: &Client<C>, key: &str, options: DeleteOptions) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     let mut query_pairs = HashMap::new();
 
@@ -379,13 +383,18 @@ where
         let conditions = options.conditions.unwrap();
 
         if conditions.is_empty() {
-            return Box::new(Err(
-                vec![Error::InvalidConditions("Current value or modified index is required.")]
-            ).into_future());
+            return Box::new(
+                Err(vec![
+                    Error::InvalidConditions("Current value or modified index is required."),
+                ]).into_future(),
+            );
         }
 
         if conditions.modified_index.is_some() {
-          query_pairs.insert("prevIndex", format!("{}", conditions.modified_index.unwrap()));
+            query_pairs.insert(
+                "prevIndex",
+                format!("{}", conditions.modified_index.unwrap()),
+            );
         }
 
         if conditions.value.is_some() {
@@ -397,13 +406,14 @@ where
     let key = key.to_string();
 
     let result = first_ok(client.members().to_vec(), move |member| {
-        let url = Url::parse_with_params(
-            &build_url(member, &key),
-            query_pairs.clone(),
-        ).map_err(Error::from).into_future();
+        let url = Url::parse_with_params(&build_url(member, &key), query_pairs.clone())
+            .map_err(Error::from)
+            .into_future();
 
         let uri = url.and_then(|url| {
-            Uri::from_str(url.as_str()).map_err(Error::from).into_future()
+            Uri::from_str(url.as_str())
+                .map_err(Error::from)
+                .into_future()
         });
 
         let http_client = http_client.clone();
@@ -414,17 +424,15 @@ where
             let status = response.status();
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| {
-                if status == StatusCode::Ok {
-                    match serde_json::from_slice::<KeySpaceInfo>(body) {
-                        Ok(key_space_info) => ok(key_space_info),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
-                } else {
-                    match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<KeySpaceInfo>(body) {
+                    Ok(key_space_info) => ok(key_space_info),
+                    Err(error) => err(Error::Serialization(error)),
+                }
+            } else {
+                match serde_json::from_slice::<ApiError>(body) {
+                    Ok(error) => err(Error::Api(error)),
+                    Err(error) => err(Error::Serialization(error)),
                 }
             })
         });
@@ -438,7 +446,7 @@ where
 /// Handles all get operations.
 fn raw_get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     let mut query_pairs = HashMap::new();
 
@@ -460,13 +468,14 @@ where
     let key = key.to_string();
 
     let result = first_ok(client.members().to_vec(), move |member| {
-        let url = Url::parse_with_params(
-            &build_url(member, &key),
-            query_pairs.clone(),
-        ).map_err(Error::from).into_future();
+        let url = Url::parse_with_params(&build_url(member, &key), query_pairs.clone())
+            .map_err(Error::from)
+            .into_future();
 
         let uri = url.and_then(|url| {
-            Uri::from_str(url.as_str()).map_err(Error::from).into_future()
+            Uri::from_str(url.as_str())
+                .map_err(Error::from)
+                .into_future()
         });
 
         let http_client = http_client.clone();
@@ -477,17 +486,15 @@ where
             let status = response.status();
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| {
-                if status == StatusCode::Ok {
-                    match serde_json::from_slice::<KeySpaceInfo>(body) {
-                        Ok(key_space_info) => ok(key_space_info),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
-                } else {
-                    match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<KeySpaceInfo>(body) {
+                    Ok(key_space_info) => ok(key_space_info),
+                    Err(error) => err(Error::Serialization(error)),
+                }
+            } else {
+                match serde_json::from_slice::<ApiError>(body) {
+                    Ok(error) => err(Error::Api(error)),
+                    Err(error) => err(Error::Serialization(error)),
                 }
             })
         });
@@ -499,13 +506,9 @@ where
 }
 
 /// Handles all set operations.
-fn raw_set<C>(
-    client: &Client<C>,
-    key: &str,
-    options: SetOptions,
-) -> FutureKeySpaceInfo
+fn raw_set<C>(client: &Client<C>, key: &str, options: SetOptions) -> FutureKeySpaceInfo
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     let mut http_options = vec![];
 
@@ -522,16 +525,16 @@ where
     }
 
     if let Some(ref prev_exist) = options.prev_exist {
-        http_options.push(
-            ("prevExist".to_owned(), prev_exist.to_string())
-        );
+        http_options.push(("prevExist".to_owned(), prev_exist.to_string()));
     }
 
     if let Some(ref conditions) = options.conditions {
         if conditions.is_empty() {
-            return Box::new(Err(
-                vec![Error::InvalidConditions("Current value or modified index is required.")]
-            ).into_future());
+            return Box::new(
+                Err(vec![
+                    Error::InvalidConditions("Current value or modified index is required."),
+                ]).into_future(),
+            );
         }
 
         if let Some(ref modified_index) = conditions.modified_index {
@@ -553,35 +556,33 @@ where
         let body = serializer.finish();
 
         let url = build_url(member, &key);
-        let uri = Uri::from_str(url.as_str()).map_err(Error::from).into_future();
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
 
         let http_client = http_client.clone();
 
-        let response = uri.and_then(move |uri| {
-            if create_in_order {
-                http_client.post(uri, body).map_err(Error::from)
-            } else {
-                http_client.put(uri, body).map_err(Error::from)
-            }
+        let response = uri.and_then(move |uri| if create_in_order {
+            http_client.post(uri, body).map_err(Error::from)
+        } else {
+            http_client.put(uri, body).map_err(Error::from)
         });
 
         let result = response.and_then(|response| {
             let status = response.status();
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| {
-                match status {
-                    StatusCode::Created | StatusCode::Ok => {
-                        match serde_json::from_slice::<KeySpaceInfo>(body) {
-                            Ok(key_space_info) => ok(key_space_info),
-                            Err(error) => err(Error::Serialization(error)),
-                        }
+            body.and_then(move |ref body| match status {
+                StatusCode::Created | StatusCode::Ok => {
+                    match serde_json::from_slice::<KeySpaceInfo>(body) {
+                        Ok(key_space_info) => ok(key_space_info),
+                        Err(error) => err(Error::Serialization(error)),
                     }
-                    _ => {
-                        match serde_json::from_slice::<ApiError>(body) {
-                            Ok(error) => err(Error::Api(error)),
-                            Err(error) => err(Error::Serialization(error)),
-                        }
+                }
+                _ => {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => err(Error::Api(error)),
+                        Err(error) => err(Error::Serialization(error)),
                     }
                 }
             })

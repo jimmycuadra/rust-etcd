@@ -12,7 +12,7 @@ use member::Member;
 /// returned.
 pub fn first_ok<F>(members: Vec<Member>, callback: F) -> FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo
+    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
 {
     FirstOk {
         callback,
@@ -25,18 +25,17 @@ where
 #[must_use = "futures do nothing unless polled"]
 pub struct FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo
+    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
 {
     callback: F,
     current_future: Option<FutureSingleMemberKeySpaceInfo>,
     errors: Vec<Error>,
     members: IntoIter<Member>,
-
 }
 
 impl<F> Future for FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo
+    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
 {
     type Item = KeySpaceInfo;
     type Error = Vec<Error>;

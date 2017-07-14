@@ -20,7 +20,7 @@ use version::VersionInfo;
 #[derive(Clone, Debug)]
 pub struct Client<C>
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     http_client: HttpClient<C>,
     members: Vec<Member>,
@@ -42,8 +42,11 @@ impl Client<HttpConnector> {
     /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn new(handle: &Handle, endpoints: &[&str], basic_auth: Option<BasicAuth>)
-    -> Result<Client<HttpConnector>, Error> {
+    pub fn new(
+        handle: &Handle,
+        endpoints: &[&str],
+        basic_auth: Option<BasicAuth>,
+    ) -> Result<Client<HttpConnector>, Error> {
         let hyper = Hyper::configure().keep_alive(true).build(handle);
 
         Client::custom(hyper, endpoints, basic_auth)
@@ -58,10 +61,16 @@ impl Client<HttpsConnector<HttpConnector>> {
     /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn https(handle: &Handle, endpoints: &[&str], basic_auth: Option<BasicAuth>)
-    -> Result<Client<HttpsConnector<HttpConnector>>, Error> {
+    pub fn https(
+        handle: &Handle,
+        endpoints: &[&str],
+        basic_auth: Option<BasicAuth>,
+    ) -> Result<Client<HttpsConnector<HttpConnector>>, Error> {
         let connector = HttpsConnector::new(4, handle)?;
-        let hyper = Hyper::configure().connector(connector).keep_alive(true).build(handle);
+        let hyper = Hyper::configure()
+            .connector(connector)
+            .keep_alive(true)
+            .build(handle);
 
         Client::custom(hyper, endpoints, basic_auth)
     }
@@ -69,7 +78,7 @@ impl Client<HttpsConnector<HttpConnector>> {
 
 impl<C> Client<C>
 where
-    C: Clone + Connect
+    C: Clone + Connect,
 {
     /// Constructs a new client using the provided `hyper::Client`. `endpoints` are URLs for the
     /// etcd cluster members the client will make API calls to.
@@ -80,8 +89,11 @@ where
     /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
-    pub fn custom(hyper: Hyper<C>, endpoints: &[&str], basic_auth: Option<BasicAuth>) ->
-    Result<Client<C>, Error> {
+    pub fn custom(
+        hyper: Hyper<C>,
+        endpoints: &[&str],
+        basic_auth: Option<BasicAuth>,
+    ) -> Result<Client<C>, Error> {
         if endpoints.len() < 1 {
             return Err(Error::NoEndpoints);
         }
@@ -117,17 +129,15 @@ where
                 let status = response.status();
                 let body = response.body().concat2().map_err(Error::from);
 
-                body.and_then(move |ref body| {
-                    if status == StatusCode::Ok {
-                        match serde_json::from_slice::<VersionInfo>(body) {
-                            Ok(stats) => ok(stats),
-                            Err(error) => err(Error::Serialization(error)),
-                        }
-                    } else {
-                        match serde_json::from_slice::<ApiError>(body) {
-                            Ok(error) => err(Error::Api(error)),
-                            Err(error) => err(Error::Serialization(error)),
-                        }
+                body.and_then(move |ref body| if status == StatusCode::Ok {
+                    match serde_json::from_slice::<VersionInfo>(body) {
+                        Ok(stats) => ok(stats),
+                        Err(error) => err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => err(Error::Api(error)),
+                        Err(error) => err(Error::Serialization(error)),
                     }
                 })
             })
@@ -136,10 +146,12 @@ where
         Box::new(futures_unordered(futures))
     }
 
-    pub(crate) fn request<T>(&self, uri: FutureResult<Uri, Error>)
-    -> Box<Future<Item = T, Error = Error>>
+    pub(crate) fn request<T>(
+        &self,
+        uri: FutureResult<Uri, Error>,
+    ) -> Box<Future<Item = T, Error = Error>>
     where
-        T: DeserializeOwned + 'static
+        T: DeserializeOwned + 'static,
     {
         let http_client = self.http_client.clone();
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
@@ -147,17 +159,15 @@ where
             let status = response.status();
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |body| {
-                if status == StatusCode::Ok {
-                    match serde_json::from_slice::<T>(&body) {
-                        Ok(stats) => ok(stats),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
-                } else {
-                    match serde_json::from_slice::<ApiError>(&body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
-                    }
+            body.and_then(move |body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<T>(&body) {
+                    Ok(stats) => ok(stats),
+                    Err(error) => err(Error::Serialization(error)),
+                }
+            } else {
+                match serde_json::from_slice::<ApiError>(&body) {
+                    Ok(error) => err(Error::Api(error)),
+                    Err(error) => err(Error::Serialization(error)),
                 }
             })
         });

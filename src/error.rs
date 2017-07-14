@@ -43,7 +43,7 @@ pub struct ApiError {
     /// The key that was being operated upon or reason for the failure.
     pub cause: Option<String>,
     /// The etcd error code.
-    #[serde(rename="errorCode")]
+    #[serde(rename = "errorCode")]
     pub error_code: u64,
     /// The etcd index.
     pub index: u64,
@@ -62,7 +62,9 @@ impl Display for Error {
             #[cfg(feature = "tls")]
             Error::Tls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),
-            Error::NoEndpoints => f.write_str("At least one endpoint is required to create a Client"),
+            Error::NoEndpoints => {
+                f.write_str("At least one endpoint is required to create a Client")
+            }
         }
     }
 }
@@ -73,7 +75,7 @@ impl StdError for Error {
             Error::Api(_) => "the etcd server returned an error",
             Error::Http(_) => "an error occurred during the HTTP request",
             Error::InvalidConditions(conditions) => conditions,
-            Error::InvalidUri(_) => "a supplied endpoint could not be parsed as a URI" ,
+            Error::InvalidUri(_) => "a supplied endpoint could not be parsed as a URI",
             Error::InvalidUrl(_) => "a URL for the request could not be generated",
             #[cfg(feature = "tls")]
             Error::Tls(_) => "an error occurred configuring TLS",
