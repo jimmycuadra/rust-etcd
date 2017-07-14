@@ -2,6 +2,13 @@
 
 use std::collections::HashMap;
 
+use futures::{Future, IntoFuture, Stream};
+use futures::stream::futures_unordered;
+use hyper::client::Connect;
+
+use client::Client;
+use error::Error;
+
 /// Statistics about an etcd cluster leader.
 #[derive(Clone, Debug, Deserialize)]
 pub struct LeaderStats {
@@ -143,4 +150,52 @@ pub struct StoreStats {
     pub update_success: u64,
     /// The number of watchers.
     pub watchers: u64,
+}
+
+/// Returns statistics about the leader member of a cluster.
+///
+/// Fails if JSON decoding fails, which suggests a bug in our schema.
+pub fn leader_stats<C>(client: &Client<C>) -> Box<Future<Item = LeaderStats, Error = Error>>
+where
+    C: Clone + Connect
+{
+    let url = format!("{}v2/stats/leader", client.members()[0].endpoint);
+    let uri = url.parse().map_err(Error::from).into_future();
+
+    client.request(uri)
+}
+
+/// Returns statistics about each cluster member the client was initialized with.
+///
+/// Fails if JSON decoding fails, which suggests a bug in our schema.
+pub fn self_stats<C>(client: &Client<C>) -> Box<Stream<Item = SelfStats, Error = Error>>
+where
+    C: Clone + Connect
+{
+    let futures = client.members().iter().map(|member| {
+        let url = format!("{}v2/stats/self", member.endpoint);
+        let uri = url.parse().map_err(Error::from).into_future();
+
+        client.request(uri)
+    });
+
+    Box::new(futures_unordered(futures))
+}
+
+/// Returns statistics about operations handled by each etcd member the client was initialized
+/// with.
+///
+/// Fails if JSON decoding fails, which suggests a bug in our schema.
+pub fn store_stats<C>(client: &Client<C>) -> Box<Stream<Item = StoreStats, Error = Error>>
+where
+    C: Clone + Connect
+{
+    let futures = client.members().iter().map(|member| {
+        let url = format!("{}v2/stats/store", member.endpoint);
+        let uri = url.parse().map_err(Error::from).into_future();
+
+        client.request(uri)
+    });
+
+    Box::new(futures_unordered(futures))
 }
