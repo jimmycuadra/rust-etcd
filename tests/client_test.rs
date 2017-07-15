@@ -132,10 +132,10 @@ fn create() {
 fn create_does_not_replace_existing_key() {
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
-    let client2 = client.clone();
+    let inner_client = client.clone();
 
-    let work = kv::create(&client2, "/test/foo", "bar", Some(60)).and_then(move |_| {
-        kv::create(&client2, "/test/foo", "bar", Some(60)).then(|result| {
+    let work = kv::create(&inner_client, "/test/foo", "bar", Some(60)).and_then(move |_| {
+        kv::create(&inner_client, "/test/foo", "bar", Some(60)).then(|result| {
             match result {
                 Ok(_) => panic!("expected EtcdError due to pre-existing key"),
                 Err(errors) => {
