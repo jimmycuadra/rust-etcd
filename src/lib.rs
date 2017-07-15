@@ -75,7 +75,8 @@
 //!     let mut core = Core::new().unwrap();
 //!     let handle = core.handle();
 //!
-//!     let http_connector = HttpConnector::new(4, &handle);
+//!     let mut http_connector = HttpConnector::new(4, &handle);
+//!     http_connector.enforce_http(false);
 //!     let https_connector = HttpsConnector::from((http_connector, tls_connector));
 //!
 //!     let hyper = hyper::Client::configure().connector(https_connector).build(&handle);

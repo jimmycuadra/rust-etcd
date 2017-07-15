@@ -1,8 +1,8 @@
 .PHONY: all
 all: rust clean
 
-.PHONY: ssl rust
-rust:
+.PHONY: rust
+rust: ssl
 	-docker-compose run --rm rust
 
 .PHONY: clean

@@ -17,13 +17,13 @@ use hyper_tls::HttpsConnector;
 use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
-use etcd::{Client, Error};
-use etcd::kv::{self, KeySpaceInfo};
+use etcd::{Client, Error, kv};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient<C> where C: Clone + Connect {
     c: Client<C>,
     core: Core,
+    run_destructor: bool,
 }
 
 impl TestClient<HttpConnector> {
@@ -34,29 +34,33 @@ impl TestClient<HttpConnector> {
         TestClient {
             c: Client::new(&handle, &["http://etcd:2379"], None).unwrap(),
             core: core,
+            run_destructor: true,
         }
     }
 
     /// Creates a new HTTPS client for a test.
-    fn https() -> TestClient<HttpsConnector<HttpConnector>> {
+    fn https(core: Core, use_client_cert: bool) -> TestClient<HttpsConnector<HttpConnector>> {
         let mut ca_cert_file = File::open("/source/tests/ssl/ca.der").unwrap();
         let mut ca_cert_buffer = Vec::new();
         ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
 
-        let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
-        let mut pkcs12_buffer = Vec::new();
-        pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
-
         let mut builder = TlsConnector::builder().unwrap();
         builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
-        builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+
+        if use_client_cert {
+            let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
+            let mut pkcs12_buffer = Vec::new();
+            pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
+
+            builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+        }
 
         let tls_connector = builder.build().unwrap();
 
-        let core = Core::new().unwrap();
         let handle = core.handle();
 
-        let http_connector = HttpConnector::new(1, &handle);
+        let mut http_connector = HttpConnector::new(1, &handle);
+        http_connector.enforce_http(false);
         let https_connector = HttpsConnector::from((http_connector, tls_connector));
 
         let hyper = Hyper::configure().connector(https_connector).build(&handle);
@@ -64,6 +68,7 @@ impl TestClient<HttpConnector> {
         TestClient {
             c: Client::custom(hyper, &["https://etcdsecure:2379"], None).unwrap(),
             core,
+            run_destructor: use_client_cert,
         }
     }
 }
@@ -76,8 +81,10 @@ impl<C> TestClient<C> where C: Clone + Connect {
 
 impl<C> Drop for TestClient<C> where C: Clone + Connect {
     fn drop(&mut self) {
-        let work = kv::delete(&self.c, "/test", true);
-        self.core.run(work).unwrap();
+        if self.run_destructor {
+            let work = kv::delete(&self.c, "/test", true);
+            self.core.run(work).unwrap();
+        }
     }
 }
 
@@ -104,38 +111,35 @@ fn create() {
         Ok(())
     }));
 
-    assert!(client.run(work).is_ok())
+    assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn create_does_not_replace_existing_key() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn create_does_not_replace_existing_key() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let client2 = client.clone();
 
-//     let fut_create = kv::create(&client, "/test/foo", "bar", Some(60));
+    let work = Box::new(kv::create(&client2, "/test/foo", "bar", Some(60)).and_then(move |_| {
+        Box::new(kv::create(&client2, "/test/foo", "bar", Some(60)).then(|result| {
+            match result {
+                Ok(_) => panic!("expected EtcdError due to pre-existing key"),
+                Err(errors) => {
+                    for error in errors {
+                        match error {
+                            Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
+                            _ => panic!("expected EtcdError due to pre-existing key"),
+                        }
+                    }
+                }
+            }
 
-//     let work = fut_create.and_then(|_| {
-//         let fut_create = kv::create(&client, "/test/foo", "bar", Some(60));
+            Ok(())
+        }))
+    }));
 
-//         let work = fut_create.then(|result| {
-//             let errors = result.err().unwrap();
-
-//             for error in errors {
-//                 match error {
-//                     Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
-//                     _ => panic!("expected EtcdError due to pre-existing key"),
-//                 }
-//             }
-
-//             result
-//         });
-
-//         Box::new(work)
-//     });
-
-//     core.run(work).unwrap();
-// }
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn create_in_order() {
@@ -387,30 +391,25 @@ fn create() {
 //     assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
 // }
 
-// // #[test]
-// // fn https() {
-// //     let client = TestClient::https();
+#[test]
+fn https() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::https(core, true);
 
-// //     if let Err(errors) = client.create("/test/foo", "bar", Some(60)) {
-// //         for error in errors {
-// //             println!("ERROR: {}", error);
-// //         }
-// //     }
+    let work = Box::new(kv::set(&client, "/test/foo", "bar", Some(60)));
 
-// //     let response = client.get("/test/foo", false, false, false).ok().unwrap();
-// //     let node = response.node.unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-// //     assert_eq!(response.action, "get");
-// //     assert_eq!(node.value.unwrap(), "bar");
-// //     assert_eq!(node.ttl.unwrap(), 60);
-// // }
+#[test]
+fn https_without_valid_client_certificate() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::https(core, false);
 
-// // #[test]
-// // fn https_without_valid_client_certificate() {
-// //     let client = Client::new(&["https://etcdsecure:2379"]).unwrap();
+    let work = Box::new(kv::set(&client, "/test/foo", "bar", Some(60)));
 
-// //     assert!(client.get("/test/foo", false, false, false).is_err());
-// // }
+    assert!(client.run(work).is_err());
+}
 
 // #[test]
 // fn leader_stats() {
