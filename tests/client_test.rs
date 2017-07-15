@@ -11,13 +11,14 @@ use std::ops::Deref;
 use std::thread::{sleep, spawn};
 use std::time::Duration;
 
-use futures::Future;
+use futures::future::{Future, join_all};
 use hyper::client::{Client as Hyper, Connect, HttpConnector};
 use hyper_tls::HttpsConnector;
 use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
-use etcd::{Client, Error, kv};
+use etcd::{Client, Error};
+use etcd::kv::{self, FutureKeySpaceInfo, KeySpaceInfo};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient<C> where C: Clone + Connect {
@@ -141,23 +142,29 @@ fn create_does_not_replace_existing_key() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn create_in_order() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn create_in_order() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
 
-//     let keys: Vec<String> = (1..4).map(|ref _key| {
-//         client.create_in_order(
-//             "/test/foo",
-//             "bar",
-//             None,
-//         ).ok().unwrap().node.unwrap().key.unwrap()
-//     }).collect();
+    let requests: Vec<FutureKeySpaceInfo> = (1..4).map(|_| {
+        kv::create_in_order( &client, "/test/foo", "bar", None)
+    }).collect();
 
-//     assert!(keys[0] < keys[1]);
-//     assert!(keys[1] < keys[2]);
-// }
+    let work = Box::new(join_all(requests).and_then(|ksis: Vec<KeySpaceInfo>| {
+        let keys: Vec<String> = ksis
+            .into_iter()
+            .map(|ksi| ksi.node.unwrap().key.unwrap())
+            .collect();
+
+        assert!(keys[0] < keys[1]);
+        assert!(keys[1] < keys[2]);
+
+        Ok(())
+    }));
+
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn create_in_order_must_operate_on_a_directory() {
