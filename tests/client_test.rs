@@ -183,94 +183,105 @@ fn create_in_order() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn create_in_order_must_operate_on_a_directory() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn create_in_order_must_operate_on_a_directory() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::create_in_order(&inner_client, "/test/foo", "baz", None).then(|result| {
+            assert!(result.is_err());
 
-//     assert!(client.create_in_order("/test/foo", "baz", None).is_err());
-// }
+            Ok(())
+        })
+    });
 
-// #[test]
-// fn compare_and_delete() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    assert!(client.run(work).is_ok());
+}
 
-//     let modified_index = client.create(
-//         "/test/foo",
-//         "bar",
-//         None
-//     ).ok().unwrap().node.unwrap().modified_index.unwrap();
+#[test]
+fn compare_and_delete() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     let response = client.compare_and_delete(
-//         "/test/foo",
-//         Some("bar"),
-//         Some(modified_index)
-//     ).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|ksi| {
+        let index = ksi.node.unwrap().modified_index.unwrap();
 
-//     assert_eq!(response.action, "compareAndDelete");
-// }
+        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), Some(index))
+            .and_then(|ksi| {
+                assert_eq!(ksi.action, "compareAndDelete");
 
-// #[test]
-// fn compare_and_delete_only_index() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+                Ok(())
+            })
+    });
 
-//     let modified_index = client.create(
-//         "/test/foo",
-//         "bar",
-//         None
-//     ).ok().unwrap().node.unwrap().modified_index.unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-//     let response = client.compare_and_delete(
-//         "/test/foo",
-//         None,
-//         Some(modified_index)
-//     ).ok().unwrap();
+#[test]
+fn compare_and_delete_only_index() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     assert_eq!(response.action, "compareAndDelete");
-// }
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|ksi| {
+        let index = ksi.node.unwrap().modified_index.unwrap();
 
-// #[test]
-// fn compare_and_delete_only_value() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+        kv::compare_and_delete(&inner_client, "/test/foo", None, Some(index)).and_then(|ksi| {
+            assert_eq!(ksi.action, "compareAndDelete");
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+            Ok(())
+        })
+    });
 
-//     let response = client.compare_and_delete(
-//         "/test/foo",
-//         Some("bar"),
-//         None,
-//     ).ok().unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-//     assert_eq!(response.action, "compareAndDelete");
-// }
+#[test]
+fn compare_and_delete_only_value() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-// #[test]
-// fn compare_and_delete_requires_conditions() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), None).and_then(|ksi| {
+            assert_eq!(ksi.action, "compareAndDelete");
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+            Ok(())
+        })
+    });
 
-//     for error in client.compare_and_delete("/test/foo", None, None).err().unwrap().iter() {
-//         match error {
-//             &Error::InvalidConditions(message) => assert_eq!(
-//                 message,
-//                 "Current value or modified index is required."
-//             ),
-//             _ => panic!("expected Error::InvalidConditions"),
-//         }
-//     }
-// }
+    assert!(client.run(work).is_ok());
+}
+
+#[test]
+fn compare_and_delete_requires_conditions() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
+
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::compare_and_delete(&inner_client, "/test/foo", None, None).then(|result| {
+            match result {
+                Ok(_) => panic!("expected Error::InvalidConditions"),
+                Err(errors) => {
+                    if errors.len() == 1 {
+                        match errors[0] {
+                            Error::InvalidConditions => Ok(()),
+                            _ => panic!("expected Error::InvalidConditions"),
+                        }
+                    } else {
+                        panic!("expected a single error: Error::InvalidConditions");
+                    }
+                }
+            }
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn compare_and_swap() {

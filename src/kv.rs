@@ -401,11 +401,7 @@ where
         let conditions = options.conditions.unwrap();
 
         if conditions.is_empty() {
-            return Box::new(
-                Err(vec![
-                    Error::InvalidConditions("Current value or modified index is required."),
-                ]).into_future(),
-            );
+            return Box::new(Err(vec![Error::InvalidConditions]).into_future());
         }
 
         if conditions.modified_index.is_some() {
@@ -548,11 +544,7 @@ where
 
     if let Some(ref conditions) = options.conditions {
         if conditions.is_empty() {
-            return Box::new(
-                Err(vec![
-                    Error::InvalidConditions("Current value or modified index is required."),
-                ]).into_future(),
-            );
+            return Box::new(Err(vec![Error::InvalidConditions]).into_future());
         }
 
         if let Some(ref modified_index) = conditions.modified_index {

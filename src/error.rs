@@ -50,7 +50,7 @@ pub enum Error {
     Http(HttpError),
     /// An error returned when invalid conditions have been provided for a compare-and-delete or
     /// compare-and-swap operation.
-    InvalidConditions(&'static str),
+    InvalidConditions,
     /// An error returned when an etcd cluster member's endpoint is not a valid URI.
     InvalidUri(UriError),
     /// An error returned when the URL for a specific API endpoint cannot be generated.
@@ -69,7 +69,7 @@ impl Display for Error {
         match *self {
             Error::Api(ref error) => write!(f, "{}", error),
             Error::Http(ref error) => write!(f, "{}", error),
-            Error::InvalidConditions(reason) => write!(f, "{}", reason),
+            ref error @ Error::InvalidConditions => write!(f, "{}", error.description()),
             Error::InvalidUri(ref error) => write!(f, "{}", error),
             Error::InvalidUrl(ref error) => write!(f, "{}", error),
             Error::NoEndpoints => {
@@ -87,7 +87,7 @@ impl StdError for Error {
         match *self {
             Error::Api(_) => "the etcd server returned an error",
             Error::Http(_) => "an error occurred during the HTTP request",
-            Error::InvalidConditions(conditions) => conditions,
+            Error::InvalidConditions => "current value or modified index is required",
             Error::InvalidUri(_) => "a supplied endpoint could not be parsed as a URI",
             Error::InvalidUrl(_) => "a URL for the request could not be generated",
             Error::NoEndpoints => "at least one endpoint is required to create a Client",
