@@ -8,10 +8,10 @@ extern crate tokio_core;
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
-use std::thread::{sleep, spawn};
-use std::time::Duration;
+use std::thread::spawn;
 
 use futures::future::{Future, join_all};
+use futures::sync::oneshot::channel;
 use hyper::client::{Client as Hyper, Connect, HttpConnector};
 use hyper_tls::HttpsConnector;
 use native_tls::{Certificate, Pkcs12, TlsConnector};
@@ -601,13 +601,14 @@ fn https_without_valid_client_certificate() {
 
 #[test]
 fn watch() {
+    let (tx, rx) = channel();
+
     let child = spawn(move || {
         let core = Core::new().unwrap();
         let mut client = TestClient::no_destructor(core);
+        let inner_client = client.clone();
 
-        sleep(Duration::from_millis(50));
-
-        let work = kv::set(&client, "/test/foo", "baz", None);
+        let work = rx.then(|_| kv::set(&inner_client, "/test/foo", "baz", None));
 
         client.run(work).unwrap();
     });
@@ -617,6 +618,8 @@ fn watch() {
     let inner_client = client.clone();
 
     let work = kv::create(&inner_client, "/test/foo", "bar", None).and_then(move |_| {
+        tx.send(()).unwrap();
+
         kv::watch(&inner_client, "/test/foo", None, false).and_then(|ksi| {
             assert_eq!(ksi.node.unwrap().value.unwrap(), "baz");
 
