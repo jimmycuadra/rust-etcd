@@ -4,11 +4,13 @@ extern crate hyper;
 extern crate hyper_tls;
 extern crate native_tls;
 extern crate tokio_core;
+extern crate tokio_timer;
 
 use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
 use std::thread::spawn;
+use std::time::Duration;
 
 use futures::future::{Future, join_all};
 use futures::sync::oneshot::channel;
@@ -18,7 +20,7 @@ use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
 use etcd::{Client, Error};
-use etcd::kv::{self, FutureKeySpaceInfo, KeySpaceInfo};
+use etcd::kv::{self, FutureKeySpaceInfo, KeySpaceInfo, WatchError};
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient<C> where C: Clone + Connect {
@@ -134,7 +136,7 @@ fn create_does_not_replace_existing_key() {
     let mut client = TestClient::new(core);
     let inner_client = client.clone();
 
-    let work = kv::create(&inner_client, "/test/foo", "bar", Some(60)).and_then(move |_| {
+    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(move |_| {
         kv::create(&inner_client, "/test/foo", "bar", Some(60)).then(|result| {
             match result {
                 Ok(_) => panic!("expected EtcdError due to pre-existing key"),
@@ -610,61 +612,105 @@ fn watch() {
 
         let work = rx.then(|_| kv::set(&inner_client, "/test/foo", "baz", None));
 
-        client.run(work).unwrap();
+        assert!(client.run(work).is_ok());
     });
 
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
     let inner_client = client.clone();
 
-    let work = kv::create(&inner_client, "/test/foo", "bar", None).and_then(move |_| {
-        tx.send(()).unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None)
+        .map_err(|errors| WatchError::Other(errors))
+        .and_then(move |_| {
+            tx.send(()).unwrap();
 
-        kv::watch(&inner_client, "/test/foo", None, false).and_then(|ksi| {
-            assert_eq!(ksi.node.unwrap().value.unwrap(), "baz");
+            kv::watch(&inner_client, "/test/foo", None, false, None).and_then(|ksi| {
+                assert_eq!(ksi.node.unwrap().value.unwrap(), "baz");
 
-            Ok(())
-        })
-    });
+                Ok(())
+            })
+        });
 
     assert!(client.run(work).is_ok());
 
     child.join().ok().unwrap();
 }
 
-// // #[test]
-// // fn watch_index() {
-// //     let client = TestClient::new();
+#[test]
+fn watch_cancel() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-// //     let index = client.set("/test/foo", "bar", None).ok().unwrap().node.unwrap().modified_index.unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None)
+        .map_err(|errors| WatchError::Other(errors))
+        .and_then(move |_| {
+            kv::watch(&inner_client, "/test/foo", None, false, Some(Duration::from_millis(1)))
+        });
 
-// //     let response = client.watch("/test/foo", Some(index), false).ok().unwrap();
-// //     let node = response.node.unwrap();
+    match client.run(work) {
+        Ok(_) => panic!("expected WatchError::Timeout"),
+        Err(WatchError::Timeout) => {}
+        Err(_) => panic!("expected WatchError::Timeout"),
+    }
+}
 
-// //     assert_eq!(node.modified_index.unwrap(), index);
-// //     assert_eq!(node.value.unwrap(), "bar");
-// // }
+#[test]
+fn watch_index() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-// // #[test]
-// // fn watch_recursive() {
-// //     let child = spawn(|| {
-// //         let client = Client::new(&["http://etcd:2379"]).unwrap();
+    let work = kv::set(&client, "/test/foo", "bar", None)
+        .map_err(|errors| WatchError::Other(errors))
+        .and_then(move |ksi| {
+            let index = ksi.node.unwrap().modified_index.unwrap();
 
-// //         sleep(Duration::from_millis(50));
+            kv::watch(&inner_client, "/test/foo", Some(index), false, None).and_then(move |ksi| {
+                let node = ksi.node.unwrap();
 
-// //         client.set("/test/foo/bar", "baz", None).ok().unwrap();
-// //     });
+                assert_eq!(node.modified_index.unwrap(), index);
+                assert_eq!(node.value.unwrap(), "bar");
 
-// //     let client = TestClient::new();
+                Ok(())
+            })
+        });
 
-// //     let response = client.watch("/test", None, true).ok().unwrap();
-// //     let node = response.node.unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-// //     assert_eq!(node.key.unwrap(), "/test/foo/bar");
-// //     assert_eq!(node.value.unwrap(), "baz");
+#[test]
+fn watch_recursive() {
+    let (tx, rx) = channel();
 
-// //     child.join().ok().unwrap();
-// // }
+    let child = spawn(move || {
+        let core = Core::new().unwrap();
+        let mut client = TestClient::no_destructor(core);
+        let inner_client = client.clone();
+
+        let work = rx.then(|_| kv::set(&inner_client, "/test/foo/bar", "baz", None));
+
+        assert!(client.run(work).is_ok());
+    });
+
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+
+    tx.send(()).unwrap();
+
+    let work = kv::watch(&client, "/test", None, true, None).and_then(|ksi| {
+        let node = ksi.node.unwrap();
+
+        assert_eq!(node.key.unwrap(), "/test/foo/bar");
+        assert_eq!(node.value.unwrap(), "baz");
+
+        Ok(())
+    });
+
+    assert!(client.run(work).is_ok());
+
+    child.join().ok().unwrap();
+}
 
 // #[test]
 // fn versions() {

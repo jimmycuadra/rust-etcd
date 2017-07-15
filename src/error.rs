@@ -9,7 +9,37 @@ use hyper::error::UriError;
 #[cfg(feature = "tls")]
 use native_tls::Error as TlsError;
 use serde_json::Error as SerializationError;
+use tokio_timer::TimeoutError as TokioTimeoutError;
 use url::ParseError as UrlError;
+
+/// An error returned by an etcd API endpoint.
+///
+/// This is a logical error, as opposed to other types of errors that may occur when using this
+/// crate, such as network or serialization errors. See `Error` for the other types of errors.
+#[derive(Clone, Debug, Deserialize)]
+pub struct ApiError {
+    /// The key that was being operated upon or reason for the failure.
+    pub cause: Option<String>,
+    /// The etcd error code.
+    #[serde(rename = "errorCode")]
+    pub error_code: u64,
+    /// The etcd index.
+    pub index: u64,
+    /// A human-friendly description of the error.
+    pub message: String,
+}
+
+impl Display for ApiError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl StdError for ApiError {
+    fn description(&self) -> &str {
+        &self.message
+    }
+}
 
 /// An error returned when an operation fails for some reaosn.
 #[derive(Debug)]
@@ -34,23 +64,6 @@ pub enum Error {
     Tls(TlsError),
 }
 
-/// An error returned by an etcd API endpoint.
-///
-/// This is a logical error, as opposed to other types of errors that may occur when using this
-/// crate, such as network or serialization errors. See `Error` for the other types of errors.
-#[derive(Clone, Debug, Deserialize)]
-pub struct ApiError {
-    /// The key that was being operated upon or reason for the failure.
-    pub cause: Option<String>,
-    /// The etcd error code.
-    #[serde(rename = "errorCode")]
-    pub error_code: u64,
-    /// The etcd index.
-    pub index: u64,
-    /// A human-friendly description of the error.
-    pub message: String,
-}
-
 impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         match *self {
@@ -59,12 +72,12 @@ impl Display for Error {
             Error::InvalidConditions(reason) => write!(f, "{}", reason),
             Error::InvalidUri(ref error) => write!(f, "{}", error),
             Error::InvalidUrl(ref error) => write!(f, "{}", error),
-            #[cfg(feature = "tls")]
-            Error::Tls(ref error) => write!(f, "{}", error),
-            Error::Serialization(ref error) => write!(f, "{}", error),
             Error::NoEndpoints => {
                 f.write_str("At least one endpoint is required to create a Client")
             }
+            #[cfg(feature = "tls")]
+            Error::Tls(ref error) => write!(f, "{}", error),
+            Error::Serialization(ref error) => write!(f, "{}", error),
         }
     }
 }
@@ -77,10 +90,10 @@ impl StdError for Error {
             Error::InvalidConditions(conditions) => conditions,
             Error::InvalidUri(_) => "a supplied endpoint could not be parsed as a URI",
             Error::InvalidUrl(_) => "a URL for the request could not be generated",
+            Error::NoEndpoints => "at least one endpoint is required to create a Client",
             #[cfg(feature = "tls")]
             Error::Tls(_) => "an error occurred configuring TLS",
             Error::Serialization(_) => "an error occurred deserializing JSON",
-            Error::NoEndpoints => "at least one endpoint is required to create a Client",
         }
     }
 }
@@ -116,14 +129,32 @@ impl From<UriError> for Error {
     }
 }
 
-impl Display for ApiError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
-        write!(f, "{}", self.message)
+/// An error returned by `kv::watch`.
+#[derive(Debug)]
+pub enum WatchError {
+    /// An error for each failed request to an etcd member.
+    Other(Vec<Error>),
+    /// The supplied timeout was reached before any request successfully completed.
+    Timeout,
+}
+
+impl<T> From<TokioTimeoutError<T>> for WatchError {
+    fn from(_: TokioTimeoutError<T>) -> Self {
+        WatchError::Timeout
     }
 }
 
-impl StdError for ApiError {
+impl Display for WatchError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        match *self {
+            WatchError::Timeout => write!(f, "{}", self.description()),
+            ref other => other.fmt(f),
+        }
+    }
+}
+
+impl StdError for WatchError {
     fn description(&self) -> &str {
-        &self.message
+        "operation timed out"
     }
 }

@@ -2,13 +2,17 @@
 
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::time::Duration;
 
 use futures::future::{Future, IntoFuture, err, ok};
 use futures::stream::Stream;
 use hyper::{StatusCode, Uri};
 use hyper::client::Connect;
 use serde_json;
+use tokio_timer::Timer;
 use url::Url;
+
+pub use error::WatchError;
 
 use async::first_ok;
 use client::Client;
@@ -17,7 +21,7 @@ use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
 use url::form_urlencoded::Serializer;
 
-/// The future returned by all key space API calls.
+/// The future returned by most key space API calls.
 ///
 /// On success, information about the result of the operation. On failure, an error for each cluster
 /// member that failed.
@@ -342,11 +346,12 @@ pub fn watch<C>(
     key: &str,
     index: Option<u64>,
     recursive: bool,
-) -> FutureKeySpaceInfo
+    timeout: Option<Duration>,
+) -> Box<Future<Item = KeySpaceInfo, Error = WatchError>>
 where
     C: Clone + Connect,
 {
-    raw_get(
+    let work = raw_get(
         client,
         key,
         GetOptions {
@@ -355,9 +360,16 @@ where
             wait: true,
             ..Default::default()
         },
-    )
-}
+    ).map_err(|errors| WatchError::Other(errors));
 
+    if let Some(duration) = timeout {
+        let timer = Timer::default();
+
+        Box::new(timer.timeout(work, duration))
+    } else {
+        Box::new(work)
+    }
+}
 
 /// Constructs the full URL for an API call.
 fn build_url(member: &Member, path: &str) -> String {
