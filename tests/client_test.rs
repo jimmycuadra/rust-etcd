@@ -39,6 +39,17 @@ impl TestClient<HttpConnector> {
         }
     }
 
+    /// Creates a new client for a test that will not clean up the key space afterwards.
+    fn no_destructor(core: Core) -> TestClient<HttpConnector> {
+        let handle = core.handle();
+
+        TestClient {
+            c: Client::new(&handle, &["http://etcd:2379"], None).unwrap(),
+            core: core,
+            run_destructor: false,
+        }
+    }
+
     /// Creates a new HTTPS client for a test.
     fn https(core: Core, use_client_cert: bool) -> TestClient<HttpsConnector<HttpConnector>> {
         let mut ca_cert_file = File::open("/source/tests/ssl/ca.der").unwrap();
@@ -75,7 +86,9 @@ impl TestClient<HttpConnector> {
 }
 
 impl<C> TestClient<C> where C: Clone + Connect {
-    pub fn run<T, E>(&mut self, work: Box<Future<Item = T, Error = E>>) -> Result<T, E> {
+    pub fn run<W, T, E>(&mut self, work: W) -> Result<T, E>
+    where W: Future<Item = T, Error = E>
+    {
         self.core.run(work)
     }
 }
@@ -102,7 +115,7 @@ fn create() {
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
 
-    let work = Box::new(kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|response| {
+    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|response| {
         let node = response.node.unwrap();
 
         assert_eq!(response.action, "create");
@@ -110,7 +123,7 @@ fn create() {
         assert_eq!(node.ttl.unwrap(), 60);
 
         Ok(())
-    }));
+    });
 
     assert!(client.run(work).is_ok());
 }
@@ -121,8 +134,8 @@ fn create_does_not_replace_existing_key() {
     let mut client = TestClient::new(core);
     let client2 = client.clone();
 
-    let work = Box::new(kv::create(&client2, "/test/foo", "bar", Some(60)).and_then(move |_| {
-        Box::new(kv::create(&client2, "/test/foo", "bar", Some(60)).then(|result| {
+    let work = kv::create(&client2, "/test/foo", "bar", Some(60)).and_then(move |_| {
+        kv::create(&client2, "/test/foo", "bar", Some(60)).then(|result| {
             match result {
                 Ok(_) => panic!("expected EtcdError due to pre-existing key"),
                 Err(errors) => {
@@ -136,8 +149,8 @@ fn create_does_not_replace_existing_key() {
             }
 
             Ok(())
-        }))
-    }));
+        })
+    });
 
     assert!(client.run(work).is_ok());
 }
@@ -151,7 +164,7 @@ fn create_in_order() {
         kv::create_in_order( &client, "/test/foo", "bar", None)
     }).collect();
 
-    let work = Box::new(join_all(requests).and_then(|ksis: Vec<KeySpaceInfo>| {
+    let work = join_all(requests).and_then(|ksis: Vec<KeySpaceInfo>| {
         let keys: Vec<String> = ksis
             .into_iter()
             .map(|ksi| ksi.node.unwrap().key.unwrap())
@@ -161,7 +174,7 @@ fn create_in_order() {
         assert!(keys[1] < keys[2]);
 
         Ok(())
-    }));
+    });
 
     assert!(client.run(work).is_ok());
 }
@@ -403,7 +416,7 @@ fn https() {
     let core = Core::new().unwrap();
     let mut client = TestClient::https(core, true);
 
-    let work = Box::new(kv::set(&client, "/test/foo", "bar", Some(60)));
+    let work = kv::set(&client, "/test/foo", "bar", Some(60));
 
     assert!(client.run(work).is_ok());
 }
@@ -413,7 +426,7 @@ fn https_without_valid_client_certificate() {
     let core = Core::new().unwrap();
     let mut client = TestClient::https(core, false);
 
-    let work = Box::new(kv::set(&client, "/test/foo", "bar", Some(60)));
+    let work = kv::set(&client, "/test/foo", "bar", Some(60));
 
     assert!(client.run(work).is_err());
 }
@@ -584,26 +597,35 @@ fn https_without_valid_client_certificate() {
 //     assert_eq!(response.action, "delete");
 // }
 
-// // #[test]
-// // fn watch() {
-// //     let child = spawn(|| {
-// //         let client = Client::new(&["http://etcd:2379"]).unwrap();
+#[test]
+fn watch() {
+    let child = spawn(move || {
+        let core = Core::new().unwrap();
+        let mut client = TestClient::no_destructor(core);
 
-// //         sleep(Duration::from_millis(50));
+        sleep(Duration::from_millis(50));
 
-// //         client.set("/test/foo", "baz", None).ok().unwrap();
-// //     });
+        let work = kv::set(&client, "/test/foo", "baz", None);
 
-// //     let client = TestClient::new();
+        client.run(work).unwrap();
+    });
 
-// //     client.create("/test/foo", "bar", None).ok().unwrap();
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-// //     let response = client.watch("/test/foo", None, false).ok().unwrap();
+    let work = kv::create(&inner_client, "/test/foo", "bar", None).and_then(move |_| {
+        kv::watch(&inner_client, "/test/foo", None, false).and_then(|ksi| {
+            assert_eq!(ksi.node.unwrap().value.unwrap(), "baz");
 
-// //     assert_eq!(response.node.unwrap().value.unwrap(), "baz");
+            Ok(())
+        })
+    });
 
-// //     child.join().ok().unwrap();
-// // }
+    assert!(client.run(work).is_ok());
+
+    child.join().ok().unwrap();
+}
 
 // // #[test]
 // // fn watch_index() {
