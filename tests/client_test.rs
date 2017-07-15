@@ -164,7 +164,9 @@ fn create_in_order() {
         kv::create_in_order( &client, "/test/foo", "bar", None)
     }).collect();
 
-    let work = join_all(requests).and_then(|ksis: Vec<KeySpaceInfo>| {
+    let work = join_all(requests).and_then(|mut ksis: Vec<KeySpaceInfo>| {
+        ksis.sort_by_key(|ksi| ksi.node.as_ref().unwrap().modified_index.unwrap());
+
         let keys: Vec<String> = ksis
             .into_iter()
             .map(|ksi| ksi.node.unwrap().key.unwrap())
