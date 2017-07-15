@@ -13,6 +13,7 @@ use std::thread::spawn;
 use std::time::Duration;
 
 use futures::future::{Future, join_all};
+use futures::stream::Stream;
 use futures::sync::oneshot::channel;
 use hyper::client::{Client as Hyper, Connect, HttpConnector};
 use hyper_tls::HttpsConnector;
@@ -723,16 +724,19 @@ fn watch_recursive() {
     child.join().ok().unwrap();
 }
 
-// #[test]
-// fn versions() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn versions() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
 
-//     for result in client.versions().into_iter() {
-//         let version = result.ok().unwrap();
+    let work = client.versions().collect().and_then(|version_infos| {
+        for version_info in version_infos {
+            assert_eq!(version_info.cluster_version, "2.3.0");
+            assert_eq!(version_info.server_version, "2.3.7");
+        }
 
-//         assert_eq!(version.cluster_version, "2.3.0");
-//         assert_eq!(version.server_version, "2.3.7");
-//     }
-// }
+        Ok(())
+    });
+
+    assert!(client.run(work).is_ok());
+}

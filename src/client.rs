@@ -121,7 +121,7 @@ where
     /// Returns version information from each etcd cluster member the client was initialized with.
     pub fn versions(&self) -> Box<Stream<Item = VersionInfo, Error = Error>> {
         let futures = self.members.iter().map(|member| {
-            let url = format!("{}version", member.endpoint);
+            let url = build_url(&member);
             let uri = url.parse().map_err(Error::from).into_future();
             let cloned_client = self.http_client.clone();
             let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
@@ -174,4 +174,15 @@ where
 
         Box::new(result)
     }
+}
+
+/// Constructs the full URL for the versions API call.
+fn build_url(member: &Member) -> String {
+    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+        ""
+    } else {
+        "/"
+    };
+
+    format!("{}{}version", member.endpoint, maybe_slash)
 }
