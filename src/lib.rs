@@ -1,8 +1,8 @@
 //! Crate `etcd` provides a client for [etcd](https://github.com/coreos/etcd), a distributed
 //! key-value store from [CoreOS](https://coreos.com/).
 //!
-//! The client uses etcd's v2 APIs. Support for the v3 APIs is planned, and will be added via
-//! separate types for backwards compatibility and to support both sets of APIs simultaneously.
+//! The client uses etcd's v2 API. Support for the v3 API is planned, and will be added via
+//! separate types for backwards compatibility and to support both APIs simultaneously.
 //!
 //! The client uses asynchronous I/O, backed by the `futures` and `tokio-core` crates, and requires
 //! both to be used alongside. Functions that return futures currently return them boxed. As soon
@@ -20,7 +20,7 @@
 //! To get basic information about the versions of etcd running in a cluster, use the
 //! `Client::versions` method. All other API calls are made by passing a `Client` reference to the
 //! functions in the `kv` and `stats` modules. These modules contain functions for API calls to the
-//! primary key-value store APIs and statistics APIs, respectively. The membership and
+//! primary key-value store API and statistics API, respectively. The membership and
 //! authentication APIs are not yet supported, but planned.
 //!
 //! # Examples
