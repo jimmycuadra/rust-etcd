@@ -394,58 +394,75 @@ fn compare_and_swap_requires_conditions() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn get() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn get() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     client.create("/test/foo", "bar", Some(60)).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|_| {
+        kv::get(&inner_client, "/test/foo", false, false, false).and_then(|ksi| {
+            assert_eq!(ksi.action, "get");
 
-//     let response = client.get("/test/foo", false, false, false).ok().unwrap();
-//     let node = response.node.unwrap();
+            let node = ksi.node.unwrap();
 
-//     assert_eq!(response.action, "get");
-//     assert_eq!(node.value.unwrap(), "bar");
-//     assert_eq!(node.ttl.unwrap(), 60);
+            assert_eq!(node.value.unwrap(), "bar");
+            assert_eq!(node.ttl.unwrap(), 60);
 
-// }
+            Ok(())
+        })
+    });
 
-// #[test]
-// fn get_non_recursive() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    assert!(client.run(work).is_ok());
+}
 
-//     client.set("/test/dir/baz", "blah", None).ok();
-//     client.set("/test/foo", "bar", None).ok();
+#[test]
+fn get_non_recursive() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     let response = client.get("/test", true, false, false).ok().unwrap();
-//     let node = response.node.unwrap();
+    let work = join_all(vec![
+        kv::set(&client, "/test/dir/baz", "blah", None),
+        kv::set(&client, "/test/foo", "bar", None)
+    ]).and_then(|_| {
+        kv::get(&inner_client, "/test", true, false, false).and_then(|ksi| {
+            let node = ksi.node.unwrap();
 
-//     assert_eq!(node.dir.unwrap(), true);
+            assert_eq!(node.dir.unwrap(), true);
 
-//     let nodes = node.nodes.unwrap();
+            let nodes = node.nodes.unwrap();
 
-//     assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir");
-//     assert_eq!(nodes[0].clone().dir.unwrap(), true);
-//     assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo");
-//     assert_eq!(nodes[1].clone().value.unwrap(), "bar");
-// }
+            assert_eq!(nodes[0].clone().key.unwrap(), "/test/dir");
+            assert_eq!(nodes[0].clone().dir.unwrap(), true);
+            assert_eq!(nodes[1].clone().key.unwrap(), "/test/foo");
+            assert_eq!(nodes[1].clone().value.unwrap(), "bar");
 
-// #[test]
-// fn get_recursive() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+            Ok(())
+        })
+    });
 
-//     client.set("/test/dir/baz", "blah", None).ok();
+    assert!(client.run(work).is_ok());
+}
 
-//     let response = client.get("/test", true, true, false).ok().unwrap();
-//     let nodes = response.node.unwrap().nodes.unwrap();
+#[test]
+fn get_recursive() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
-// }
+    let work = kv::set(&client, "/test/dir/baz", "blah", None).and_then(|_| {
+        kv::get(&inner_client, "/test", true, true, false).and_then(|ksi| {
+            let nodes = ksi.node.unwrap().nodes.unwrap();
+
+            assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
+
+            Ok(())
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
 
 #[test]
 fn https() {
