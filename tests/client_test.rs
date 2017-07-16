@@ -190,7 +190,9 @@ fn create_in_order() {
     let work = join_all(requests).and_then(|mut kvis: Vec<(KeyValueInfo, ClusterInfo)>| {
         kvis.sort_by_key(|&(ref kvi, _)| kvi.node.modified_index);
 
-        let keys: Vec<String> = kvis.into_iter().map(|(kvi, _)| kvi.node.key.unwrap()).collect();
+        let keys: Vec<String> = kvis.into_iter()
+            .map(|(kvi, _)| kvi.node.key.unwrap())
+            .collect();
 
         assert!(keys[0] < keys[1]);
         assert!(keys[1] < keys[2]);

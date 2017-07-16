@@ -32,7 +32,9 @@ use url::form_urlencoded::Serializer;
 pub type FutureKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Vec<Error>>>;
 
 /// A `FutureKeyValueInfo` for a single etcd cluster member.
-pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Error>>;
+pub(crate) type FutureSingleMemberKeyValueInfo = Box<
+    Future<Item = (KeyValueInfo, ClusterInfo), Error = Error>,
+>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]

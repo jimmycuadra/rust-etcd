@@ -156,7 +156,9 @@ pub struct StoreStats {
 /// Returns statistics about the leader member of a cluster.
 ///
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
-pub fn leader_stats<C>(client: &Client<C>) -> Box<Future<Item = (LeaderStats, ClusterInfo), Error = Error>>
+pub fn leader_stats<C>(
+    client: &Client<C>,
+) -> Box<Future<Item = (LeaderStats, ClusterInfo), Error = Error>>
 where
     C: Clone + Connect,
 {
@@ -169,7 +171,9 @@ where
 /// Returns statistics about each cluster member the client was initialized with.
 ///
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
-pub fn self_stats<C>(client: &Client<C>) -> Box<Stream<Item = (SelfStats, ClusterInfo), Error = Error>>
+pub fn self_stats<C>(
+    client: &Client<C>,
+) -> Box<Stream<Item = (SelfStats, ClusterInfo), Error = Error>>
 where
     C: Clone + Connect,
 {
@@ -187,7 +191,9 @@ where
 /// with.
 ///
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
-pub fn store_stats<C>(client: &Client<C>) -> Box<Stream<Item = (StoreStats, ClusterInfo), Error = Error>>
+pub fn store_stats<C>(
+    client: &Client<C>,
+) -> Box<Stream<Item = (StoreStats, ClusterInfo), Error = Error>>
 where
     C: Clone + Connect,
 {
