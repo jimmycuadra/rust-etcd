@@ -557,112 +557,151 @@ fn store_stats() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn update() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn update() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::update(&inner_client, "/test/foo", "blah", Some(30)).and_then(|ksi| {
+            assert_eq!(ksi.action, "update");
 
-//     let response = client.update("/test/foo", "blah", Some(30)).ok().unwrap();
-//     let node = response.node.unwrap();
+            let node = ksi.node.unwrap();
 
-//     assert_eq!(response.action, "update");
-//     assert_eq!(node.value.unwrap(), "blah");
-//     assert_eq!(node.ttl.unwrap(), 30);
-// }
+            assert_eq!(node.value.unwrap(), "blah");
+            assert_eq!(node.ttl.unwrap(), 30);
 
-// #[test]
-// fn update_requires_existing_key() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+            Ok(())
+        })
+    });
 
-//     for error in client.update("/test/foo", "bar", None).err().unwrap().iter() {
-//         match error {
-//             &Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
-//             _ => panic!("expected EtcdError due to missing key"),
-//         }
-//     };
-// }
+    assert!(client.run(work).is_ok());
+}
 
-// #[test]
-// fn update_dir() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn update_requires_existing_key() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
 
-//     client.create_dir("/test", None).ok().unwrap();
+    let work = kv::update(&client, "/test/foo", "bar", None).then(|result| {
+        match result {
+            Err(ref errors) => {
+                match errors[0] {
+                    Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
+                    _ => panic!("expected EtcdError due to missing key"),
+                }
+            },
+            _ => panic!("expected EtcdError due to missing key"),
+        }
 
-//     let response = client.update_dir("/test", Some(60)).ok().unwrap();
+        let result: Result<(), ()> = Ok(());
 
-//     assert_eq!(response.node.unwrap().ttl.unwrap(), 60);
-// }
+        result
+    });
 
-// #[test]
-// fn update_dir_replaces_key() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    assert!(client.run(work).is_ok());
+}
 
-//     client.set("/test/foo", "bar", None).ok().unwrap();
+#[test]
+fn update_dir() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     let response = client.update_dir("/test/foo", Some(60)).ok().unwrap();
-//     let node = response.node.unwrap();
+    let work = kv::create_dir(&client, "/test", None).and_then(|_| {
+        kv::update_dir(&inner_client, "/test", Some(60)).and_then(|ksi| {
+            assert_eq!(ksi.node.unwrap().ttl.unwrap(), 60);
 
-//     assert_eq!(node.value.unwrap(), "");
-//     assert_eq!(node.ttl.unwrap(), 60);
-// }
+            Ok(())
+        })
+    });
 
-// #[test]
-// fn update_dir_requires_existing_dir() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    assert!(client.run(work).is_ok());
+}
 
-//     assert!(client.update_dir("/test", None).is_err());
-// }
+#[test]
+fn update_dir_replaces_key() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-// #[test]
-// fn delete() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    let work = kv::set(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::update_dir(&inner_client, "/test/foo", Some(60)).and_then(|ksi| {
+            let node = ksi.node.unwrap();
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+            assert_eq!(node.value.unwrap(), "");
+            assert_eq!(node.ttl.unwrap(), 60);
 
-//     let response = client.delete("/test/foo", false).ok().unwrap();
+            Ok(())
+        })
+    });
 
-//     assert_eq!(response.action, "delete");
-// }
+    assert!(client.run(work).is_ok());
+}
 
-// #[test]
-// fn create_dir() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn update_dir_requires_existing_dir() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
 
-//     let response = client.create_dir("/test/dir", None).ok().unwrap();
-//     let node = response.node.unwrap();
+    let work = kv::update_dir(&client, "/test", None);
 
-//     assert_eq!(response.action, "create");
-//     assert!(node.dir.is_some());
-//     assert!(node.value.is_none());
-// }
+    assert!(client.run(work).is_err());
+}
 
-// #[test]
-// fn delete_dir() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn delete() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     client.create_dir("/test/dir", None).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::delete(&inner_client, "/test/foo", false).and_then(|ksi| {
+            assert_eq!(ksi.action, "delete");
 
-//     let response = client.delete_dir("/test/dir").ok().unwrap();
+            Ok(())
+        })
+    });
 
-//     assert_eq!(response.action, "delete");
-// }
+    assert!(client.run(work).is_ok());
+}
+
+#[test]
+fn create_dir() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+
+    let work = kv::create_dir(&client, "/test/dir", None).and_then(|ksi| {
+        assert_eq!(ksi.action, "create");
+
+        let node = ksi.node.unwrap();
+
+        assert!(node.dir.is_some());
+        assert!(node.value.is_none());
+
+        Ok(())
+    });
+
+    assert!(client.run(work).is_ok());
+}
+
+#[test]
+fn delete_dir() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
+
+    let work = kv::create_dir(&client, "/test/dir", None).and_then(|_| {
+        kv::delete_dir(&inner_client, "/test/dir").and_then(|ksi| {
+            assert_eq!(ksi.action, "delete");
+
+            Ok(())
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
 
 #[test]
 fn watch() {
