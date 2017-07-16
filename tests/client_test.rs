@@ -25,7 +25,10 @@ use etcd::kv::{self, Action, FutureKeyValueInfo, KeyValueInfo, WatchError};
 use etcd::stats;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
-struct TestClient<C> where C: Clone + Connect {
+struct TestClient<C>
+where
+    C: Clone + Connect,
+{
     c: Client<C>,
     core: Core,
     run_destructor: bool,
@@ -61,14 +64,18 @@ impl TestClient<HttpConnector> {
         ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
 
         let mut builder = TlsConnector::builder().unwrap();
-        builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
+        builder
+            .add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap())
+            .unwrap();
 
         if use_client_cert {
             let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
             let mut pkcs12_buffer = Vec::new();
             pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
 
-            builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+            builder
+                .identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap())
+                .unwrap();
         }
 
         let tls_connector = builder.build().unwrap();
@@ -89,15 +96,22 @@ impl TestClient<HttpConnector> {
     }
 }
 
-impl<C> TestClient<C> where C: Clone + Connect {
+impl<C> TestClient<C>
+where
+    C: Clone + Connect,
+{
     pub fn run<W, T, E>(&mut self, work: W) -> Result<T, E>
-    where W: Future<Item = T, Error = E>
+    where
+        W: Future<Item = T, Error = E>,
     {
         self.core.run(work)
     }
 }
 
-impl<C> Drop for TestClient<C> where C: Clone + Connect {
+impl<C> Drop for TestClient<C>
+where
+    C: Clone + Connect,
+{
     fn drop(&mut self) {
         if self.run_destructor {
             let work = kv::delete(&self.c, "/test", true);
@@ -106,7 +120,10 @@ impl<C> Drop for TestClient<C> where C: Clone + Connect {
     }
 }
 
-impl<C> Deref for TestClient<C> where C: Clone + Connect {
+impl<C> Deref for TestClient<C>
+where
+    C: Clone + Connect,
+{
     type Target = Client<C>;
 
     fn deref(&self) -> &Self::Target {
@@ -145,7 +162,9 @@ fn create_does_not_replace_existing_key() {
                 Err(errors) => {
                     for error in errors {
                         match error {
-                            Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
+                            Error::Api(ref error) => {
+                                assert_eq!(error.message, "Key already exists")
+                            }
                             _ => panic!("expected EtcdError due to pre-existing key"),
                         }
                     }
@@ -164,17 +183,14 @@ fn create_in_order() {
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
 
-    let requests: Vec<FutureKeyValueInfo> = (1..4).map(|_| {
-        kv::create_in_order( &client, "/test/foo", "bar", None)
-    }).collect();
+    let requests: Vec<FutureKeyValueInfo> = (1..4)
+        .map(|_| kv::create_in_order(&client, "/test/foo", "bar", None))
+        .collect();
 
     let work = join_all(requests).and_then(|mut kvis: Vec<KeyValueInfo>| {
         kvis.sort_by_key(|kvi| kvi.node.modified_index);
 
-        let keys: Vec<String> = kvis
-            .into_iter()
-            .map(|kvi| kvi.node.key.unwrap())
-            .collect();
+        let keys: Vec<String> = kvis.into_iter().map(|kvi| kvi.node.key.unwrap()).collect();
 
         assert!(keys[0] < keys[1]);
         assert!(keys[1] < keys[2]);
@@ -265,18 +281,16 @@ fn compare_and_delete_requires_conditions() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_delete(&inner_client, "/test/foo", None, None).then(|result| {
-            match result {
-                Ok(_) => panic!("expected Error::InvalidConditions"),
-                Err(errors) => {
-                    if errors.len() == 1 {
-                        match errors[0] {
-                            Error::InvalidConditions => Ok(()),
-                            _ => panic!("expected Error::InvalidConditions"),
-                        }
-                    } else {
-                        panic!("expected a single error: Error::InvalidConditions");
+        kv::compare_and_delete(&inner_client, "/test/foo", None, None).then(|result| match result {
+            Ok(_) => panic!("expected Error::InvalidConditions"),
+            Err(errors) => {
+                if errors.len() == 1 {
+                    match errors[0] {
+                        Error::InvalidConditions => Ok(()),
+                        _ => panic!("expected Error::InvalidConditions"),
                     }
+                } else {
+                    panic!("expected a single error: Error::InvalidConditions");
                 }
             }
         })
@@ -320,18 +334,12 @@ fn compare_and_swap_only_index() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|kvi| {
         let index = kvi.node.modified_index;
 
-        kv::compare_and_swap(
-            &inner_client,
-            "/test/foo",
-            "baz",
-            None,
-            None,
-            Some(index),
-        ).and_then(|kvi| {
-            assert_eq!(kvi.action, Action::CompareAndSwap);
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, Some(index))
+            .and_then(|kvi| {
+                assert_eq!(kvi.action, Action::CompareAndSwap);
 
-            Ok(())
-        })
+                Ok(())
+            })
     });
 
     assert!(client.run(work).is_ok());
@@ -344,18 +352,12 @@ fn compare_and_swap() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_swap(
-            &inner_client,
-            "/test/foo",
-            "baz",
-            None,
-            Some("bar"),
-            None,
-        ).and_then(|kvi| {
-            assert_eq!(kvi.action, Action::CompareAndSwap);
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, Some("bar"), None)
+            .and_then(|kvi| {
+                assert_eq!(kvi.action, Action::CompareAndSwap);
 
-            Ok(())
-        })
+                Ok(())
+            })
     });
 
     assert!(client.run(work).is_ok());
@@ -368,15 +370,8 @@ fn compare_and_swap_requires_conditions() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_swap(
-            &inner_client,
-            "/test/foo",
-            "baz",
-            None,
-            None,
-            None,
-        ).then(|result| {
-            match result {
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, None)
+            .then(|result| match result {
                 Ok(_) => panic!("expected Error::InvalidConditions"),
                 Err(errors) => {
                     if errors.len() == 1 {
@@ -388,8 +383,7 @@ fn compare_and_swap_requires_conditions() {
                         panic!("expected a single error: Error::InvalidConditions");
                     }
                 }
-            }
-        })
+            })
     });
 
     assert!(client.run(work).is_ok());
@@ -425,7 +419,7 @@ fn get_non_recursive() {
 
     let work = join_all(vec![
         kv::set(&client, "/test/dir/baz", "blah", None),
-        kv::set(&client, "/test/foo", "bar", None)
+        kv::set(&client, "/test/foo", "bar", None),
     ]).and_then(|_| {
         kv::get(&inner_client, "/test", true, false, false).and_then(|kvi| {
             let node = kvi.node;
@@ -456,7 +450,10 @@ fn get_recursive() {
         kv::get(&inner_client, "/test", true, true, false).and_then(|kvi| {
             let nodes = kvi.node.nodes.unwrap();
 
-            assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
+            assert_eq!(
+                nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(),
+                "blah"
+            );
 
             Ok(())
         })
@@ -501,7 +498,7 @@ fn self_stats() {
     let core = Core::new().unwrap();
     let mut client = TestClient::no_destructor(core);
 
-    let work = stats::self_stats(&client).collect().and_then(|_|  Ok(()));
+    let work = stats::self_stats(&client).collect().and_then(|_| Ok(()));
 
     assert!(client.run(work).is_ok());
 }
@@ -532,16 +529,15 @@ fn set_dir() {
     let inner_client = client.clone();
 
     let work = kv::set_dir(&client, "/test", None).and_then(|_| {
-        kv::set_dir(&inner_client, "/test", None).then(|result| {
-            match result {
+        kv::set_dir(&inner_client, "/test", None)
+            .then(|result| match result {
                 Ok(_) => panic!("set_dir should fail on an existing dir"),
                 Err(_) => Ok(()),
-            }
-        }).and_then(|_| {
-            kv::set(&inner_client, "/test/foo", "bar", None).and_then(|_| {
-                kv::set_dir(&inner_client, "/test/foo", None)
             })
-        })
+            .and_then(|_| {
+                kv::set(&inner_client, "/test/foo", "bar", None)
+                    .and_then(|_| kv::set_dir(&inner_client, "/test/foo", None))
+            })
     });
 
     assert!(client.run(work).is_ok());
@@ -552,7 +548,7 @@ fn store_stats() {
     let core = Core::new().unwrap();
     let mut client = TestClient::no_destructor(core);
 
-    let work = stats::store_stats(&client).collect().and_then(|_|  Ok(()));
+    let work = stats::store_stats(&client).collect().and_then(|_| Ok(()));
 
     assert!(client.run(work).is_ok());
 }
@@ -591,7 +587,7 @@ fn update_requires_existing_key() {
                     Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
                     _ => panic!("expected EtcdError due to missing key"),
                 }
-            },
+            }
             _ => panic!("expected EtcdError due to missing key"),
         }
 
@@ -747,7 +743,13 @@ fn watch_cancel() {
     let work = kv::create(&client, "/test/foo", "bar", None)
         .map_err(|errors| WatchError::Other(errors))
         .and_then(move |_| {
-            kv::watch(&inner_client, "/test/foo", None, false, Some(Duration::from_millis(1)))
+            kv::watch(
+                &inner_client,
+                "/test/foo",
+                None,
+                false,
+                Some(Duration::from_millis(1)),
+            )
         });
 
     match client.run(work) {
