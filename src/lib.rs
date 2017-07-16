@@ -25,7 +25,7 @@
 //!     let client = Client::new(&handle, &["http://etcd.example.com:2379"], None).unwrap();
 //!
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
-//!         kv::get(&client, "/foo", false, false, false).and_then(|key_value_info| {
+//!         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
 //!             let value = key_value_info.node.value.unwrap();
 //!
 //!             assert_eq!(value, "bar".to_string());
@@ -86,7 +86,7 @@
 //!     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
 //!
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
-//!         kv::get(&client, "/foo", false, false, false).and_then(|key_value_info| {
+//!         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
 //!             let value = key_value_info.node.value.unwrap();
 //!
 //!             assert_eq!(value, "bar".to_string());

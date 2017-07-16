@@ -21,7 +21,8 @@ use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
 use etcd::{Client, Error};
-use etcd::kv::{self, Action, FutureKeyValueInfo, KeyValueInfo, WatchError, WatchOptions};
+use etcd::kv::{self, Action, FutureKeyValueInfo, GetOptions, KeyValueInfo, WatchError,
+               WatchOptions};
 use etcd::stats;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
@@ -396,7 +397,7 @@ fn get() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|_| {
-        kv::get(&inner_client, "/test/foo", false, false, false).and_then(|kvi| {
+        kv::get(&inner_client, "/test/foo", GetOptions::default()).and_then(|kvi| {
             assert_eq!(kvi.action, Action::Get);
 
             let node = kvi.node;
@@ -421,7 +422,14 @@ fn get_non_recursive() {
         kv::set(&client, "/test/dir/baz", "blah", None),
         kv::set(&client, "/test/foo", "bar", None),
     ]).and_then(|_| {
-        kv::get(&inner_client, "/test", true, false, false).and_then(|kvi| {
+        kv::get(
+            &inner_client,
+            "/test",
+            GetOptions {
+                sort: true,
+                ..Default::default()
+            },
+        ).and_then(|kvi| {
             let node = kvi.node;
 
             assert_eq!(node.dir.unwrap(), true);
@@ -447,7 +455,15 @@ fn get_recursive() {
     let inner_client = client.clone();
 
     let work = kv::set(&client, "/test/dir/baz", "blah", None).and_then(|_| {
-        kv::get(&inner_client, "/test", true, true, false).and_then(|kvi| {
+        kv::get(
+            &inner_client,
+            "/test",
+            GetOptions {
+                recursive: true,
+                sort: true,
+                ..Default::default()
+            },
+        ).and_then(|kvi| {
             let nodes = kvi.node.nodes.unwrap();
 
             assert_eq!(

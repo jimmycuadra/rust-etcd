@@ -18,7 +18,7 @@ use async::first_ok;
 use client::Client;
 use error::{ApiError, Error};
 use member::Member;
-use options::{ComparisonConditions, DeleteOptions, GetOptions, SetOptions};
+use options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
 use url::form_urlencoded::Serializer;
 
 /// The future returned by most key space API calls.
@@ -94,6 +94,21 @@ pub struct Node {
     pub ttl: Option<i64>,
     /// The value of the key.
     pub value: Option<String>,
+}
+
+/// Options for customizing the behavior of `kv::get`.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub struct GetOptions {
+    /// If true and the node is a directory, child nodes will be returned as well.
+    pub recursive: bool,
+    /// If true and the node is a directory, any child nodes returned will be sorted
+    /// alphabetically.
+    pub sort: bool,
+    /// If true, the etcd node serving the response will synchronize with the quorum before
+    /// returning the value.
+    ///
+    /// This is slower but avoids possibly stale data from being returned.
+    pub strong_consistency: bool,
 }
 
 /// Options for customizing the behavior of `kv::watch`.
@@ -274,23 +289,17 @@ where
 /// If `strong_consistency` is `true`, the etcd node serving the response will synchronize with
 /// the quorum before returning the value. This is slower but avoids possibly stale data from
 /// being returned.
-pub fn get<C>(
-    client: &Client<C>,
-    key: &str,
-    sort: bool,
-    recursive: bool,
-    strong_consistency: bool,
-) -> FutureKeyValueInfo
+pub fn get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
     raw_get(
         client,
         key,
-        GetOptions {
-            recursive: recursive,
-            sort: Some(sort),
-            strong_consistency: strong_consistency,
+        InternalGetOptions {
+            recursive: options.recursive,
+            sort: Some(options.sort),
+            strong_consistency: options.strong_consistency,
             ..Default::default()
         },
     )
@@ -395,7 +404,7 @@ where
     let work = raw_get(
         client,
         key,
-        GetOptions {
+        InternalGetOptions {
             recursive: options.recursive,
             wait_index: options.index,
             wait: true,
@@ -499,7 +508,7 @@ where
 }
 
 /// Handles all get operations.
-fn raw_get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeyValueInfo
+fn raw_get<C>(client: &Client<C>, key: &str, options: InternalGetOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
