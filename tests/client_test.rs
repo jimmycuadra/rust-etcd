@@ -284,95 +284,115 @@ fn compare_and_delete_requires_conditions() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn compare_and_swap() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn test_compare_and_swap() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     let modified_index = client.create(
-//         "/test/foo",
-//         "bar",
-//         None
-//     ).ok().unwrap().node.unwrap().modified_index.unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|ksi| {
+        let index = ksi.node.unwrap().modified_index.unwrap();
 
-//     let response = client.compare_and_swap(
-//         "/test/foo",
-//         "baz",
-//         Some(100),
-//         Some("bar"),
-//         Some(modified_index)
-//     ).ok().unwrap();
+        kv::compare_and_swap(
+            &inner_client,
+            "/test/foo",
+            "baz",
+            Some(100),
+            Some("bar"),
+            Some(index),
+        ).and_then(|ksi| {
+            assert_eq!(ksi.action, "compareAndSwap");
 
-//     assert_eq!(response.action, "compareAndSwap");
-// }
+            Ok(())
+        })
+    });
 
-// #[test]
-// fn compare_and_swap_only_index() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    assert!(client.run(work).is_ok());
+}
 
-//     let modified_index = client.create(
-//         "/test/foo",
-//         "bar",
-//         None
-//     ).ok().unwrap().node.unwrap().modified_index.unwrap();
+#[test]
+fn compare_and_swap_only_index() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     let response = client.compare_and_swap(
-//         "/test/foo",
-//         "baz",
-//         None,
-//         None,
-//         Some(modified_index)
-//     ).ok().unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|ksi| {
+        let index = ksi.node.unwrap().modified_index.unwrap();
 
-//     assert_eq!(response.action, "compareAndSwap");
-// }
+        kv::compare_and_swap(
+            &inner_client,
+            "/test/foo",
+            "baz",
+            None,
+            None,
+            Some(index),
+        ).and_then(|ksi| {
+            assert_eq!(ksi.action, "compareAndSwap");
 
-// #[test]
-// fn compare_and_swap_only_value() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+            Ok(())
+        })
+    });
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-//     let response = client.compare_and_swap(
-//         "/test/foo",
-//         "bar",
-//         None,
-//         Some("bar"),
-//         None,
-//     ).ok().unwrap();
+#[test]
+fn compare_and_swap() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-//     assert_eq!(response.action, "compareAndSwap");
-// }
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::compare_and_swap(
+            &inner_client,
+            "/test/foo",
+            "baz",
+            None,
+            Some("bar"),
+            None,
+        ).and_then(|ksi| {
+            assert_eq!(ksi.action, "compareAndSwap");
 
-// #[test]
-// fn compare_and_swap_requires_conditions() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+            Ok(())
+        })
+    });
 
-//     client.create("/test/foo", "bar", None).ok().unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-//     for error in client.compare_and_swap(
-//         "/test/foo",
-//         "bar",
-//         None,
-//         None,
-//         None,
-//     ).err().unwrap().iter() {
-//         match error {
-//             &Error::InvalidConditions(message) => assert_eq!(
-//                 message,
-//                 "Current value or modified index is required."
-//             ),
-//             _ => panic!("expected Error::InvalidConditions"),
-//         }
-//     }
-// }
+#[test]
+fn compare_and_swap_requires_conditions() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
+
+    let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
+        kv::compare_and_swap(
+            &inner_client,
+            "/test/foo",
+            "baz",
+            None,
+            None,
+            None,
+        ).then(|result| {
+            match result {
+                Ok(_) => panic!("expected Error::InvalidConditions"),
+                Err(errors) => {
+                    if errors.len() == 1 {
+                        match errors[0] {
+                            Error::InvalidConditions => Ok(()),
+                            _ => panic!("expected Error::InvalidConditions"),
+                        }
+                    } else {
+                        panic!("expected a single error: Error::InvalidConditions");
+                    }
+                }
+            }
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn get() {
