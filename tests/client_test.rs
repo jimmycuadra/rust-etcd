@@ -119,10 +119,10 @@ fn create() {
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
 
-    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|response| {
-        let node = response.node.unwrap();
+    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|kvi| {
+        let node = kvi.node;
 
-        assert_eq!(response.action, Action::Create);
+        assert_eq!(kvi.action, Action::Create);
         assert_eq!(node.value.unwrap(), "bar");
         assert_eq!(node.ttl.unwrap(), 60);
 
@@ -169,11 +169,11 @@ fn create_in_order() {
     }).collect();
 
     let work = join_all(requests).and_then(|mut kvis: Vec<KeyValueInfo>| {
-        kvis.sort_by_key(|kvi| kvi.node.as_ref().unwrap().modified_index.unwrap());
+        kvis.sort_by_key(|kvi| kvi.node.modified_index);
 
         let keys: Vec<String> = kvis
             .into_iter()
-            .map(|kvi| kvi.node.unwrap().key.unwrap())
+            .map(|kvi| kvi.node.key.unwrap())
             .collect();
 
         assert!(keys[0] < keys[1]);
@@ -209,7 +209,7 @@ fn compare_and_delete() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|kvi| {
-        let index = kvi.node.unwrap().modified_index.unwrap();
+        let index = kvi.node.modified_index;
 
         kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), Some(index))
             .and_then(|kvi| {
@@ -229,7 +229,7 @@ fn compare_and_delete_only_index() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|kvi| {
-        let index = kvi.node.unwrap().modified_index.unwrap();
+        let index = kvi.node.modified_index;
 
         kv::compare_and_delete(&inner_client, "/test/foo", None, Some(index)).and_then(|kvi| {
             assert_eq!(kvi.action, Action::CompareAndDelete);
@@ -292,7 +292,7 @@ fn test_compare_and_swap() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|kvi| {
-        let index = kvi.node.unwrap().modified_index.unwrap();
+        let index = kvi.node.modified_index;
 
         kv::compare_and_swap(
             &inner_client,
@@ -318,7 +318,7 @@ fn compare_and_swap_only_index() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|kvi| {
-        let index = kvi.node.unwrap().modified_index.unwrap();
+        let index = kvi.node.modified_index;
 
         kv::compare_and_swap(
             &inner_client,
@@ -405,7 +405,7 @@ fn get() {
         kv::get(&inner_client, "/test/foo", false, false, false).and_then(|kvi| {
             assert_eq!(kvi.action, Action::Get);
 
-            let node = kvi.node.unwrap();
+            let node = kvi.node;
 
             assert_eq!(node.value.unwrap(), "bar");
             assert_eq!(node.ttl.unwrap(), 60);
@@ -428,7 +428,7 @@ fn get_non_recursive() {
         kv::set(&client, "/test/foo", "bar", None)
     ]).and_then(|_| {
         kv::get(&inner_client, "/test", true, false, false).and_then(|kvi| {
-            let node = kvi.node.unwrap();
+            let node = kvi.node;
 
             assert_eq!(node.dir.unwrap(), true);
 
@@ -454,7 +454,7 @@ fn get_recursive() {
 
     let work = kv::set(&client, "/test/dir/baz", "blah", None).and_then(|_| {
         kv::get(&inner_client, "/test", true, true, false).and_then(|kvi| {
-            let nodes = kvi.node.unwrap().nodes.unwrap();
+            let nodes = kvi.node.nodes.unwrap();
 
             assert_eq!(nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(), "blah");
 
@@ -514,7 +514,7 @@ fn set() {
     let work = kv::set(&client, "/test/foo", "baz", None).and_then(|kvi| {
         assert_eq!(kvi.action, Action::Set);
 
-        let node = kvi.node.unwrap();
+        let node = kvi.node;
 
         assert_eq!(node.value.unwrap(), "baz");
         assert!(node.ttl.is_none());
@@ -567,7 +567,7 @@ fn update() {
         kv::update(&inner_client, "/test/foo", "blah", Some(30)).and_then(|kvi| {
             assert_eq!(kvi.action, Action::Update);
 
-            let node = kvi.node.unwrap();
+            let node = kvi.node;
 
             assert_eq!(node.value.unwrap(), "blah");
             assert_eq!(node.ttl.unwrap(), 30);
@@ -611,7 +611,7 @@ fn update_dir() {
 
     let work = kv::create_dir(&client, "/test", None).and_then(|_| {
         kv::update_dir(&inner_client, "/test", Some(60)).and_then(|kvi| {
-            assert_eq!(kvi.node.unwrap().ttl.unwrap(), 60);
+            assert_eq!(kvi.node.ttl.unwrap(), 60);
 
             Ok(())
         })
@@ -628,7 +628,7 @@ fn update_dir_replaces_key() {
 
     let work = kv::set(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::update_dir(&inner_client, "/test/foo", Some(60)).and_then(|kvi| {
-            let node = kvi.node.unwrap();
+            let node = kvi.node;
 
             assert_eq!(node.value.unwrap(), "");
             assert_eq!(node.ttl.unwrap(), 60);
@@ -675,7 +675,7 @@ fn create_dir() {
     let work = kv::create_dir(&client, "/test/dir", None).and_then(|kvi| {
         assert_eq!(kvi.action, Action::Create);
 
-        let node = kvi.node.unwrap();
+        let node = kvi.node;
 
         assert!(node.dir.is_some());
         assert!(node.value.is_none());
@@ -727,7 +727,7 @@ fn watch() {
             tx.send(()).unwrap();
 
             kv::watch(&inner_client, "/test/foo", None, false, None).and_then(|kvi| {
-                assert_eq!(kvi.node.unwrap().value.unwrap(), "baz");
+                assert_eq!(kvi.node.value.unwrap(), "baz");
 
                 Ok(())
             })
@@ -766,12 +766,12 @@ fn watch_index() {
     let work = kv::set(&client, "/test/foo", "bar", None)
         .map_err(|errors| WatchError::Other(errors))
         .and_then(move |kvi| {
-            let index = kvi.node.unwrap().modified_index.unwrap();
+            let index = kvi.node.modified_index;
 
             kv::watch(&inner_client, "/test/foo", Some(index), false, None).and_then(move |kvi| {
-                let node = kvi.node.unwrap();
+                let node = kvi.node;
 
-                assert_eq!(node.modified_index.unwrap(), index);
+                assert_eq!(node.modified_index, index);
                 assert_eq!(node.value.unwrap(), "bar");
 
                 Ok(())
@@ -801,7 +801,7 @@ fn watch_recursive() {
     tx.send(()).unwrap();
 
     let work = kv::watch(&client, "/test", None, true, None).and_then(|kvi| {
-        let node = kvi.node.unwrap();
+        let node = kvi.node;
 
         assert_eq!(node.key.unwrap(), "/test/foo/bar");
         assert_eq!(node.value.unwrap(), "baz");

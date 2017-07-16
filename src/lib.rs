@@ -21,16 +21,18 @@
 //! fn main() {
 //!     let mut core = Core::new().unwrap();
 //!     let handle = core.handle();
+//!
 //!     let client = Client::new(&handle, &["http://etcd.example.com:2379"], None).unwrap();
-//!     let work = Box::new(kv::set(&client, "/foo", "bar", None).and_then(|_| {
-//!         Box::new(kv::get(&client, "/foo", false, false, false).and_then(|key_space_info| {
-//!             let value = key_space_info.node.unwrap().value.unwrap();
+//!
+//!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!         kv::get(&client, "/foo", false, false, false).and_then(|key_value_info| {
+//!             let value = key_value_info.node.value.unwrap();
 //!
 //!             assert_eq!(value, "bar".to_string());
 //!
 //!             Ok(())
-//!         }))
-//!     }));
+//!         })
+//!     });
 //!
 //!     core.run(work).unwrap();
 //! }
@@ -83,15 +85,15 @@
 //!
 //!     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
 //!
-//!     let work = Box::new(kv::set(&client, "/foo", "bar", None).and_then(|_| {
-//!         Box::new(kv::get(&client, "/foo", false, false, false).and_then(|key_space_info| {
-//!             let value = key_space_info.node.unwrap().value.unwrap();
+//!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!         kv::get(&client, "/foo", false, false, false).and_then(|key_value_info| {
+//!             let value = key_value_info.node.value.unwrap();
 //!
 //!             assert_eq!(value, "bar".to_string());
 //!
 //!             Ok(())
-//!         }))
-//!     }));
+//!         })
+//!     });
 //!
 //!     core.run(work).unwrap();
 //! }
