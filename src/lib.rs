@@ -1,9 +1,27 @@
-//! Crate etcd provides a client for [etcd](https://github.com/coreos/etcd), a distributed
+//! Crate `etcd` provides a client for [etcd](https://github.com/coreos/etcd), a distributed
 //! key-value store from [CoreOS](https://coreos.com/).
 //!
-//! `Client` is the entry point for all API calls. Types for etcd's primary key space operations
-//! are reexported to the crate root. Types for other etcd operations are found in the crate's
-//! public modules.
+//! The client uses etcd's v2 APIs. Support for the v3 APIs is planned, and will be added via
+//! separate types for backwards compatibility and to support both sets of APIs simultaneously.
+//!
+//! The client uses asynchronous I/O, backed by the `futures` and `tokio-core` crates, and requires
+//! both to be used alongside. Functions that return futures currently return them boxed. As soon
+//! as Rust's [impl Trait](https://github.com/rust-lang/rust/issues/34511) feature is stabilized,
+//! this crate's API will be updated to use it.
+//!
+//! The client is thoroughly tested against etcd 2.3.7.
+//!
+//! # Usage
+//!
+//! `Client` is an HTTP client required for all API calls. It can be constructed to use HTTP or
+//! HTTPS, and supports authenticating to the etcd cluster via HTTP basic authentication (username
+//! and password) and/or X.509 client certificates.
+//!
+//! To get basic information about the versions of etcd running in a cluster, use the
+//! `Client::versions` method. All other API calls are made by passing a `Client` reference to the
+//! functions in the `kv` and `stats` modules. These modules contain functions for API calls to the
+//! primary key-value store API and statistics API, respectively. The membership and authentication
+//! APIs are not yet supported, but planned.
 //!
 //! # Examples
 //!
@@ -14,90 +32,45 @@
 //! extern crate futures;
 //! extern crate tokio_core;
 //!
-//! use etcd::{Client, kv};
+//! use etcd::Client;
+//! use etcd::kv::{self, Action};
 //! use futures::Future;
 //! use tokio_core::reactor::Core;
 //!
 //! fn main() {
+//!     // Create a `Core`, which is the event loop which will drive futures to completion.
 //!     let mut core = Core::new().unwrap();
+//!     // Get a "handle" to the event loop that the client can use to schedule work.
 //!     let handle = core.handle();
 //!
+//!     // Create a client to access a single cluster member. Addresses of multiple cluster
+//!     // members can be provided and the client will try each one in sequence until it
+//!     // receives a successful response.
 //!     let client = Client::new(&handle, &["http://etcd.example.com:2379"], None).unwrap();
 //!
+//!     // Set the key "/foo" to the value "bar" with no expiration.
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!         // Once the key has been set, ask for details about it.
 //!         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
-//!             let value = key_value_info.node.value.unwrap();
+//!             // The information returned tells you what kind of operation was performed.
+//!             assert_eq!(key_value_info.action, Action::Get);
 //!
-//!             assert_eq!(value, "bar".to_string());
+//!             // The value of the key is what we set it to previously.
+//!             assert_eq!(key_value_info.node.value, Some("bar".to_string()));
 //!
 //!             Ok(())
 //!         })
 //!     });
 //!
+//!     // Start the event loop, driving the asynchronous code to completion.
 //!     core.run(work).unwrap();
 //! }
 //! ```
 //!
-//! Using client certificate authentication:
+//! # Cargo features
 //!
-//! ```no_run
-//! extern crate etcd;
-//! extern crate futures;
-//! extern crate hyper;
-//! extern crate hyper_tls;
-//! extern crate native_tls;
-//! extern crate tokio_core;
-//!
-//! use std::fs::File;
-//! use std::io::Read;
-//!
-//! use futures::Future;
-//! use hyper::client::HttpConnector;
-//! use hyper_tls::HttpsConnector;
-//! use native_tls::{Certificate, Pkcs12, TlsConnector};
-//! use tokio_core::reactor::Core;
-//!
-//! use etcd::{Client, kv};
-//!
-//! fn main() {
-//!     let mut ca_cert_file = File::open("ca.der").unwrap();
-//!     let mut ca_cert_buffer = Vec::new();
-//!     ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
-//!
-//!     let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
-//!     let mut pkcs12_buffer = Vec::new();
-//!     pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
-//!
-//!     let mut builder = TlsConnector::builder().unwrap();
-//!     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
-//!     builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
-//!
-//!     let tls_connector = builder.build().unwrap();
-//!
-//!     let mut core = Core::new().unwrap();
-//!     let handle = core.handle();
-//!
-//!     let mut http_connector = HttpConnector::new(4, &handle);
-//!     http_connector.enforce_http(false);
-//!     let https_connector = HttpsConnector::from((http_connector, tls_connector));
-//!
-//!     let hyper = hyper::Client::configure().connector(https_connector).build(&handle);
-//!
-//!     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
-//!
-//!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
-//!         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
-//!             let value = key_value_info.node.value.unwrap();
-//!
-//!             assert_eq!(value, "bar".to_string());
-//!
-//!             Ok(())
-//!         })
-//!     });
-//!
-//!     core.run(work).unwrap();
-//! }
-//! ```
+//! Crate `etcd` has one Cargo feature, `tls`, which adds HTTPS support via the `Client::https`
+//! constructor. This feature is enabled by default.
 
 #![deny(missing_debug_implementations, missing_docs, warnings)]
 

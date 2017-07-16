@@ -16,7 +16,9 @@ use http::HttpClient;
 use member::Member;
 use version::VersionInfo;
 
-/// API client for etcd. All API calls are made via the client.
+/// API client for etcd.
+///
+/// All API calls require a client.
 #[derive(Clone, Debug)]
 pub struct Client<C>
 where
@@ -36,8 +38,14 @@ pub struct BasicAuth {
 }
 
 impl Client<HttpConnector> {
-    /// Constructs a new client using the HTTP protocol. `endpoints` are URLs for the etcd cluster
-    /// members the client will make API calls to.
+    /// Constructs a new client using the HTTP protocol.
+    ///
+    /// # Parameters
+    ///
+    /// * handle: A handle to the event loop.
+    /// * endpoints: URLs for one or more cluster members. When making an API call, the client will
+    /// make the call to each member in order until it receives a successful respponse.
+    /// * basic_auth: Credentials for HTTP basic authentication.
     ///
     /// # Errors
     ///
@@ -55,8 +63,14 @@ impl Client<HttpConnector> {
 
 #[cfg(feature = "tls")]
 impl Client<HttpsConnector<HttpConnector>> {
-    /// Constructs a new client using the HTTPS protocol. `endpoints` are URLs for the etcd cluster
-    /// members the client will make API calls to.
+    /// Constructs a new client using the HTTPS protocol.
+    ///
+    /// # Parameters
+    ///
+    /// * handle: A handle to the event loop.
+    /// * endpoints: URLs for one or more cluster members. When making an API call, the client will
+    /// make the call to each member in order until it receives a successful respponse.
+    /// * basic_auth: Credentials for HTTP basic authentication.
     ///
     /// # Errors
     ///
@@ -80,15 +94,85 @@ impl<C> Client<C>
 where
     C: Clone + Connect,
 {
-    /// Constructs a new client using the provided `hyper::Client`. `endpoints` are URLs for the
-    /// etcd cluster members the client will make API calls to.
+    /// Constructs a new client using the provided `hyper::Client`.
     ///
     /// This method allows the user to configure the details of the underlying HTTP client to their
     /// liking. It is also necessary when using X.509 client certificate authentication.
     ///
+    /// # Parameters
+    ///
+    /// * hyper: A fully configured `hyper::Client`.
+    /// * endpoints: URLs for one or more cluster members. When making an API call, the client will
+    /// make the call to each member in order until it receives a successful respponse.
+    /// * basic_auth: Credentials for HTTP basic authentication.
+    ///
     /// # Errors
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
+    ///
+    /// # Examples
+    ///
+    /// Configuring the client to authenticate with both HTTP basic auth and an X.509 client
+    /// certificate:
+    ///
+    /// ```no_run
+    /// extern crate etcd;
+    /// extern crate futures;
+    /// extern crate hyper;
+    /// extern crate hyper_tls;
+    /// extern crate native_tls;
+    /// extern crate tokio_core;
+    ///
+    /// use std::fs::File;
+    /// use std::io::Read;
+    ///
+    /// use futures::Future;
+    /// use hyper::client::HttpConnector;
+    /// use hyper_tls::HttpsConnector;
+    /// use native_tls::{Certificate, Pkcs12, TlsConnector};
+    /// use tokio_core::reactor::Core;
+    ///
+    /// use etcd::{Client, kv};
+    ///
+    /// fn main() {
+    ///     let mut ca_cert_file = File::open("ca.der").unwrap();
+    ///     let mut ca_cert_buffer = Vec::new();
+    ///     ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
+    ///
+    ///     let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
+    ///     let mut pkcs12_buffer = Vec::new();
+    ///     pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
+    ///
+    ///     let mut builder = TlsConnector::builder().unwrap();
+    ///     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
+    ///     builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+    ///
+    ///     let tls_connector = builder.build().unwrap();
+    ///
+    ///     let mut core = Core::new().unwrap();
+    ///     let handle = core.handle();
+    ///
+    ///     let mut http_connector = HttpConnector::new(4, &handle);
+    ///     http_connector.enforce_http(false);
+    ///     let https_connector = HttpsConnector::from((http_connector, tls_connector));
+    ///
+    ///     let hyper = hyper::Client::configure().connector(https_connector).build(&handle);
+    ///
+    ///     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
+    ///
+    ///     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+    ///         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
+    ///             let value = key_value_info.node.value.unwrap();
+    ///
+    ///             assert_eq!(value, "bar".to_string());
+    ///
+    ///             Ok(())
+    ///         })
+    ///     });
+    ///
+    ///     core.run(work).unwrap();
+    /// }
+    /// ```
     pub fn custom(
         hyper: Hyper<C>,
         endpoints: &[&str],
@@ -110,10 +194,12 @@ where
         })
     }
 
+    /// Lets other internal code access the `HttpClient`.
     pub(crate) fn http_client(&self) -> &HttpClient<C> {
         &self.http_client
     }
 
+    /// Lets other internal code access the cluster `Member`s.
     pub(crate) fn members(&self) -> &[Member] {
         &self.members
     }
@@ -146,6 +232,7 @@ where
         Box::new(futures_unordered(futures))
     }
 
+    /// Lets other internal code make basic HTTP requests.
     pub(crate) fn request<T>(
         &self,
         uri: FutureResult<Uri, Error>,

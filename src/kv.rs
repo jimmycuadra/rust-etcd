@@ -1,4 +1,8 @@
 //! etcd's key-value API.
+//!
+//! The term "node" in the documentation for this module refers to a key-value pair or a directory
+//! of key-value pairs. For example, "/foo" is a key if it has a value, but it is a directory if
+//! there other other key-value pairs "underneath" it, such as "/foo/bar".
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -27,7 +31,7 @@ use url::form_urlencoded::Serializer;
 /// member that failed.
 pub type FutureKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Vec<Error>>>;
 
-/// A FutureKeyValueInfo for a single etcd cluster member.
+/// A `FutureKeyValueInfo` for a single etcd cluster member.
 pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Error>>;
 
 /// Information about the result of a successful key space operation.
@@ -123,7 +127,18 @@ pub struct WatchOptions {
     pub timeout: Option<Duration>,
 }
 
-/// Deletes a key only if the given current value and/or current modified index match.
+/// Deletes a node only if the given current value and/or current modified index match.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to delete.
+/// * current_value: If given, the node must currently have this value for the operation to
+/// succeed.
+/// * current_modified_index: If given, the node must currently be at this modified index for the
+/// operation to succeed.
+///
+/// # Errors
 ///
 /// Fails if the conditions didn't match or if no conditions were given.
 pub fn compare_and_delete<C>(
@@ -148,8 +163,21 @@ where
     )
 }
 
-/// Updates the value of a key only if the given current value and/or current modified index
+/// Updates a node only if the given current value and/or current modified index
 /// match.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to update.
+/// * value: The new value for the node.
+/// * ttl: If given, the node will expire after this many seconds.
+/// * current_value: If given, the node must currently have this value for the operation to
+/// succeed.
+/// * current_modified_index: If given, the node must currently be at this modified index for the
+/// operation to succeed.
+///
+/// # Errors
 ///
 /// Fails if the conditions didn't match or if no conditions were given.
 pub fn compare_and_swap<C>(
@@ -178,7 +206,16 @@ where
     )
 }
 
-/// Creates a new key-value pair with any given time to live in seconds.
+/// Creates a new key-value pair.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the key-value pair to create.
+/// * value: The new value for the node.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
 ///
 /// Fails if the key already exists.
 pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
@@ -197,7 +234,15 @@ where
     )
 }
 
-/// Creates a new empty directory at the given key with the given time to live in seconds.
+/// Creates a new empty directory.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the directory to create.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
 ///
 /// Fails if the key already exists.
 pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
@@ -216,8 +261,23 @@ where
     )
 }
 
-/// Creates a new key-value pair in the given directory with any given time to live in seconds
-/// and a key name guaranteed to be greater than all existing keys in the directory.
+/// Creates a new key-value pair in a directory with a numeric key name larger than any of its
+/// sibling key-value pairs.
+///
+/// For example, the first value created with this function under the directory "/foo" will have a
+/// key name like "00000000000000000001" automatically generated. The second value created with
+/// this function under the same directory will have a key name like "00000000000000000002".
+///
+/// This behavior is guaranteed by the server.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the directory to create a key-value pair in.
+/// * value: The new value for the key-value pair.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
 ///
 /// Fails if the key already exists and is not a directory.
 pub fn create_in_order<C>(
@@ -241,10 +301,16 @@ where
     )
 }
 
-/// Deletes a key-value pair or directory.
+/// Deletes a node.
 ///
-/// If `recursive` is `true` and the key is a directory, the directory and all child key-value
-/// pairs and directories will be deleted.
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to delete.
+/// * recursive: If true, and the key is a directory, the directory and all child key-value
+/// pairs and directories will be deleted as well.
+///
+/// # Errors
 ///
 /// Fails if the key is a directory and `recursive` is `false`.
 pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> FutureKeyValueInfo
@@ -263,6 +329,13 @@ where
 
 /// Deletes an empty directory or a key-value pair at the given key.
 ///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to delete.
+///
+/// # Errors
+///
 /// Fails if the directory is not empty.
 pub fn delete_dir<C>(client: &Client<C>, key: &str) -> FutureKeyValueInfo
 where
@@ -278,17 +351,17 @@ where
     )
 }
 
-/// Gets the value of a key.
+/// Gets the value of a node.
 ///
-/// If the key is a directory, `sort` will determine whether the
-/// contents of the directory are returned in a sorted order.
+/// # Parameters
 ///
-/// If the key is a directory and `recursive` is `true`, the contents of child directories will
-/// be returned as well.
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to retrieve.
+/// * options: Options to customize the behavior of the operation.
 ///
-/// If `strong_consistency` is `true`, the etcd node serving the response will synchronize with
-/// the quorum before returning the value. This is slower but avoids possibly stale data from
-/// being returned.
+/// # Errors
+///
+/// Fails if the key doesn't exist.
 pub fn get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
@@ -305,10 +378,20 @@ where
     )
 }
 
-/// Sets the key to the given value with the given time to live in seconds. Any previous value
-/// and TTL will be replaced.
+/// Sets the value of a key-value pair.
 ///
-/// Fails if the key is a directory.
+/// Any previous value and TTL will be replaced.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the key-value pair to set.
+/// * value: The new value for the key-value pair.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
+///
+/// Fails if the node is a directory.
 pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
@@ -324,10 +407,19 @@ where
     )
 }
 
-/// Sets the key to an empty directory with the given time to live in seconds. An existing
-/// key-value will be replaced, but an existing directory will not.
+/// Sets the key to an empty directory.
 ///
-/// Fails if the key is an existing directory.
+/// An existing key-value pair will be replaced, but an existing directory will not.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the directory to set.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
+///
+/// Fails if the node is an existing directory.
 pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
@@ -343,7 +435,16 @@ where
     )
 }
 
-/// Updates the given key to the given value and time to live in seconds.
+/// Updates an existing key-value pair.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the key-value pair to update.
+/// * value: The new value for the key-value pair.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
 ///
 /// Fails if the key does not exist.
 pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
@@ -362,11 +463,20 @@ where
     )
 }
 
-/// Updates the given key to a directory with the given time to live in seconds. If the
-/// directory already existed, only the TTL is updated. If the key was a key-value pair, its
+/// Updates a directory.
+///
+/// If the directory already existed, only the TTL is updated. If the key was a key-value pair, its
 /// value is removed and its TTL is updated.
 ///
-/// Fails if the key does not exist.
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to update.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
+///
+/// Fails if the node does not exist.
 pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
@@ -383,16 +493,23 @@ where
     )
 }
 
-/// Watches etcd for changes to the given key (including all child keys if `recursive` is
-/// `true`,) and returns the new value as soon as a change takes place.
+/// Watches a node for changes and returns the new value as soon as a change takes place.
 ///
-/// The watch will return the first change indexed with `index` or greater, if specified,
-/// allowing you to watch for changes that happened in the past.
+/// # Parameters
 ///
-/// Fails if a supplied `index` value is too old and has been flushed out of etcd's internal
-/// store of the most recent change events. In this case, the key should be queried for its
-/// latest "modified index" value and that should be used as the new `index` on a subsequent
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the node to watch.
+/// * options: Options to customize the behavior of the operation.
+///
+/// # Errors
+///
+/// Fails if `options.index` is too old and has been flushed out of etcd's internal store of the
+/// most recent change events. In this case, the key should be queried for its latest
+/// "modified index" value and that should be used as the new `options.index` on a subsequent
 /// `watch`.
+///
+/// Fails if a timeout is specified and the duration lapses without a response from the etcd
+/// cluster.
 pub fn watch<C>(
     client: &Client<C>,
     key: &str,
