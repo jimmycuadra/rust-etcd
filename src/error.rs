@@ -16,7 +16,7 @@ use url::ParseError as UrlError;
 ///
 /// This is a logical error, as opposed to other types of errors that may occur when using this
 /// crate, such as network or serialization errors. See `Error` for the other types of errors.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct ApiError {
     /// The key that was being operated upon or reason for the failure.
     pub cause: Option<String>,

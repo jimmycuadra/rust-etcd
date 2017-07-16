@@ -3,7 +3,7 @@
 /// Information about the versions of etcd running in a cluster.
 ///
 /// This value is returned by `Client::versions`.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct VersionInfo {
     /// The version of the entire etcd cluster.
     #[serde(rename = "etcdcluster")]

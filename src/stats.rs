@@ -89,7 +89,7 @@ pub struct SelfStats {
 }
 
 /// A small amount of information about the leader of the cluster.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct LeaderInfo {
     /// The unique Raft ID of the leader.
     #[serde(rename = "leader")]
@@ -102,7 +102,7 @@ pub struct LeaderInfo {
 }
 
 /// Statistics about the operations handled by an etcd member.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct StoreStats {
     /// The number of failed compare and delete operations.
     #[serde(rename = "compareAndDeleteFail")]
