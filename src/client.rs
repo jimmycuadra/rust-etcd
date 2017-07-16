@@ -57,6 +57,13 @@ pub struct BasicAuth {
     pub password: String,
 }
 
+/// A value returned by the health check API endpoint to indicate a healthy cluster member.
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+pub struct Health {
+    /// The health status of the cluster member.
+    pub health: String,
+}
+
 impl Client<HttpConnector> {
     /// Constructs a new client using the HTTP protocol.
     ///
@@ -226,20 +233,50 @@ where
         &self.members
     }
 
-    /// Returns version information from each etcd cluster member the client was initialized with.
-    pub fn versions(&self) -> Box<Stream<Item = VersionInfo, Error = Error>> {
+    /// Runs a basic health check against each etcd member.
+    pub fn health(&self) -> Box<Stream<Item = (Health, ClusterInfo), Error = Error>> {
         let futures = self.members.iter().map(|member| {
-            let url = build_url(&member);
+            let url = build_url(&member, "health");
             let uri = url.parse().map_err(Error::from).into_future();
             let cloned_client = self.http_client.clone();
             let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
             response.and_then(|response| {
                 let status = response.status();
+                let cluster_info = ClusterInfo::from(response.headers());
+                let body = response.body().concat2().map_err(Error::from);
+
+                body.and_then(move |ref body| if status == StatusCode::Ok {
+                    match serde_json::from_slice::<Health>(body) {
+                        Ok(health) => ok((health, cluster_info)),
+                        Err(error) => err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => err(Error::Api(error)),
+                        Err(error) => err(Error::Serialization(error)),
+                    }
+                })
+            })
+        });
+
+        Box::new(futures_unordered(futures))
+    }
+
+    /// Returns version information from each etcd cluster member the client was initialized with.
+    pub fn versions(&self) -> Box<Stream<Item = (VersionInfo, ClusterInfo), Error = Error>> {
+        let futures = self.members.iter().map(|member| {
+            let url = build_url(&member, "version");
+            let uri = url.parse().map_err(Error::from).into_future();
+            let cloned_client = self.http_client.clone();
+            let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
+            response.and_then(|response| {
+                let status = response.status();
+                let cluster_info = ClusterInfo::from(response.headers());
                 let body = response.body().concat2().map_err(Error::from);
 
                 body.and_then(move |ref body| if status == StatusCode::Ok {
                     match serde_json::from_slice::<VersionInfo>(body) {
-                        Ok(stats) => ok(stats),
+                        Ok(versions) => ok((versions, cluster_info)),
                         Err(error) => err(Error::Serialization(error)),
                     }
                 } else {
@@ -331,12 +368,12 @@ impl<'a> From<&'a Headers> for ClusterInfo {
 }
 
 /// Constructs the full URL for the versions API call.
-fn build_url(member: &Member) -> String {
+fn build_url(member: &Member, path: &str) -> String {
     let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
         ""
     } else {
         "/"
     };
 
-    format!("{}{}version", member.endpoint, maybe_slash)
+    format!("{}{}{}", member.endpoint, maybe_slash, path)
 }

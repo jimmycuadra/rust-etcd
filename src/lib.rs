@@ -95,7 +95,7 @@ extern crate tokio_core;
 extern crate tokio_timer;
 extern crate url;
 
-pub use client::{BasicAuth, Client, ClusterInfo};
+pub use client::{BasicAuth, Client, ClusterInfo, Health};
 pub use error::{ApiError, Error};
 pub use version::VersionInfo;
 
