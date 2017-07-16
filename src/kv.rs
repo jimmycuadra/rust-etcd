@@ -31,10 +31,10 @@ pub type FutureKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Vec<Error>
 pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Error>>;
 
 /// Information about the result of a successful key space operation.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct KeyValueInfo {
     /// The action that was taken, e.g. `get`, `set`.
-    pub action: String,
+    pub action: Action,
     /// The etcd `Node` that was operated upon.
     pub node: Option<Node>,
     /// The previous state of the target node.
@@ -42,8 +42,39 @@ pub struct KeyValueInfo {
     pub prev_node: Option<Node>,
 }
 
-/// An etcd key-value pair or directory.
-#[derive(Clone, Debug, Deserialize)]
+/// The type of action that was taken in response to a key value API request.
+///
+/// "Node" refers to the key or directory being acted upon.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq)]
+pub enum Action {
+    /// Atomic deletion of a node based on previous state.
+    #[serde(rename = "compareAndDelete")]
+    CompareAndDelete,
+    /// Atomtic update of a node based on previous state.
+    #[serde(rename = "compareAndSwap")]
+    CompareAndSwap,
+    /// Creation of a node that didn't previously exist.
+    #[serde(rename = "create")]
+    Create,
+    /// Deletion of a node.
+    #[serde(rename = "delete")]
+    Delete,
+    /// Expiration of a node.
+    #[serde(rename = "expire")]
+    Expire,
+    /// Retrieval of a node.
+    #[serde(rename = "get")]
+    Get,
+    /// Assignment of a node, which may have previously existed.
+    #[serde(rename = "set")]
+    Set,
+    /// Update of an existing node.
+    #[serde(rename = "update")]
+    Update,
+}
+
+/// An etcd key or directory.
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct Node {
     /// The new value of the etcd creation index.
     #[serde(rename = "createdIndex")]

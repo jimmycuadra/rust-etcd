@@ -21,7 +21,7 @@ use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
 use etcd::{Client, Error};
-use etcd::kv::{self, FutureKeyValueInfo, KeyValueInfo, WatchError};
+use etcd::kv::{self, Action, FutureKeyValueInfo, KeyValueInfo, WatchError};
 use etcd::stats;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
@@ -122,7 +122,7 @@ fn create() {
     let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|response| {
         let node = response.node.unwrap();
 
-        assert_eq!(response.action, "create");
+        assert_eq!(response.action, Action::Create);
         assert_eq!(node.value.unwrap(), "bar");
         assert_eq!(node.ttl.unwrap(), 60);
 
@@ -213,7 +213,7 @@ fn compare_and_delete() {
 
         kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), Some(index))
             .and_then(|kvi| {
-                assert_eq!(kvi.action, "compareAndDelete");
+                assert_eq!(kvi.action, Action::CompareAndDelete);
 
                 Ok(())
             })
@@ -232,7 +232,7 @@ fn compare_and_delete_only_index() {
         let index = kvi.node.unwrap().modified_index.unwrap();
 
         kv::compare_and_delete(&inner_client, "/test/foo", None, Some(index)).and_then(|kvi| {
-            assert_eq!(kvi.action, "compareAndDelete");
+            assert_eq!(kvi.action, Action::CompareAndDelete);
 
             Ok(())
         })
@@ -249,7 +249,7 @@ fn compare_and_delete_only_value() {
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), None).and_then(|kvi| {
-            assert_eq!(kvi.action, "compareAndDelete");
+            assert_eq!(kvi.action, Action::CompareAndDelete);
 
             Ok(())
         })
@@ -302,7 +302,7 @@ fn test_compare_and_swap() {
             Some("bar"),
             Some(index),
         ).and_then(|kvi| {
-            assert_eq!(kvi.action, "compareAndSwap");
+            assert_eq!(kvi.action, Action::CompareAndSwap);
 
             Ok(())
         })
@@ -328,7 +328,7 @@ fn compare_and_swap_only_index() {
             None,
             Some(index),
         ).and_then(|kvi| {
-            assert_eq!(kvi.action, "compareAndSwap");
+            assert_eq!(kvi.action, Action::CompareAndSwap);
 
             Ok(())
         })
@@ -352,7 +352,7 @@ fn compare_and_swap() {
             Some("bar"),
             None,
         ).and_then(|kvi| {
-            assert_eq!(kvi.action, "compareAndSwap");
+            assert_eq!(kvi.action, Action::CompareAndSwap);
 
             Ok(())
         })
@@ -403,7 +403,7 @@ fn get() {
 
     let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|_| {
         kv::get(&inner_client, "/test/foo", false, false, false).and_then(|kvi| {
-            assert_eq!(kvi.action, "get");
+            assert_eq!(kvi.action, Action::Get);
 
             let node = kvi.node.unwrap();
 
@@ -512,7 +512,7 @@ fn set() {
     let mut client = TestClient::new(core);
 
     let work = kv::set(&client, "/test/foo", "baz", None).and_then(|kvi| {
-        assert_eq!(kvi.action, "set");
+        assert_eq!(kvi.action, Action::Set);
 
         let node = kvi.node.unwrap();
 
@@ -565,7 +565,7 @@ fn update() {
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::update(&inner_client, "/test/foo", "blah", Some(30)).and_then(|kvi| {
-            assert_eq!(kvi.action, "update");
+            assert_eq!(kvi.action, Action::Update);
 
             let node = kvi.node.unwrap();
 
@@ -658,7 +658,7 @@ fn delete() {
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::delete(&inner_client, "/test/foo", false).and_then(|kvi| {
-            assert_eq!(kvi.action, "delete");
+            assert_eq!(kvi.action, Action::Delete);
 
             Ok(())
         })
@@ -673,7 +673,7 @@ fn create_dir() {
     let mut client = TestClient::new(core);
 
     let work = kv::create_dir(&client, "/test/dir", None).and_then(|kvi| {
-        assert_eq!(kvi.action, "create");
+        assert_eq!(kvi.action, Action::Create);
 
         let node = kvi.node.unwrap();
 
@@ -694,7 +694,7 @@ fn delete_dir() {
 
     let work = kv::create_dir(&client, "/test/dir", None).and_then(|_| {
         kv::delete_dir(&inner_client, "/test/dir").and_then(|kvi| {
-            assert_eq!(kvi.action, "delete");
+            assert_eq!(kvi.action, Action::Delete);
 
             Ok(())
         })
