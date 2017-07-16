@@ -181,14 +181,15 @@ where
     ///     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
     ///
     ///     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
-    ///         kv::get(&client, "/foo", kv::GetOptions::default())
-    ///             .and_then(|(key_value_info, _)| {
-    ///                 let value = key_value_info.node.value.unwrap();
+    ///         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
     ///
-    ///                 assert_eq!(value, "bar".to_string());
+    ///         get_request.and_then(|(key_value_info, _)| {
+    ///             let value = key_value_info.node.value.unwrap();
     ///
-    ///                 Ok(())
-    ///             })
+    ///             assert_eq!(value, "bar".to_string());
+    ///
+    ///             Ok(())
+    ///         })
     ///     });
     ///
     ///     core.run(work).unwrap();

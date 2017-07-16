@@ -20,8 +20,8 @@
 //! To get basic information about the versions of etcd running in a cluster, use the
 //! `Client::versions` method. All other API calls are made by passing a `Client` reference to the
 //! functions in the `kv` and `stats` modules. These modules contain functions for API calls to the
-//! primary key-value store API and statistics API, respectively. The membership and authentication
-//! APIs are not yet supported, but planned.
+//! primary key-value store APIs and statistics APIs, respectively. The membership and
+//! authentication APIs are not yet supported, but planned.
 //!
 //! # Examples
 //!
@@ -51,20 +51,21 @@
 //!     // Set the key "/foo" to the value "bar" with no expiration.
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
 //!         // Once the key has been set, ask for details about it.
-//!         kv::get(&client, "/foo", kv::GetOptions::default())
-//!             .and_then(|(key_value_info, cluster_info)| {
-//!                 // The information returned tells you what kind of operation was performed.
-//!                 assert_eq!(key_value_info.action, Action::Get);
+//!         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
 //!
-//!                 // The value of the key is what we set it to previously.
-//!                 assert_eq!(key_value_info.node.value, Some("bar".to_string()));
+//!         get_request.and_then(|(key_value_info, cluster_info)| {
+//!             // The information returned tells you what kind of operation was performed.
+//!             assert_eq!(key_value_info.action, Action::Get);
 //!
-//!                 // Each API call also returns information about the etcd cluster extracted from
-//!                 // HTTP response headers.
-//!                 assert!(cluster_info.etcd_index.is_some());
+//!             // The value of the key is what we set it to previously.
+//!             assert_eq!(key_value_info.node.value, Some("bar".to_string()));
 //!
-//!                 Ok(())
-//!             })
+//!             // Each API call also returns information about the etcd cluster extracted from
+//!             // HTTP response headers.
+//!             assert!(cluster_info.etcd_index.is_some());
+//!
+//!             Ok(())
+//!         })
 //!     });
 //!
 //!     // Start the event loop, driving the asynchronous code to completion.
