@@ -3,7 +3,7 @@
 use futures::{Future, IntoFuture, Stream};
 use futures::future::{FutureResult, err, ok};
 use futures::stream::futures_unordered;
-use hyper::{Client as Hyper, StatusCode, Uri};
+use hyper::{Client as Hyper, Headers, StatusCode, Uri};
 use hyper::client::{Connect, HttpConnector};
 #[cfg(feature = "tls")]
 use hyper_tls::HttpsConnector;
@@ -15,6 +15,26 @@ use error::{ApiError, Error};
 use http::HttpClient;
 use member::Member;
 use version::VersionInfo;
+
+header! {
+    /// The `X-Etcd-Cluster-Id` header.
+    (XEtcdClusterId, "X-Etcd-Cluster-Id") => [String]
+}
+
+header! {
+    /// The `X-Etcd-Index` HTTP header.
+    (XEtcdIndex, "X-Etcd-Index") => [u64]
+}
+
+header! {
+    /// The `X-Raft-Index` HTTP header.
+    (XRaftIndex, "X-Raft-Index") => [u64]
+}
+
+header! {
+    /// The `X-Raft-Term` HTTP header.
+    (XRaftTerm, "X-Raft-Term") => [u64]
+}
 
 /// API client for etcd.
 ///
@@ -161,13 +181,14 @@ where
     ///     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
     ///
     ///     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
-    ///         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
-    ///             let value = key_value_info.node.value.unwrap();
+    ///         kv::get(&client, "/foo", kv::GetOptions::default())
+    ///             .and_then(|(key_value_info, _)| {
+    ///                 let value = key_value_info.node.value.unwrap();
     ///
-    ///             assert_eq!(value, "bar".to_string());
+    ///                 assert_eq!(value, "bar".to_string());
     ///
-    ///             Ok(())
-    ///         })
+    ///                 Ok(())
+    ///             })
     ///     });
     ///
     ///     core.run(work).unwrap();
@@ -236,7 +257,7 @@ where
     pub(crate) fn request<T>(
         &self,
         uri: FutureResult<Uri, Error>,
-    ) -> Box<Future<Item = T, Error = Error>>
+    ) -> Box<Future<Item = (T, ClusterInfo), Error = Error>>
     where
         T: DeserializeOwned + 'static,
     {
@@ -244,11 +265,12 @@ where
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
         let result = response.and_then(|response| {
             let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<T>(&body) {
-                    Ok(stats) => ok(stats),
+                    Ok(stats) => ok((stats, cluster_info)),
                     Err(error) => err(Error::Serialization(error)),
                 }
             } else {
@@ -260,6 +282,50 @@ where
         });
 
         Box::new(result)
+    }
+}
+
+/// Information about the state of the etcd cluster from an API response's HTTP headers.
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ClusterInfo {
+    /// An internal identifier for the cluster.
+    pub cluster_id: Option<String>,
+    /// A unique, monotonically-incrementing integer created for each change to etcd.
+    pub etcd_index: Option<u64>,
+    /// A unique, monotonically-incrementing integer used by the Raft protocol.
+    pub raft_index: Option<u64>,
+    /// The current Raft election term.
+    pub raft_term: Option<u64>,
+}
+
+impl<'a> From<&'a Headers> for ClusterInfo {
+    fn from(headers: &'a Headers) -> Self {
+
+        let cluster_id = match headers.get::<XEtcdClusterId>() {
+            Some(&XEtcdClusterId(ref value)) => Some(value.clone()),
+            None => None,
+        };
+        let etcd_index = match headers.get::<XEtcdIndex>() {
+            Some(&XEtcdIndex(value)) => Some(value),
+            None => None,
+        };
+
+        let raft_index = match headers.get::<XRaftIndex>() {
+            Some(&XRaftIndex(value)) => Some(value),
+            None => None,
+        };
+
+        let raft_term = match headers.get::<XRaftTerm>() {
+            Some(&XRaftTerm(value)) => Some(value),
+            None => None,
+        };
+
+        ClusterInfo {
+            cluster_id,
+            etcd_index,
+            raft_index,
+            raft_term,
+        }
     }
 }
 

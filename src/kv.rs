@@ -19,7 +19,7 @@ use url::Url;
 pub use error::WatchError;
 
 use async::first_ok;
-use client::Client;
+use client::{Client, ClusterInfo};
 use error::{ApiError, Error};
 use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
@@ -29,10 +29,10 @@ use url::form_urlencoded::Serializer;
 ///
 /// On success, information about the result of the operation. On failure, an error for each cluster
 /// member that failed.
-pub type FutureKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Vec<Error>>>;
+pub type FutureKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Vec<Error>>>;
 
 /// A `FutureKeyValueInfo` for a single etcd cluster member.
-pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Error>>;
+pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Error>>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -514,7 +514,7 @@ pub fn watch<C>(
     client: &Client<C>,
     key: &str,
     options: WatchOptions,
-) -> Box<Future<Item = KeyValueInfo, Error = WatchError>>
+) -> Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = WatchError>>
 where
     C: Clone + Connect,
 {
@@ -603,17 +603,18 @@ where
 
         let result = response.and_then(move |response| {
             let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
-                    Ok(key_space_info) => ok(key_space_info),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(key_space_info) => Ok((key_space_info, cluster_info)),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             } else {
                 match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => err(Error::Api(error)),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(error) => Err(Error::Api(error)),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             })
         });
@@ -665,11 +666,12 @@ where
 
         let result = response.and_then(|response| {
             let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
-                    Ok(key_space_info) => ok(key_space_info),
+                    Ok(key_space_info) => ok((key_space_info, cluster_info)),
                     Err(error) => err(Error::Serialization(error)),
                 }
             } else {
@@ -747,12 +749,13 @@ where
 
         let result = response.and_then(|response| {
             let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| match status {
                 StatusCode::Created | StatusCode::Ok => {
                     match serde_json::from_slice::<KeyValueInfo>(body) {
-                        Ok(key_space_info) => ok(key_space_info),
+                        Ok(key_space_info) => ok((key_space_info, cluster_info)),
                         Err(error) => err(Error::Serialization(error)),
                     }
                 }

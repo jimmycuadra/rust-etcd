@@ -51,15 +51,20 @@
 //!     // Set the key "/foo" to the value "bar" with no expiration.
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
 //!         // Once the key has been set, ask for details about it.
-//!         kv::get(&client, "/foo", kv::GetOptions::default()).and_then(|key_value_info| {
-//!             // The information returned tells you what kind of operation was performed.
-//!             assert_eq!(key_value_info.action, Action::Get);
+//!         kv::get(&client, "/foo", kv::GetOptions::default())
+//!             .and_then(|(key_value_info, cluster_info)| {
+//!                 // The information returned tells you what kind of operation was performed.
+//!                 assert_eq!(key_value_info.action, Action::Get);
 //!
-//!             // The value of the key is what we set it to previously.
-//!             assert_eq!(key_value_info.node.value, Some("bar".to_string()));
+//!                 // The value of the key is what we set it to previously.
+//!                 assert_eq!(key_value_info.node.value, Some("bar".to_string()));
 //!
-//!             Ok(())
-//!         })
+//!                 // Each API call also returns information about the etcd cluster extracted from
+//!                 // HTTP response headers.
+//!                 assert!(cluster_info.etcd_index.is_some());
+//!
+//!                 Ok(())
+//!             })
 //!     });
 //!
 //!     // Start the event loop, driving the asynchronous code to completion.
@@ -75,6 +80,7 @@
 #![deny(missing_debug_implementations, missing_docs, warnings)]
 
 extern crate futures;
+#[macro_use]
 extern crate hyper;
 #[cfg(feature = "tls")]
 extern crate hyper_tls;
@@ -88,7 +94,7 @@ extern crate tokio_core;
 extern crate tokio_timer;
 extern crate url;
 
-pub use client::{BasicAuth, Client};
+pub use client::{BasicAuth, Client, ClusterInfo};
 pub use error::{ApiError, Error};
 pub use version::VersionInfo;
 

@@ -72,9 +72,7 @@ impl Display for Error {
             ref error @ Error::InvalidConditions => write!(f, "{}", error.description()),
             Error::InvalidUri(ref error) => write!(f, "{}", error),
             Error::InvalidUrl(ref error) => write!(f, "{}", error),
-            Error::NoEndpoints => {
-                f.write_str("At least one endpoint is required to create a Client")
-            }
+            ref error @ Error::NoEndpoints => write!(f, "{}", error.description()),
             #[cfg(feature = "tls")]
             Error::Tls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),

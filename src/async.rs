@@ -3,6 +3,7 @@ use std::vec::IntoIter;
 
 use futures::{Async, Future, Poll};
 
+use client::ClusterInfo;
 use error::Error;
 use kv::{FutureSingleMemberKeyValueInfo, KeyValueInfo};
 use member::Member;
@@ -37,7 +38,7 @@ impl<F> Future for FirstOk<F>
 where
     F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
 {
-    type Item = KeyValueInfo;
+    type Item = (KeyValueInfo, ClusterInfo);
     type Error = Vec<Error>;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
@@ -48,7 +49,7 @@ where
 
                     Ok(Async::NotReady)
                 }
-                Ok(Async::Ready(key_space_info)) => Ok(Async::Ready(key_space_info)),
+                Ok(Async::Ready(kvi_and_ci)) => Ok(Async::Ready(kvi_and_ci)),
                 Err(error) => {
                     self.errors.push(error);
 
