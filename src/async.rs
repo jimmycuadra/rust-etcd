@@ -4,7 +4,7 @@ use std::vec::IntoIter;
 use futures::{Async, Future, Poll};
 
 use error::Error;
-use kv::{FutureSingleMemberKeySpaceInfo, KeySpaceInfo};
+use kv::{FutureSingleMemberKeyValueInfo, KeyValueInfo};
 use member::Member;
 
 /// Executes the given closure with each cluster member and short-circuit returns the first
@@ -12,7 +12,7 @@ use member::Member;
 /// returned.
 pub fn first_ok<F>(members: Vec<Member>, callback: F) -> FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
+    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
 {
     FirstOk {
         callback,
@@ -25,19 +25,19 @@ where
 #[must_use = "futures do nothing unless polled"]
 pub struct FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
+    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
 {
     callback: F,
-    current_future: Option<FutureSingleMemberKeySpaceInfo>,
+    current_future: Option<FutureSingleMemberKeyValueInfo>,
     errors: Vec<Error>,
     members: IntoIter<Member>,
 }
 
 impl<F> Future for FirstOk<F>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeySpaceInfo,
+    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
 {
-    type Item = KeySpaceInfo;
+    type Item = KeyValueInfo;
     type Error = Vec<Error>;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {

@@ -25,14 +25,14 @@ use url::form_urlencoded::Serializer;
 ///
 /// On success, information about the result of the operation. On failure, an error for each cluster
 /// member that failed.
-pub type FutureKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Vec<Error>>>;
+pub type FutureKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Vec<Error>>>;
 
-/// A FutureKeySpaceInfo for a single etcd cluster member.
-pub(crate) type FutureSingleMemberKeySpaceInfo = Box<Future<Item = KeySpaceInfo, Error = Error>>;
+/// A FutureKeyValueInfo for a single etcd cluster member.
+pub(crate) type FutureSingleMemberKeyValueInfo = Box<Future<Item = KeyValueInfo, Error = Error>>;
 
 /// Information about the result of a successful key space operation.
 #[derive(Clone, Debug, Deserialize)]
-pub struct KeySpaceInfo {
+pub struct KeyValueInfo {
     /// The action that was taken, e.g. `get`, `set`.
     pub action: String,
     /// The etcd `Node` that was operated upon.
@@ -73,7 +73,7 @@ pub fn compare_and_delete<C>(
     key: &str,
     current_value: Option<&str>,
     current_modified_index: Option<u64>,
-) -> FutureKeySpaceInfo
+) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -101,7 +101,7 @@ pub fn compare_and_swap<C>(
     ttl: Option<u64>,
     current_value: Option<&str>,
     current_modified_index: Option<u64>,
-) -> FutureKeySpaceInfo
+) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -123,7 +123,7 @@ where
 /// Creates a new key-value pair with any given time to live in seconds.
 ///
 /// Fails if the key already exists.
-pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -142,7 +142,7 @@ where
 /// Creates a new empty directory at the given key with the given time to live in seconds.
 ///
 /// Fails if the key already exists.
-pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -167,7 +167,7 @@ pub fn create_in_order<C>(
     key: &str,
     value: &str,
     ttl: Option<u64>,
-) -> FutureKeySpaceInfo
+) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -189,7 +189,7 @@ where
 /// pairs and directories will be deleted.
 ///
 /// Fails if the key is a directory and `recursive` is `false`.
-pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> FutureKeySpaceInfo
+pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -206,7 +206,7 @@ where
 /// Deletes an empty directory or a key-value pair at the given key.
 ///
 /// Fails if the directory is not empty.
-pub fn delete_dir<C>(client: &Client<C>, key: &str) -> FutureKeySpaceInfo
+pub fn delete_dir<C>(client: &Client<C>, key: &str) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -237,7 +237,7 @@ pub fn get<C>(
     sort: bool,
     recursive: bool,
     strong_consistency: bool,
-) -> FutureKeySpaceInfo
+) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -257,7 +257,7 @@ where
 /// and TTL will be replaced.
 ///
 /// Fails if the key is a directory.
-pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -276,7 +276,7 @@ where
 /// key-value will be replaced, but an existing directory will not.
 ///
 /// Fails if the key is an existing directory.
-pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -294,7 +294,7 @@ where
 /// Updates the given key to the given value and time to live in seconds.
 ///
 /// Fails if the key does not exist.
-pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -315,7 +315,7 @@ where
 /// value is removed and its TTL is updated.
 ///
 /// Fails if the key does not exist.
-pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeySpaceInfo
+pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -347,7 +347,7 @@ pub fn watch<C>(
     index: Option<u64>,
     recursive: bool,
     timeout: Option<Duration>,
-) -> Box<Future<Item = KeySpaceInfo, Error = WatchError>>
+) -> Box<Future<Item = KeyValueInfo, Error = WatchError>>
 where
     C: Clone + Connect,
 {
@@ -383,7 +383,7 @@ fn build_url(member: &Member, path: &str) -> String {
 }
 
 /// Handles all delete operations.
-fn raw_delete<C>(client: &Client<C>, key: &str, options: DeleteOptions) -> FutureKeySpaceInfo
+fn raw_delete<C>(client: &Client<C>, key: &str, options: DeleteOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -439,7 +439,7 @@ where
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<KeySpaceInfo>(body) {
+                match serde_json::from_slice::<KeyValueInfo>(body) {
                     Ok(key_space_info) => ok(key_space_info),
                     Err(error) => err(Error::Serialization(error)),
                 }
@@ -458,7 +458,7 @@ where
 }
 
 /// Handles all get operations.
-fn raw_get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeySpaceInfo
+fn raw_get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -501,7 +501,7 @@ where
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<KeySpaceInfo>(body) {
+                match serde_json::from_slice::<KeyValueInfo>(body) {
                     Ok(key_space_info) => ok(key_space_info),
                     Err(error) => err(Error::Serialization(error)),
                 }
@@ -520,7 +520,7 @@ where
 }
 
 /// Handles all set operations.
-fn raw_set<C>(client: &Client<C>, key: &str, options: SetOptions) -> FutureKeySpaceInfo
+fn raw_set<C>(client: &Client<C>, key: &str, options: SetOptions) -> FutureKeyValueInfo
 where
     C: Clone + Connect,
 {
@@ -584,7 +584,7 @@ where
 
             body.and_then(move |ref body| match status {
                 StatusCode::Created | StatusCode::Ok => {
-                    match serde_json::from_slice::<KeySpaceInfo>(body) {
+                    match serde_json::from_slice::<KeyValueInfo>(body) {
                         Ok(key_space_info) => ok(key_space_info),
                         Err(error) => err(Error::Serialization(error)),
                     }
