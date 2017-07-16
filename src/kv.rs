@@ -96,6 +96,18 @@ pub struct Node {
     pub value: Option<String>,
 }
 
+/// Options for customizing the behavior of `kv::watch`.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+pub struct WatchOptions {
+    /// If given, the watch operation will return the first change at the index or greater,
+    /// allowing you to watch for changes that happened in the past.
+    pub index: Option<u64>,
+    /// Whether or not to watch all child keys as well.
+    pub recursive: bool,
+    /// If given, the watch operation will time out if it's still waiting after the duration.
+    pub timeout: Option<Duration>,
+}
+
 /// Deletes a key only if the given current value and/or current modified index match.
 ///
 /// Fails if the conditions didn't match or if no conditions were given.
@@ -375,9 +387,7 @@ where
 pub fn watch<C>(
     client: &Client<C>,
     key: &str,
-    index: Option<u64>,
-    recursive: bool,
-    timeout: Option<Duration>,
+    options: WatchOptions,
 ) -> Box<Future<Item = KeyValueInfo, Error = WatchError>>
 where
     C: Clone + Connect,
@@ -386,14 +396,14 @@ where
         client,
         key,
         GetOptions {
-            recursive: recursive,
-            wait_index: index,
+            recursive: options.recursive,
+            wait_index: options.index,
             wait: true,
             ..Default::default()
         },
     ).map_err(|errors| WatchError::Other(errors));
 
-    if let Some(duration) = timeout {
+    if let Some(duration) = options.timeout {
         let timer = Timer::default();
 
         Box::new(timer.timeout(work, duration))

@@ -21,7 +21,7 @@ use native_tls::{Certificate, Pkcs12, TlsConnector};
 use tokio_core::reactor::Core;
 
 use etcd::{Client, Error};
-use etcd::kv::{self, Action, FutureKeyValueInfo, KeyValueInfo, WatchError};
+use etcd::kv::{self, Action, FutureKeyValueInfo, KeyValueInfo, WatchError, WatchOptions};
 use etcd::stats;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
@@ -722,7 +722,7 @@ fn watch() {
         .and_then(move |_| {
             tx.send(()).unwrap();
 
-            kv::watch(&inner_client, "/test/foo", None, false, None).and_then(|kvi| {
+            kv::watch(&inner_client, "/test/foo", WatchOptions::default()).and_then(|kvi| {
                 assert_eq!(kvi.node.value.unwrap(), "baz");
 
                 Ok(())
@@ -746,9 +746,10 @@ fn watch_cancel() {
             kv::watch(
                 &inner_client,
                 "/test/foo",
-                None,
-                false,
-                Some(Duration::from_millis(1)),
+                WatchOptions {
+                    timeout: Some(Duration::from_millis(1)),
+                    ..Default::default()
+                },
             )
         });
 
@@ -770,7 +771,14 @@ fn watch_index() {
         .and_then(move |kvi| {
             let index = kvi.node.modified_index;
 
-            kv::watch(&inner_client, "/test/foo", Some(index), false, None).and_then(move |kvi| {
+            kv::watch(
+                &inner_client,
+                "/test/foo",
+                WatchOptions {
+                    index: Some(index),
+                    ..Default::default()
+                },
+            ).and_then(move |kvi| {
                 let node = kvi.node;
 
                 assert_eq!(node.modified_index, index);
@@ -802,7 +810,14 @@ fn watch_recursive() {
 
     tx.send(()).unwrap();
 
-    let work = kv::watch(&client, "/test", None, true, None).and_then(|kvi| {
+    let work = kv::watch(
+        &client,
+        "/test",
+        WatchOptions {
+            recursive: true,
+            ..Default::default()
+        },
+    ).and_then(|kvi| {
         let node = kvi.node;
 
         assert_eq!(node.key.unwrap(), "/test/foo/bar");
