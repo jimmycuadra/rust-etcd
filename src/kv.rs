@@ -27,8 +27,8 @@ use url::form_urlencoded::Serializer;
 
 /// The future returned by most key space API calls.
 ///
-/// On success, information about the result of the operation. On failure, an error for each cluster
-/// member that failed.
+/// On success, information about the result of the operation and information about the etcd
+/// cluster. On failure, an error for each cluster member that failed.
 pub type FutureKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Vec<Error>>>;
 
 /// A `FutureKeyValueInfo` for a single etcd cluster member.
