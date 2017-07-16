@@ -506,33 +506,46 @@ fn self_stats() {
     assert!(client.run(work).is_ok());
 }
 
-// #[test]
-// fn set() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn set() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
 
-//     let response = client.set("/test/foo", "baz", None).ok().unwrap();
-//     let node = response.node.unwrap();
+    let work = kv::set(&client, "/test/foo", "baz", None).and_then(|ksi| {
+        assert_eq!(ksi.action, "set");
 
-//     assert_eq!(response.action, "set");
-//     assert_eq!(node.value.unwrap(), "baz");
-//     assert!(node.ttl.is_none());
-// }
+        let node = ksi.node.unwrap();
 
-// #[test]
-// fn set_dir() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+        assert_eq!(node.value.unwrap(), "baz");
+        assert!(node.ttl.is_none());
 
-//     assert!(client.set_dir("/test", None).is_ok());
-//     assert!(client.set_dir("/test", None).is_err());
+        Ok(())
+    });
 
-//     client.set("/test/foo", "bar", None).ok().unwrap();
+    assert!(client.run(work).is_ok());
+}
 
-//     assert!(client.set_dir("/test/foo", None).is_ok());
-// }
+#[test]
+fn set_dir() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
+
+    let work = kv::set_dir(&client, "/test", None).and_then(|_| {
+        kv::set_dir(&inner_client, "/test", None).then(|result| {
+            match result {
+                Ok(_) => panic!("set_dir should fail on an existing dir"),
+                Err(_) => Ok(()),
+            }
+        }).and_then(|_| {
+            kv::set(&inner_client, "/test/foo", "bar", None).and_then(|_| {
+                kv::set_dir(&inner_client, "/test/foo", None)
+            })
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
 
 #[test]
 fn store_stats() {
