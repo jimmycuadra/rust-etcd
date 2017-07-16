@@ -22,6 +22,7 @@ use tokio_core::reactor::Core;
 
 use etcd::{Client, Error};
 use etcd::kv::{self, FutureKeySpaceInfo, KeySpaceInfo, WatchError};
+use etcd::stats;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 struct TestClient<C> where C: Clone + Connect {
@@ -484,25 +485,26 @@ fn https_without_valid_client_certificate() {
     assert!(client.run(work).is_err());
 }
 
-// #[test]
-// fn leader_stats() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn leader_stats() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
 
-//     client.leader_stats().unwrap();
-// }
+    let work = stats::leader_stats(&client);
 
-// #[test]
-// fn self_stats() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+    println!("{:?}", client.run(work));
+    // assert!(client.run(work).is_ok());
+}
 
-//     for result in client.self_stats().iter() {
-//         assert!(result.is_ok());
-//     }
-// }
+#[test]
+fn self_stats() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
+
+    let work = stats::self_stats(&client).collect().and_then(|_|  Ok(()));
+
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn set() {
@@ -532,16 +534,15 @@ fn https_without_valid_client_certificate() {
 //     assert!(client.set_dir("/test/foo", None).is_ok());
 // }
 
-// #[test]
-// fn store_stats() {
-//     let mut core = Core::new().unwrap();
-//     let handle = core.handle();
-//     let client = TestClient::new(&handle);
+#[test]
+fn store_stats() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::no_destructor(core);
 
-//     for result in client.store_stats() {
-//         assert!(result.is_ok())
-//     }
-// }
+    let work = stats::store_stats(&client).collect().and_then(|_|  Ok(()));
+
+    assert!(client.run(work).is_ok());
+}
 
 // #[test]
 // fn update() {

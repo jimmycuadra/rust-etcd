@@ -8,6 +8,7 @@ use hyper::client::Connect;
 
 use client::Client;
 use error::Error;
+use member::Member;
 
 /// Statistics about an etcd cluster leader.
 #[derive(Clone, Debug, Deserialize)]
@@ -159,7 +160,7 @@ pub fn leader_stats<C>(client: &Client<C>) -> Box<Future<Item = LeaderStats, Err
 where
     C: Clone + Connect,
 {
-    let url = format!("{}v2/stats/leader", client.members()[0].endpoint);
+    let url = build_url(&client.members()[0], "v2/stats/leader");
     let uri = url.parse().map_err(Error::from).into_future();
 
     client.request(uri)
@@ -173,7 +174,7 @@ where
     C: Clone + Connect,
 {
     let futures = client.members().iter().map(|member| {
-        let url = format!("{}v2/stats/self", member.endpoint);
+        let url = build_url(&member, "v2/stats/self");
         let uri = url.parse().map_err(Error::from).into_future();
 
         client.request(uri)
@@ -191,11 +192,22 @@ where
     C: Clone + Connect,
 {
     let futures = client.members().iter().map(|member| {
-        let url = format!("{}v2/stats/store", member.endpoint);
+        let url = build_url(&member, "v2/stats/store");
         let uri = url.parse().map_err(Error::from).into_future();
 
         client.request(uri)
     });
 
     Box::new(futures_unordered(futures))
+}
+
+/// Constructs the full URL for an API call.
+fn build_url(member: &Member, path: &str) -> String {
+    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+        ""
+    } else {
+        "/"
+    };
+
+    format!("{}{}{}", member.endpoint, maybe_slash, path)
 }
