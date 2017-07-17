@@ -12,7 +12,6 @@ use serde_json;
 use async::first_ok;
 use client::{Client, ClusterInfo};
 use error::{ApiError, Error};
-use member::Member as SimpleMember;
 
 /// An etcd server that is a member of a cluster.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -42,7 +41,7 @@ where
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.members().to_vec(), move |member| {
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -77,12 +76,12 @@ where
 }
 
 /// Constructs the full URL for an API call.
-fn build_url(member: &SimpleMember, path: &str) -> String {
-    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+fn build_url(endpoint: &Uri, path: &str) -> String {
+    let maybe_slash = if endpoint.as_ref().ends_with("/") {
         ""
     } else {
         "/"
     };
 
-    format!("{}{}v2/members{}", member.endpoint, maybe_slash, path)
+    format!("{}{}v2/members{}", endpoint, maybe_slash, path)
 }

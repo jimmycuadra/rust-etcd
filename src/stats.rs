@@ -4,11 +4,11 @@ use std::collections::HashMap;
 
 use futures::{Future, IntoFuture, Stream};
 use futures::stream::futures_unordered;
+use hyper::Uri;
 use hyper::client::Connect;
 
 use client::{Client, ClusterInfo};
 use error::Error;
-use member::Member;
 
 /// Statistics about an etcd cluster leader.
 #[derive(Clone, Debug, Deserialize)]
@@ -162,7 +162,7 @@ pub fn leader_stats<C>(
 where
     C: Clone + Connect,
 {
-    let url = build_url(&client.members()[0], "v2/stats/leader");
+    let url = build_url(&client.endpoints()[0], "v2/stats/leader");
     let uri = url.parse().map_err(Error::from).into_future();
 
     client.request(uri)
@@ -177,8 +177,8 @@ pub fn self_stats<C>(
 where
     C: Clone + Connect,
 {
-    let futures = client.members().iter().map(|member| {
-        let url = build_url(&member, "v2/stats/self");
+    let futures = client.endpoints().iter().map(|endpoint| {
+        let url = build_url(&endpoint, "v2/stats/self");
         let uri = url.parse().map_err(Error::from).into_future();
 
         client.request(uri)
@@ -197,8 +197,8 @@ pub fn store_stats<C>(
 where
     C: Clone + Connect,
 {
-    let futures = client.members().iter().map(|member| {
-        let url = build_url(&member, "v2/stats/store");
+    let futures = client.endpoints().iter().map(|endpoint| {
+        let url = build_url(&endpoint, "v2/stats/store");
         let uri = url.parse().map_err(Error::from).into_future();
 
         client.request(uri)
@@ -208,12 +208,12 @@ where
 }
 
 /// Constructs the full URL for an API call.
-fn build_url(member: &Member, path: &str) -> String {
-    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+fn build_url(endpoint: &Uri, path: &str) -> String {
+    let maybe_slash = if endpoint.as_ref().ends_with("/") {
         ""
     } else {
         "/"
     };
 
-    format!("{}{}{}", member.endpoint, maybe_slash, path)
+    format!("{}{}{}", endpoint, maybe_slash, path)
 }

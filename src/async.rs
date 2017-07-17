@@ -2,40 +2,41 @@ use std::mem::replace;
 use std::vec::IntoIter;
 
 use futures::{Async, Future, Poll};
-
-use member::Member;
+use hyper::Uri;
 
 /// Executes the given closure with each cluster member and short-circuit returns the first
 /// successful result. If all members are exhausted without success, the final error is
 /// returned.
-pub fn first_ok<F, T>(members: Vec<Member>, callback: F) -> FirstOk<F, T>
+pub fn first_ok<F, T>(endpoints: Vec<Uri>, callback: F) -> FirstOk<F, T>
 where
-    F: Fn(&Member) -> T,
+    F: Fn(&Uri) -> T,
     T: Future,
 {
+    let max_errors = endpoints.len();
+
     FirstOk {
         callback,
         current_future: None,
-        errors: Vec::with_capacity(members.len()),
-        members: members.into_iter(),
+        endpoints: endpoints.into_iter(),
+        errors: Vec::with_capacity(max_errors),
     }
 }
 
 #[must_use = "futures do nothing unless polled"]
 pub struct FirstOk<F, T>
 where
-    F: Fn(&Member) -> T,
+    F: Fn(&Uri) -> T,
     T: Future,
 {
     callback: F,
     current_future: Option<T>,
+    endpoints: IntoIter<Uri>,
     errors: Vec<T::Error>,
-    members: IntoIter<Member>,
 }
 
 impl<F, T> Future for FirstOk<F, T>
 where
-    F: Fn(&Member) -> T,
+    F: Fn(&Uri) -> T,
     T: Future,
 {
     type Item = T::Item;
@@ -57,9 +58,9 @@ where
                 }
             }
         } else {
-            match self.members.next() {
-                Some(member) => {
-                    self.current_future = Some((self.callback)(&member));
+            match self.endpoints.next() {
+                Some(endpoint) => {
+                    self.current_future = Some((self.callback)(&endpoint));
 
                     self.poll()
                 }

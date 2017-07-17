@@ -13,7 +13,6 @@ use tokio_core::reactor::Handle;
 
 use error::{ApiError, Error};
 use http::HttpClient;
-use member::Member;
 use version::VersionInfo;
 
 header! {
@@ -44,8 +43,8 @@ pub struct Client<C>
 where
     C: Clone + Connect,
 {
+    endpoints: Vec<Uri>,
     http_client: HttpClient<C>,
-    members: Vec<Member>,
 }
 
 /// A username and password to use for HTTP basic authentication.
@@ -211,15 +210,15 @@ where
             return Err(Error::NoEndpoints);
         }
 
-        let mut members = Vec::with_capacity(endpoints.len());
+        let mut uri_endpoints = Vec::with_capacity(endpoints.len());
 
         for endpoint in endpoints {
-            members.push(Member::new(endpoint)?);
+            uri_endpoints.push(endpoint.parse()?);
         }
 
         Ok(Client {
+            endpoints: uri_endpoints,
             http_client: HttpClient::new(hyper, basic_auth),
-            members: members,
         })
     }
 
@@ -228,15 +227,15 @@ where
         &self.http_client
     }
 
-    /// Lets other internal code access the cluster `Member`s.
-    pub(crate) fn members(&self) -> &[Member] {
-        &self.members
+    /// Lets other internal code access the cluster endpoints.
+    pub(crate) fn endpoints(&self) -> &[Uri] {
+        &self.endpoints
     }
 
     /// Runs a basic health check against each etcd member.
     pub fn health(&self) -> Box<Stream<Item = (Health, ClusterInfo), Error = Error>> {
-        let futures = self.members.iter().map(|member| {
-            let url = build_url(&member, "health");
+        let futures = self.endpoints.iter().map(|endpoint| {
+            let url = build_url(&endpoint, "health");
             let uri = url.parse().map_err(Error::from).into_future();
             let cloned_client = self.http_client.clone();
             let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
@@ -264,8 +263,8 @@ where
 
     /// Returns version information from each etcd cluster member the client was initialized with.
     pub fn versions(&self) -> Box<Stream<Item = (VersionInfo, ClusterInfo), Error = Error>> {
-        let futures = self.members.iter().map(|member| {
-            let url = build_url(&member, "version");
+        let futures = self.endpoints.iter().map(|endpoint| {
+            let url = build_url(&endpoint, "version");
             let uri = url.parse().map_err(Error::from).into_future();
             let cloned_client = self.http_client.clone();
             let response = uri.and_then(move |uri| cloned_client.get(uri).map_err(Error::from));
@@ -368,12 +367,12 @@ impl<'a> From<&'a Headers> for ClusterInfo {
 }
 
 /// Constructs the full URL for the versions API call.
-fn build_url(member: &Member, path: &str) -> String {
-    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+fn build_url(endpoint: &Uri, path: &str) -> String {
+    let maybe_slash = if endpoint.as_ref().ends_with("/") {
         ""
     } else {
         "/"
     };
 
-    format!("{}{}{}", member.endpoint, maybe_slash, path)
+    format!("{}{}{}", endpoint, maybe_slash, path)
 }

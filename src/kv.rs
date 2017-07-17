@@ -21,7 +21,6 @@ pub use error::WatchError;
 use async::first_ok;
 use client::{Client, ClusterInfo};
 use error::{ApiError, Error};
-use member::Member;
 use options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
 use url::form_urlencoded::Serializer;
 
@@ -536,14 +535,14 @@ where
 }
 
 /// Constructs the full URL for an API call.
-fn build_url(member: &Member, path: &str) -> String {
-    let maybe_slash = if member.endpoint.as_ref().ends_with("/") {
+fn build_url(endpoint: &Uri, path: &str) -> String {
+    let maybe_slash = if endpoint.as_ref().ends_with("/") {
         ""
     } else {
         "/"
     };
 
-    format!("{}{}v2/keys{}", member.endpoint, maybe_slash, path)
+    format!("{}{}v2/keys{}", endpoint, maybe_slash, path)
 }
 
 /// Handles all delete operations.
@@ -583,8 +582,8 @@ where
     let http_client = client.http_client().clone();
     let key = key.to_string();
 
-    let result = first_ok(client.members().to_vec(), move |member| {
-        let url = Url::parse_with_params(&build_url(member, &key), query_pairs.clone())
+    let result = first_ok(client.endpoints().to_vec(), move |endpoint| {
+        let url = Url::parse_with_params(&build_url(endpoint, &key), query_pairs.clone())
             .map_err(Error::from)
             .into_future();
 
@@ -646,8 +645,8 @@ where
     let http_client = client.http_client().clone();
     let key = key.to_string();
 
-    let result = first_ok(client.members().to_vec(), move |member| {
-        let url = Url::parse_with_params(&build_url(member, &key), query_pairs.clone())
+    let result = first_ok(client.endpoints().to_vec(), move |endpoint| {
+        let url = Url::parse_with_params(&build_url(endpoint, &key), query_pairs.clone())
             .map_err(Error::from)
             .into_future();
 
@@ -726,12 +725,12 @@ where
     let key = key.to_string();
     let create_in_order = options.create_in_order;
 
-    let result = first_ok(client.members().to_vec(), move |member| {
+    let result = first_ok(client.endpoints().to_vec(), move |endpoint| {
         let mut serializer = Serializer::new(String::new());
         serializer.extend_pairs(http_options.clone());
         let body = serializer.finish();
 
-        let url = build_url(member, &key);
+        let url = build_url(endpoint, &key);
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
             .into_future();

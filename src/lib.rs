@@ -107,6 +107,5 @@ mod async;
 mod client;
 mod error;
 mod http;
-mod member;
 mod options;
 mod version;
