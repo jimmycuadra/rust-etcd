@@ -10,7 +10,7 @@ use hyper::client::Connect;
 use serde_json;
 
 use async::first_ok;
-use client::{Client, ClusterInfo};
+use client::{Client, ClusterInfo, Response};
 use error::{ApiError, Error};
 
 /// An etcd server that is a member of a cluster.
@@ -33,9 +33,7 @@ pub struct Member {
 /// # Parameters
 ///
 /// * client: A `Client` to use to make the API call.
-pub fn list<C>(
-    client: &Client<C>,
-) -> Box<Future<Item = (Vec<Member>, ClusterInfo), Error = Vec<Error>>>
+pub fn list<C>(client: &Client<C>) -> Box<Future<Item = Response<Vec<Member>>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -58,7 +56,7 @@ where
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<Vec<Member>>(body) {
-                    Ok(members) => Ok((members, cluster_info)),
+                    Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
                 }
             } else {

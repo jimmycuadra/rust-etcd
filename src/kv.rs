@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::Duration;
 
-use futures::future::{Future, IntoFuture, err, ok};
+use futures::future::{Future, IntoFuture};
 use futures::stream::Stream;
 use hyper::{StatusCode, Uri};
 use hyper::client::Connect;
@@ -19,7 +19,7 @@ use url::Url;
 pub use error::WatchError;
 
 use async::first_ok;
-use client::{Client, ClusterInfo};
+use client::{Client, ClusterInfo, Response};
 use error::{ApiError, Error};
 use options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
 use url::form_urlencoded::Serializer;
@@ -28,7 +28,7 @@ use url::form_urlencoded::Serializer;
 ///
 /// On success, information about the result of the operation and information about the etcd
 /// cluster. On failure, an error for each cluster member that failed.
-pub type FutureKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Vec<Error>>>;
+pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>;
 
 /// Information about the result of a successful key-value API operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -510,7 +510,7 @@ pub fn watch<C>(
     client: &Client<C>,
     key: &str,
     options: WatchOptions,
-) -> Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = WatchError>>
+) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError>>
 where
     C: Clone + Connect,
 {
@@ -604,7 +604,7 @@ where
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
-                    Ok(key_value_info) => Ok((key_value_info, cluster_info)),
+                    Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
                 }
             } else {
@@ -667,13 +667,13 @@ where
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
-                    Ok(key_value_info) => ok((key_value_info, cluster_info)),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(data) => Ok(Response { data, cluster_info }),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             } else {
                 match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => err(Error::Api(error)),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(error) => Err(Error::Api(error)),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             })
         });
@@ -751,14 +751,14 @@ where
             body.and_then(move |ref body| match status {
                 StatusCode::Created | StatusCode::Ok => {
                     match serde_json::from_slice::<KeyValueInfo>(body) {
-                        Ok(key_value_info) => ok((key_value_info, cluster_info)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 }
                 _ => {
                     match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 }
             })

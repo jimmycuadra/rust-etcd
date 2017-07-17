@@ -53,16 +53,16 @@
 //!         // Once the key has been set, ask for details about it.
 //!         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
 //!
-//!         get_request.and_then(|(key_value_info, cluster_info)| {
+//!         get_request.and_then(|response| {
 //!             // The information returned tells you what kind of operation was performed.
-//!             assert_eq!(key_value_info.action, Action::Get);
+//!             assert_eq!(response.data.action, Action::Get);
 //!
 //!             // The value of the key is what we set it to previously.
-//!             assert_eq!(key_value_info.node.value, Some("bar".to_string()));
+//!             assert_eq!(response.data.node.value, Some("bar".to_string()));
 //!
 //!             // Each API call also returns information about the etcd cluster extracted from
 //!             // HTTP response headers.
-//!             assert!(cluster_info.etcd_index.is_some());
+//!             assert!(response.cluster_info.etcd_index.is_some());
 //!
 //!             Ok(())
 //!         })
@@ -95,7 +95,7 @@ extern crate tokio_core;
 extern crate tokio_timer;
 extern crate url;
 
-pub use client::{BasicAuth, Client, ClusterInfo, Health};
+pub use client::{BasicAuth, Client, ClusterInfo, Health, Response};
 pub use error::{ApiError, Error};
 pub use version::VersionInfo;
 

@@ -1,7 +1,7 @@
 //! Contains the etcd client. All API calls are made via the client.
 
 use futures::{Future, IntoFuture, Stream};
-use futures::future::{FutureResult, err, ok};
+use futures::future::FutureResult;
 use futures::stream::futures_unordered;
 use hyper::{Client as Hyper, Headers, StatusCode, Uri};
 use hyper::client::{Connect, HttpConnector};
@@ -189,8 +189,8 @@ where
     ///     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
     ///         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
     ///
-    ///         get_request.and_then(|(key_value_info, _)| {
-    ///             let value = key_value_info.node.value.unwrap();
+    ///         get_request.and_then(|response| {
+    ///             let value = response.data.node.value.unwrap();
     ///
     ///             assert_eq!(value, "bar".to_string());
     ///
@@ -233,7 +233,7 @@ where
     }
 
     /// Runs a basic health check against each etcd member.
-    pub fn health(&self) -> Box<Stream<Item = (Health, ClusterInfo), Error = Error>> {
+    pub fn health(&self) -> Box<Stream<Item = Response<Health>, Error = Error>> {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "health");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -246,13 +246,13 @@ where
 
                 body.and_then(move |ref body| if status == StatusCode::Ok {
                     match serde_json::from_slice::<Health>(body) {
-                        Ok(health) => ok((health, cluster_info)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 } else {
                     match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 })
             })
@@ -262,7 +262,7 @@ where
     }
 
     /// Returns version information from each etcd cluster member the client was initialized with.
-    pub fn versions(&self) -> Box<Stream<Item = (VersionInfo, ClusterInfo), Error = Error>> {
+    pub fn versions(&self) -> Box<Stream<Item = Response<VersionInfo>, Error = Error>> {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "version");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -275,13 +275,13 @@ where
 
                 body.and_then(move |ref body| if status == StatusCode::Ok {
                     match serde_json::from_slice::<VersionInfo>(body) {
-                        Ok(versions) => ok((versions, cluster_info)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 } else {
                     match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => err(Error::Api(error)),
-                        Err(error) => err(Error::Serialization(error)),
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
                     }
                 })
             })
@@ -294,7 +294,7 @@ where
     pub(crate) fn request<T>(
         &self,
         uri: FutureResult<Uri, Error>,
-    ) -> Box<Future<Item = (T, ClusterInfo), Error = Error>>
+    ) -> Box<Future<Item = Response<T>, Error = Error>>
     where
         T: DeserializeOwned + 'static,
     {
@@ -307,19 +307,31 @@ where
 
             body.and_then(move |body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<T>(&body) {
-                    Ok(t) => ok((t, cluster_info)),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(data) => Ok(Response { data, cluster_info }),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             } else {
                 match serde_json::from_slice::<ApiError>(&body) {
-                    Ok(error) => err(Error::Api(error)),
-                    Err(error) => err(Error::Serialization(error)),
+                    Ok(error) => Err(Error::Api(error)),
+                    Err(error) => Err(Error::Serialization(error)),
                 }
             })
         });
 
         Box::new(result)
     }
+}
+
+/// A wrapper type returned by all API calls.
+///
+/// Contains the primary data of the response along with information about the cluster extracted
+/// from the HTTP response headers.
+#[derive(Clone, Debug)]
+pub struct Response<T> {
+    /// Information about the state of the cluster.
+    pub cluster_info: ClusterInfo,
+    /// The primary data of the response.
+    pub data: T,
 }
 
 /// Information about the state of the etcd cluster from an API response's HTTP headers.
