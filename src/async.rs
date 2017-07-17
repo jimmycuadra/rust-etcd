@@ -3,17 +3,15 @@ use std::vec::IntoIter;
 
 use futures::{Async, Future, Poll};
 
-use client::ClusterInfo;
-use error::Error;
-use kv::{FutureSingleMemberKeyValueInfo, KeyValueInfo};
 use member::Member;
 
 /// Executes the given closure with each cluster member and short-circuit returns the first
 /// successful result. If all members are exhausted without success, the final error is
 /// returned.
-pub fn first_ok<F>(members: Vec<Member>, callback: F) -> FirstOk<F>
+pub fn first_ok<F, T>(members: Vec<Member>, callback: F) -> FirstOk<F, T>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
+    F: Fn(&Member) -> T,
+    T: Future,
 {
     FirstOk {
         callback,
@@ -24,22 +22,24 @@ where
 }
 
 #[must_use = "futures do nothing unless polled"]
-pub struct FirstOk<F>
+pub struct FirstOk<F, T>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
+    F: Fn(&Member) -> T,
+    T: Future,
 {
     callback: F,
-    current_future: Option<FutureSingleMemberKeyValueInfo>,
-    errors: Vec<Error>,
+    current_future: Option<T>,
+    errors: Vec<T::Error>,
     members: IntoIter<Member>,
 }
 
-impl<F> Future for FirstOk<F>
+impl<F, T> Future for FirstOk<F, T>
 where
-    F: Fn(&Member) -> FutureSingleMemberKeyValueInfo,
+    F: Fn(&Member) -> T,
+    T: Future,
 {
-    type Item = (KeyValueInfo, ClusterInfo);
-    type Error = Vec<Error>;
+    type Item = T::Item;
+    type Error = Vec<T::Error>;
 
     fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
         if let Some(mut current_future) = self.current_future.take() {
@@ -49,7 +49,7 @@ where
 
                     Ok(Async::NotReady)
                 }
-                Ok(Async::Ready(kvi_and_ci)) => Ok(Async::Ready(kvi_and_ci)),
+                Ok(Async::Ready(item)) => Ok(Async::Ready(item)),
                 Err(error) => {
                     self.errors.push(error);
 

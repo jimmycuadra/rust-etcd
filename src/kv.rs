@@ -31,11 +31,6 @@ use url::form_urlencoded::Serializer;
 /// cluster. On failure, an error for each cluster member that failed.
 pub type FutureKeyValueInfo = Box<Future<Item = (KeyValueInfo, ClusterInfo), Error = Vec<Error>>>;
 
-/// A `FutureKeyValueInfo` for a single etcd cluster member.
-pub(crate) type FutureSingleMemberKeyValueInfo = Box<
-    Future<Item = (KeyValueInfo, ClusterInfo), Error = Error>,
->;
-
 /// Information about the result of a successful key-value API operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct KeyValueInfo {

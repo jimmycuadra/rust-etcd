@@ -308,7 +308,7 @@ where
 
             body.and_then(move |body| if status == StatusCode::Ok {
                 match serde_json::from_slice::<T>(&body) {
-                    Ok(stats) => ok((stats, cluster_info)),
+                    Ok(t) => ok((t, cluster_info)),
                     Err(error) => err(Error::Serialization(error)),
                 }
             } else {

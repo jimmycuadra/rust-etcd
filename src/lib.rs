@@ -100,6 +100,7 @@ pub use error::{ApiError, Error};
 pub use version::VersionInfo;
 
 pub mod kv;
+pub mod members;
 pub mod stats;
 
 mod async;
