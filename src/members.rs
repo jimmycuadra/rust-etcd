@@ -28,6 +28,12 @@ pub struct Member {
     pub client_urls: Vec<String>,
 }
 
+/// A small wrapper around `Member` to match the response of `GET /v2/members`.
+#[derive(Debug, Deserialize)]
+struct ListResponse {
+    members: Vec<Member>,
+}
+
 /// Lists the members of the cluster.
 ///
 /// # Parameters
@@ -55,8 +61,8 @@ where
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<Vec<Member>>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
+                match serde_json::from_slice::<ListResponse>(body) {
+                    Ok(data) => Ok(Response { data: data.members, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
                 }
             } else {
