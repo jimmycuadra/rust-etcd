@@ -28,11 +28,11 @@ pub struct Member {
     pub client_urls: Vec<String>,
 }
 
-/// The request body for `POST /v2/members`.
+/// The request body for `POST /v2/members` and `PUT /v2/members/:id`.
 #[derive(Debug, Serialize)]
-struct AddMember {
+struct PeerUrls {
     #[serde(rename = "peerURLs")]
-    pub peer_urls: Vec<String>,
+    peer_urls: Vec<String>,
 }
 
 /// A small wrapper around `Member` to match the response of `GET /v2/members`.
@@ -41,7 +41,7 @@ struct ListResponse {
     members: Vec<Member>,
 }
 
-/// Add a new member to the cluster.
+/// Adds a new member to the cluster.
 ///
 /// # Parameters
 ///
@@ -54,9 +54,9 @@ pub fn add<C>(
 where
     C: Clone + Connect,
 {
-    let add_member = AddMember { peer_urls };
+    let peer_urls = PeerUrls { peer_urls };
 
-    let body = match serde_json::to_string(&add_member) {
+    let body = match serde_json::to_string(&peer_urls) {
         Ok(body) => body,
         Err(error) => return Box::new(Err(vec![Error::Serialization(error)]).into_future()),
     };
@@ -98,7 +98,7 @@ where
     Box::new(result)
 }
 
-/// Delete a member from the cluster.
+/// Deletes a member from the cluster.
 ///
 /// # Parameters
 ///
@@ -193,6 +193,66 @@ where
 
     Box::new(result)
 }
+
+/// Updates the peer URLs of a member of the cluster.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * id: The unique identifier of the member to update.
+/// * peer_urls: URLs exposing this cluster member's peer API.
+pub fn update<C>(
+    client: &Client<C>,
+    id: String,
+    peer_urls: Vec<String>,
+) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+{
+    let peer_urls = PeerUrls { peer_urls };
+
+    let body = match serde_json::to_string(&peer_urls) {
+        Ok(body) => body,
+        Err(error) => return Box::new(Err(vec![Error::Serialization(error)]).into_future()),
+    };
+
+    let http_client = client.http_client().clone();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let url = build_url(member, &format!("/{}", id));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let body = body.clone();
+        let http_client = http_client.clone();
+
+        let response = uri.and_then(move |uri| http_client.put(uri, body).map_err(Error::from));
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+            let body = response.body().concat2().map_err(Error::from);
+
+            body.and_then(move |ref body| if status == StatusCode::NoContent {
+                Ok(Response {
+                    data: (),
+                    cluster_info,
+                })
+            } else {
+                match serde_json::from_slice::<ApiError>(body) {
+                    Ok(error) => Err(Error::Api(error)),
+                    Err(error) => Err(Error::Serialization(error)),
+                }
+            })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
 
 /// Constructs the full URL for an API call.
 fn build_url(endpoint: &Uri, path: &str) -> String {
