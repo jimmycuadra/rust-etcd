@@ -47,7 +47,7 @@ struct ListResponse {
 ///
 /// * client: A `Client` to use to make the API call.
 /// * peer_urls: URLs exposing this cluster member's peer API.
-pub fn add_member<C>(
+pub fn add<C>(
     client: &Client<C>,
     peer_urls: Vec<String>,
 ) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
@@ -104,7 +104,7 @@ where
 ///
 /// * client: A `Client` to use to make the API call.
 /// * id: The unique identifier of the member to delete.
-pub fn delete_member<C>(
+pub fn delete<C>(
     client: &Client<C>,
     id: String,
 ) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
