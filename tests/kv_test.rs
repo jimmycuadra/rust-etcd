@@ -124,7 +124,7 @@ fn compare_and_delete() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|res| {
         let index = res.data.node.modified_index;
 
-        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), Some(index))
+        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), index)
             .and_then(|res| {
                 assert_eq!(res.data.action, Action::CompareAndDelete);
 
@@ -144,7 +144,7 @@ fn compare_and_delete_only_index() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|res| {
         let index = res.data.node.modified_index;
 
-        kv::compare_and_delete(&inner_client, "/test/foo", None, Some(index)).and_then(|res| {
+        kv::compare_and_delete(&inner_client, "/test/foo", None, index).and_then(|res| {
             assert_eq!(res.data.action, Action::CompareAndDelete);
 
             Ok(())
@@ -211,7 +211,7 @@ fn test_compare_and_swap() {
             "baz",
             Some(100),
             Some("bar"),
-            Some(index),
+            index,
         ).and_then(|res| {
             assert_eq!(res.data.action, Action::CompareAndSwap);
 
@@ -231,7 +231,7 @@ fn compare_and_swap_only_index() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|res| {
         let index = res.data.node.modified_index;
 
-        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, Some(index))
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, index)
             .and_then(|res| {
                 assert_eq!(res.data.action, Action::CompareAndSwap);
 
@@ -366,6 +366,30 @@ fn get_recursive() {
                 nodes[0].clone().nodes.unwrap()[0].clone().value.unwrap(),
                 "blah"
             );
+
+            Ok(())
+        })
+    });
+
+    assert!(client.run(work).is_ok());
+}
+
+#[test]
+fn get_root() {
+    let core = Core::new().unwrap();
+    let mut client = TestClient::new(core);
+    let inner_client = client.clone();
+
+    let work = kv::create(&client, "/test/foo", "bar", Some(60)).and_then(|_| {
+        kv::get(&inner_client, "/", GetOptions::default()).and_then(|res| {
+            assert_eq!(res.data.action, Action::Get);
+
+            let node = res.data.node;
+
+            assert!(node.created_index.is_none());
+            assert!(node.modified_index.is_none());
+            assert_eq!(node.nodes.unwrap().len(), 1);
+            assert_eq!(node.dir.unwrap(), true);
 
             Ok(())
         })
@@ -656,7 +680,7 @@ fn watch_index() {
                 &inner_client,
                 "/test/foo",
                 WatchOptions {
-                    index: Some(index),
+                    index: index,
                     ..Default::default()
                 },
             ).and_then(move |res| {
