@@ -78,7 +78,7 @@ pub enum Action {
 pub struct Node {
     /// The new value of the etcd creation index.
     #[serde(rename = "createdIndex")]
-    pub created_index: u64,
+    pub created_index: Option<u64>,
     /// Whether or not the node is a directory.
     pub dir: Option<bool>,
     /// An ISO 8601 timestamp for when the key will expire.
@@ -87,7 +87,7 @@ pub struct Node {
     pub key: Option<String>,
     /// The new value of the etcd modification index.
     #[serde(rename = "modifiedIndex")]
-    pub modified_index: u64,
+    pub modified_index: Option<u64>,
     /// Child nodes of a directory.
     pub nodes: Option<Vec<Node>>,
     /// The key's time to live in seconds.
