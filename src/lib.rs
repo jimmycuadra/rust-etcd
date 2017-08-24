@@ -99,6 +99,7 @@ pub use client::{BasicAuth, Client, ClusterInfo, Health, Response};
 pub use error::{ApiError, Error};
 pub use version::VersionInfo;
 
+pub mod auth;
 pub mod kv;
 pub mod members;
 pub mod stats;

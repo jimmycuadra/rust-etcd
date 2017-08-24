@@ -4,7 +4,7 @@ use std::convert::From;
 use std::error::Error as StdError;
 use std::fmt::{Display, Error as FmtError, Formatter};
 
-use hyper::Error as HttpError;
+use hyper::{Error as HttpError, StatusCode};
 use hyper::error::UriError;
 #[cfg(feature = "tls")]
 use native_tls::Error as TlsError;
@@ -62,6 +62,8 @@ pub enum Error {
     /// An error returned when configuring TLS.
     #[cfg(feature = "tls")]
     Tls(TlsError),
+    /// An error returned when an unexpected HTTP status code is returned by the server.
+    UnexpectedStatus(StatusCode),
 }
 
 impl Display for Error {
@@ -76,6 +78,7 @@ impl Display for Error {
             #[cfg(feature = "tls")]
             Error::Tls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),
+            Error::UnexpectedStatus(ref status) => write!(f, "the etcd server returned an unexpected HTTP status code: {}", status),
         }
     }
 }
@@ -92,6 +95,7 @@ impl StdError for Error {
             #[cfg(feature = "tls")]
             Error::Tls(_) => "an error occurred configuring TLS",
             Error::Serialization(_) => "an error occurred deserializing JSON",
+            Error::UnexpectedStatus(_) => "the etcd server returned an unexpected HTTP status code",
         }
     }
 }
