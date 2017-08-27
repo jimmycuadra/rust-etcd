@@ -208,19 +208,19 @@ impl Role {
     }
 
     /// Grants read permission for a key in etcd's key-value store to this role.
-    pub fn add_kv_read_permission<K>(&mut self, key: K)
+    pub fn grant_kv_read_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
     {
-        self.permissions.kv.add_read_permission(key)
+        self.permissions.kv.grant_read_permission(key)
     }
 
     /// Grants write permission for a key in etcd's key-value store to this role.
-    pub fn add_kv_write_permission<K>(&mut self, key: K)
+    pub fn grant_kv_write_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
     {
-        self.permissions.kv.add_write_permission(key)
+        self.permissions.kv.grant_write_permission(key)
     }
 
     /// Returns a list of keys in etcd's key-value store that this role is allowed to read.
@@ -271,7 +271,7 @@ impl RoleUpdate {
     where
         K: Into<String>,
     {
-        self.grants.kv.add_read_permission(key)
+        self.grants.kv.grant_read_permission(key)
     }
 
     /// Grants write permission for a key in etcd's key-value store to this role.
@@ -279,7 +279,7 @@ impl RoleUpdate {
     where
         K: Into<String>,
     {
-        self.grants.kv.add_write_permission(key)
+        self.grants.kv.grant_write_permission(key)
     }
 
     /// Revokes read permission for a key in etcd's key-value store from this role.
@@ -288,7 +288,7 @@ impl RoleUpdate {
         K: Into<String>,
         String: PartialEq<K>,
     {
-        self.revocations.kv.remove_read_permission(key)
+        self.revocations.kv.revoke_read_permission(key)
     }
 
     /// Revokes write permission for a key in etcd's key-value store from this role.
@@ -297,7 +297,7 @@ impl RoleUpdate {
         K: Into<String>,
         String: PartialEq<K>,
     {
-        self.revocations.kv.remove_write_permission(key)
+        self.revocations.kv.revoke_write_permission(key)
     }
 }
 
@@ -336,7 +336,7 @@ impl Permission {
     }
 
     /// Grants read access to a resource.
-    fn add_read_permission<K>(&mut self, key: K)
+    fn grant_read_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
     {
@@ -344,7 +344,7 @@ impl Permission {
     }
 
     /// Grants write access to a resource.
-    fn add_write_permission<K>(&mut self, key: K)
+    fn grant_write_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
     {
@@ -352,7 +352,7 @@ impl Permission {
     }
 
     /// Revokes read access to a resource.
-    fn remove_read_permission<K>(&mut self, key: &K)
+    fn revoke_read_permission<K>(&mut self, key: &K)
     where
         K: Into<String>,
         String: PartialEq<K>,
@@ -363,7 +363,7 @@ impl Permission {
     }
 
     /// Revokes write access to a resource.
-    fn remove_write_permission<K>(&mut self, key: &K)
+    fn revoke_write_permission<K>(&mut self, key: &K)
     where
         K: Into<String>,
         String: PartialEq<K>,
