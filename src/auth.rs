@@ -114,6 +114,11 @@ impl NewUser {
         }
     }
 
+    /// Gets the name of the new user.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     /// Grants a role to the new user.
     pub fn add_role<R>(&mut self, role: R)
     where
@@ -153,6 +158,11 @@ impl UserUpdate {
             grants: None,
             revocations: None,
         }
+    }
+
+    /// Gets the name of the user being updated.
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Updates the user's password.
@@ -205,6 +215,11 @@ impl Role {
             name: name.into(),
             permissions: Permissions::new(),
         }
+    }
+
+    /// Gets the name of the role.
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Grants read permission for a key in etcd's key-value store to this role.
@@ -264,6 +279,11 @@ impl RoleUpdate {
             grants: Permissions::new(),
             revocations: Permissions::new(),
         }
+    }
+
+    /// Gets the name of the role being updated.
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     /// Grants read permission for a key in etcd's key-value store to this role.
@@ -374,6 +394,55 @@ impl Permission {
     }
 }
 
+/// Creates a new role.
+pub fn create_role<C>(
+    client: &Client<C>,
+    role: Role,
+) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+{
+    let http_client = client.http_client().clone();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let body = serde_json::to_string(&role)
+            .map_err(Error::from)
+            .into_future();
+
+        let url = build_url(member, &format!("/roles/{}", role.name));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let params = uri.join(body);
+
+        let http_client = http_client.clone();
+
+        let response = params.and_then(move |(uri, body)| {
+            http_client.put(uri, body).map_err(Error::from)
+        });
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+            let body = response.body().concat2().map_err(Error::from);
+
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<Role>(body) {
+                    Ok(data) => Ok(Response { data, cluster_info }),
+                    Err(error) => Err(Error::Serialization(error)),
+                }
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
 /// Creates a new user.
 pub fn create_user<C>(
     client: &Client<C>,
@@ -415,6 +484,48 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
+/// Deletes a role.
+pub fn delete_role<C, N>(
+    client: &Client<C>,
+    name: N,
+) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+    N: Into<String>,
+{
+    let http_client = client.http_client().clone();
+    let name = name.into();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let url = build_url(member, &format!("/roles/{}", name));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let http_client = http_client.clone();
+
+        let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+
+            if status == StatusCode::Ok {
+                Ok(Response {
+                    data: (),
+                    cluster_info,
+                })
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            }
         });
 
         Box::new(result)
@@ -779,6 +890,55 @@ where
     Box::new(result)
 }
 
+/// Updates an existing role.
+pub fn update_role<C>(
+    client: &Client<C>,
+    role: RoleUpdate,
+) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+{
+    let http_client = client.http_client().clone();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let body = serde_json::to_string(&role)
+            .map_err(Error::from)
+            .into_future();
+
+        let url = build_url(member, &format!("/roles/{}", role.name));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let params = uri.join(body);
+
+        let http_client = http_client.clone();
+
+        let response = params.and_then(move |(uri, body)| {
+            http_client.put(uri, body).map_err(Error::from)
+        });
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+            let body = response.body().concat2().map_err(Error::from);
+
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<Role>(body) {
+                    Ok(data) => Ok(Response { data, cluster_info }),
+                    Err(error) => Err(Error::Serialization(error)),
+                }
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
 /// Updates an existing user.
 pub fn update_user<C>(
     client: &Client<C>,
@@ -827,6 +987,7 @@ where
 
     Box::new(result)
 }
+
 /// Constructs the full URL for an API call.
 fn build_url(endpoint: &Uri, path: &str) -> String {
     let maybe_slash = if endpoint.as_ref().ends_with("/") {
