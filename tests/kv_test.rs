@@ -9,7 +9,7 @@ extern crate tokio_timer;
 use std::thread::spawn;
 use std::time::Duration;
 
-use futures::future::{Future, join_all};
+use futures::future::{join_all, Future};
 use futures::sync::oneshot::channel;
 use tokio_core::reactor::Core;
 use etcd::{Error, Response};
@@ -55,16 +55,12 @@ fn create_does_not_replace_existing_key() {
         kv::create(&inner_client, "/test/foo", "bar", Some(60)).then(|result| {
             match result {
                 Ok(_) => panic!("expected EtcdError due to pre-existing key"),
-                Err(errors) => {
-                    for error in errors {
-                        match error {
-                            Error::Api(ref error) => {
-                                assert_eq!(error.message, "Key already exists")
-                            }
-                            _ => panic!("expected EtcdError due to pre-existing key"),
-                        }
+                Err(errors) => for error in errors {
+                    match error {
+                        Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
+                        _ => panic!("expected EtcdError due to pre-existing key"),
                     }
-                }
+                },
             }
 
             Ok(())
@@ -124,12 +120,11 @@ fn compare_and_delete() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|res| {
         let index = res.data.node.modified_index;
 
-        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), index)
-            .and_then(|res| {
-                assert_eq!(res.data.action, Action::CompareAndDelete);
+        kv::compare_and_delete(&inner_client, "/test/foo", Some("bar"), index).and_then(|res| {
+            assert_eq!(res.data.action, Action::CompareAndDelete);
 
-                Ok(())
-            })
+            Ok(())
+        })
     });
 
     assert!(client.run(work).is_ok());
@@ -180,16 +175,14 @@ fn compare_and_delete_requires_conditions() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::compare_and_delete(&inner_client, "/test/foo", None, None).then(|result| match result {
             Ok(_) => panic!("expected Error::InvalidConditions"),
-            Err(errors) => {
-                if errors.len() == 1 {
-                    match errors[0] {
-                        Error::InvalidConditions => Ok(()),
-                        _ => panic!("expected Error::InvalidConditions"),
-                    }
-                } else {
-                    panic!("expected a single error: Error::InvalidConditions");
+            Err(errors) => if errors.len() == 1 {
+                match errors[0] {
+                    Error::InvalidConditions => Ok(()),
+                    _ => panic!("expected Error::InvalidConditions"),
                 }
-            }
+            } else {
+                panic!("expected a single error: Error::InvalidConditions");
+            },
         })
     });
 
@@ -231,12 +224,11 @@ fn compare_and_swap_only_index() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|res| {
         let index = res.data.node.modified_index;
 
-        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, index)
-            .and_then(|res| {
-                assert_eq!(res.data.action, Action::CompareAndSwap);
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, index).and_then(|res| {
+            assert_eq!(res.data.action, Action::CompareAndSwap);
 
-                Ok(())
-            })
+            Ok(())
+        })
     });
 
     assert!(client.run(work).is_ok());
@@ -249,12 +241,13 @@ fn compare_and_swap() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, Some("bar"), None)
-            .and_then(|res| {
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, Some("bar"), None).and_then(
+            |res| {
                 assert_eq!(res.data.action, Action::CompareAndSwap);
 
                 Ok(())
-            })
+            },
+        )
     });
 
     assert!(client.run(work).is_ok());
@@ -267,20 +260,19 @@ fn compare_and_swap_requires_conditions() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, None)
-            .then(|result| match result {
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, None).then(
+            |result| match result {
                 Ok(_) => panic!("expected Error::InvalidConditions"),
-                Err(errors) => {
-                    if errors.len() == 1 {
-                        match errors[0] {
-                            Error::InvalidConditions => Ok(()),
-                            _ => panic!("expected Error::InvalidConditions"),
-                        }
-                    } else {
-                        panic!("expected a single error: Error::InvalidConditions");
+                Err(errors) => if errors.len() == 1 {
+                    match errors[0] {
+                        Error::InvalidConditions => Ok(()),
+                        _ => panic!("expected Error::InvalidConditions"),
                     }
-                }
-            })
+                } else {
+                    panic!("expected a single error: Error::InvalidConditions");
+                },
+            },
+        )
     });
 
     assert!(client.run(work).is_ok());
@@ -487,12 +479,10 @@ fn update_requires_existing_key() {
 
     let work = kv::update(&client, "/test/foo", "bar", None).then(|result| {
         match result {
-            Err(ref errors) => {
-                match errors[0] {
-                    Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
-                    _ => panic!("expected EtcdError due to missing key"),
-                }
-            }
+            Err(ref errors) => match errors[0] {
+                Error::Api(ref error) => assert_eq!(error.message, "Key not found"),
+                _ => panic!("expected EtcdError due to missing key"),
+            },
             _ => panic!("expected EtcdError due to missing key"),
         }
 

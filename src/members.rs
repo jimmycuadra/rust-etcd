@@ -31,6 +31,7 @@ pub struct Member {
 /// The request body for `POST /v2/members` and `PUT /v2/members/:id`.
 #[derive(Debug, Serialize)]
 struct PeerUrls {
+    /// The peer URLs.
     #[serde(rename = "peerURLs")]
     peer_urls: Vec<String>,
 }
@@ -38,6 +39,7 @@ struct PeerUrls {
 /// A small wrapper around `Member` to match the response of `GET /v2/members`.
 #[derive(Debug, Deserialize)]
 struct ListResponse {
+    /// The members.
     members: Vec<Member>,
 }
 

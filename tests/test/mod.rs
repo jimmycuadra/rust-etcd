@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::ops::Deref;
 
-use etcd::{Client, kv};
+use etcd::{kv, Client};
 use futures::Future;
 use hyper::client::{Client as Hyper, Connect, HttpConnector};
 use hyper_tls::HttpsConnector;

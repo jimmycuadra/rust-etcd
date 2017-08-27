@@ -755,12 +755,10 @@ where
                         Err(error) => Err(Error::Serialization(error)),
                     }
                 }
-                _ => {
-                    match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => Err(Error::Api(error)),
-                        Err(error) => Err(Error::Serialization(error)),
-                    }
-                }
+                _ => match serde_json::from_slice::<ApiError>(body) {
+                    Ok(error) => Err(Error::Api(error)),
+                    Err(error) => Err(Error::Serialization(error)),
+                },
             })
         });
 

@@ -349,7 +349,6 @@ pub struct ClusterInfo {
 
 impl<'a> From<&'a Headers> for ClusterInfo {
     fn from(headers: &'a Headers) -> Self {
-
         let cluster_id = match headers.get::<XEtcdClusterId>() {
             Some(&XEtcdClusterId(ref value)) => Some(value.clone()),
             None => None,

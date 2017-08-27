@@ -78,7 +78,11 @@ impl Display for Error {
             #[cfg(feature = "tls")]
             Error::Tls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),
-            Error::UnexpectedStatus(ref status) => write!(f, "the etcd server returned an unexpected HTTP status code: {}", status),
+            Error::UnexpectedStatus(ref status) => write!(
+                f,
+                "the etcd server returned an unexpected HTTP status code: {}",
+                status
+            ),
         }
     }
 }
