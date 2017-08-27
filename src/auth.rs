@@ -20,46 +20,13 @@ struct AuthStatus {
     pub enabled: bool,
 }
 
-/// The result of attempting to disable the auth system.
+/// The type returned when the auth system is successfully enabled or disabled.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum DisableAuth {
-    /// The auth system was already disabled.
-    AlreadyDisabled,
-    /// The auth system was successfully disabled.
-    Disabled,
-    /// The attempt to disable the auth system was not done by a root user.
-    Unauthorized,
-}
-
-impl DisableAuth {
-    /// Indicates whether or not the auth system was disabled as a result of the call to `disable`.
-    pub fn is_disabled(&self) -> bool {
-        match *self {
-            DisableAuth::AlreadyDisabled | DisableAuth::Disabled => true,
-            DisableAuth::Unauthorized => false,
-        }
-    }
-}
-
-/// The result of attempting to enable the auth system.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum EnableAuth {
-    /// The auth system was already enabled.
-    AlreadyEnabled,
-    /// The auth system was successfully enabled.
-    Enabled,
-    /// The auth system could not be enabled because there is no root user.
-    RootUserRequired,
-}
-
-impl EnableAuth {
-    /// Indicates whether or not the auth system was enabled as a result of the call to `enable`.
-    pub fn is_enabled(&self) -> bool {
-        match *self {
-            EnableAuth::AlreadyEnabled | EnableAuth::Enabled => true,
-            EnableAuth::RootUserRequired => false,
-        }
-    }
+pub enum AuthChange {
+    /// The auth system was successfully enabled or disabled.
+    Changed,
+    /// The auth system was already in the desired state.
+    Unchanged,
 }
 
 /// An existing etcd user.
@@ -579,7 +546,7 @@ where
 /// Attempts to disable the auth system.
 pub fn disable<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<DisableAuth>, Error = Vec<Error>>>
+) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -599,23 +566,17 @@ where
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
-            let result = match status {
-                StatusCode::Ok => Response {
-                    data: DisableAuth::Disabled,
+            match status {
+                StatusCode::Ok => Ok(Response {
+                    data: AuthChange::Changed,
                     cluster_info,
-                },
-                StatusCode::Conflict => Response {
-                    data: DisableAuth::AlreadyDisabled,
+                }),
+                StatusCode::Conflict => Ok(Response {
+                    data: AuthChange::Unchanged,
                     cluster_info,
-                },
-                StatusCode::Unauthorized => Response {
-                    data: DisableAuth::Unauthorized,
-                    cluster_info,
-                },
-                _ => return Err(Error::UnexpectedStatus(status)),
-            };
-
-            Ok(result)
+                }),
+                _ => Err(Error::UnexpectedStatus(status)),
+            }
         });
 
         Box::new(result)
@@ -625,7 +586,7 @@ where
 }
 
 /// Attempts to enable the auth system.
-pub fn enable<C>(client: &Client<C>) -> Box<Future<Item = Response<EnableAuth>, Error = Vec<Error>>>
+pub fn enable<C>(client: &Client<C>) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -647,23 +608,17 @@ where
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
-            let result = match status {
-                StatusCode::Ok => Response {
-                    data: EnableAuth::Enabled,
+            match status {
+                StatusCode::Ok => Ok(Response {
+                    data: AuthChange::Changed,
                     cluster_info,
-                },
-                StatusCode::BadRequest => Response {
-                    data: EnableAuth::RootUserRequired,
+                }),
+                StatusCode::Conflict => Ok(Response {
+                    data: AuthChange::Unchanged,
                     cluster_info,
-                },
-                StatusCode::Conflict => Response {
-                    data: EnableAuth::AlreadyEnabled,
-                    cluster_info,
-                },
+                }),
                 _ => return Err(Error::UnexpectedStatus(status)),
-            };
-
-            Ok(result)
+            }
         });
 
         Box::new(result)
