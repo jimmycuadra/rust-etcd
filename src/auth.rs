@@ -417,6 +417,48 @@ where
     Box::new(result)
 }
 
+/// Deletes a user.
+pub fn delete_user<C, N>(
+    client: &Client<C>,
+    name: N,
+) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+    N: Into<String>,
+{
+    let http_client = client.http_client().clone();
+    let name = name.into();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let url = build_url(member, &format!("/users/{}", name));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let http_client = http_client.clone();
+
+        let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+
+            if status == StatusCode::Ok {
+                Ok(Response {
+                    data: (),
+                    cluster_info,
+                })
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            }
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
 /// Attempts to disable the auth system.
 pub fn disable<C>(
     client: &Client<C>,
