@@ -234,6 +234,12 @@ impl Role {
     }
 }
 
+/// A list of all roles.
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+struct Roles {
+    roles: Option<Vec<Role>>,
+}
+
 /// Parameters used to update an existing authorization role.
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct RoleUpdate {
@@ -555,20 +561,107 @@ where
     Box::new(result)
 }
 
-/// Get a user.
-pub fn get_user<C, U>(
+/// Get a role.
+pub fn get_role<C, N>(
     client: &Client<C>,
-    user: U,
+    name: N,
+) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+    N: Into<String>,
+{
+    let http_client = client.http_client().clone();
+    let name = name.into();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let url = build_url(member, &format!("/roles/{}", name));
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let http_client = http_client.clone();
+
+        let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+            let body = response.body().concat2().map_err(Error::from);
+
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<Role>(body) {
+                    Ok(data) => Ok(Response { data, cluster_info }),
+                    Err(error) => Err(Error::Serialization(error)),
+                }
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
+/// Gets all roles.
+pub fn get_roles<C>(
+    client: &Client<C>,
+) -> Box<Future<Item = Response<Vec<Role>>, Error = Vec<Error>>>
+where
+    C: Clone + Connect,
+{
+    let http_client = client.http_client().clone();
+
+    let result = first_ok(client.endpoints().to_vec(), move |member| {
+        let url = build_url(member, "/roles");
+        let uri = Uri::from_str(url.as_str())
+            .map_err(Error::from)
+            .into_future();
+
+        let http_client = http_client.clone();
+
+        let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
+
+        let result = response.and_then(|response| {
+            let status = response.status();
+            let cluster_info = ClusterInfo::from(response.headers());
+            let body = response.body().concat2().map_err(Error::from);
+
+            body.and_then(move |ref body| if status == StatusCode::Ok {
+                match serde_json::from_slice::<Roles>(body) {
+                    Ok(roles) => {
+                        let data = roles.roles.unwrap_or_else(|| Vec::with_capacity(0));
+
+                        Ok(Response { data, cluster_info })
+                    }
+                    Err(error) => Err(Error::Serialization(error)),
+                }
+            } else {
+                Err(Error::UnexpectedStatus(status))
+            })
+        });
+
+        Box::new(result)
+    });
+
+    Box::new(result)
+}
+
+/// Get a user.
+pub fn get_user<C, N>(
+    client: &Client<C>,
+    name: N,
 ) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
-    U: Into<String>,
+    N: Into<String>,
 {
     let http_client = client.http_client().clone();
-    let user = user.into();
+    let name = name.into();
 
     let result = first_ok(client.endpoints().to_vec(), move |member| {
-        let url = build_url(member, &format!("/users/{}", user));
+        let url = build_url(member, &format!("/users/{}", name));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
             .into_future();
