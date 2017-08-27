@@ -29,16 +29,39 @@ pub enum AuthChange {
     Unchanged,
 }
 
-/// An existing etcd user.
+/// An existing etcd user with a list of their granted roles.
 #[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
 pub struct User {
     /// The user's name.
+    #[serde(rename = "user")]
+    name: String,
+    /// The names of roles granted to the user.
+    roles: Vec<String>,
+}
+
+impl User {
+    /// Returns the user's name.
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    /// Returns the names of the roles granted to the user.
+    pub fn role_names(&self) -> &[String] {
+        &self.roles
+    }
+}
+
+/// An existing etcd user with details of granted roles.
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+pub struct UserDetail {
+    /// The user's name.
+    #[serde(rename = "user")]
     name: String,
     /// Roles granted to the user.
     roles: Vec<Role>,
 }
 
-impl User {
+impl UserDetail {
     /// Returns the user's name.
     pub fn name(&self) -> &str {
         &self.name
@@ -53,17 +76,19 @@ impl User {
 /// A list of all users.
 #[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
 struct Users {
-    users: Option<Vec<User>>,
+    users: Option<Vec<UserDetail>>,
 }
 
 /// Paramters used to create a new etcd user.
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct NewUser {
     /// The user's name.
+    #[serde(rename = "user")]
     name: String,
     /// The user's password.
     password: String,
     /// An initial set of roles granted to the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
     roles: Option<Vec<String>>,
 }
 
@@ -102,14 +127,18 @@ impl NewUser {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct UserUpdate {
     /// The user's name.
+    #[serde(rename = "user")]
     name: String,
     /// A new password for the user.
+    #[serde(skip_serializing_if = "Option::is_none")]
     password: Option<String>,
     /// Roles being granted to the user.
     #[serde(rename = "grant")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     grants: Option<Vec<String>>,
     /// Roles being revoked from the user.
     #[serde(rename = "revoke")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     revocations: Option<Vec<String>>,
 }
 
@@ -167,6 +196,7 @@ impl UserUpdate {
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct Role {
     /// The name of the role.
+    #[serde(rename = "role")]
     name: String,
     /// Permissions granted to the role.
     permissions: Permissions,
@@ -194,7 +224,7 @@ impl Role {
     where
         K: Into<String>,
     {
-        self.permissions.kv.grant_read_permission(key)
+        self.permissions.kv.modify_read_permission(key)
     }
 
     /// Grants write permission for a key in etcd's key-value store to this role.
@@ -202,17 +232,23 @@ impl Role {
     where
         K: Into<String>,
     {
-        self.permissions.kv.grant_write_permission(key)
+        self.permissions.kv.modify_write_permission(key)
     }
 
     /// Returns a list of keys in etcd's key-value store that this role is allowed to read.
     pub fn kv_read_permissions(&self) -> &[String] {
-        &self.permissions.kv.read
+        match self.permissions.kv.read {
+            Some(ref read) => read,
+            None => &[],
+        }
     }
 
     /// Returns a list of keys in etcd's key-value store that this role is allowed to write.
     pub fn kv_write_permissions(&self) -> &[String] {
-        &self.permissions.kv.write
+        match self.permissions.kv.write {
+            Some(ref write) => write,
+            None => &[],
+        }
     }
 }
 
@@ -226,13 +262,16 @@ struct Roles {
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct RoleUpdate {
     /// The name of the role.
+    #[serde(rename = "role")]
     name: String,
     /// Permissions being added to the role.
     #[serde(rename = "grant")]
-    grants: Permissions,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    grants: Option<Permissions>,
     /// Permissions being removed from the role.
     #[serde(rename = "revoke")]
-    revocations: Permissions,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    revocations: Option<Permissions>,
 }
 
 impl RoleUpdate {
@@ -243,8 +282,8 @@ impl RoleUpdate {
     {
         RoleUpdate {
             name: role.into(),
-            grants: Permissions::new(),
-            revocations: Permissions::new(),
+            grants: None,
+            revocations: None,
         }
     }
 
@@ -258,7 +297,14 @@ impl RoleUpdate {
     where
         K: Into<String>,
     {
-        self.grants.kv.grant_read_permission(key)
+        match self.grants {
+            Some(ref mut grants) => grants.kv.modify_read_permission(key),
+            None => {
+                let mut permissions = Permissions::new();
+                permissions.kv.modify_read_permission(key);
+                self.grants = Some(permissions);
+            }
+        }
     }
 
     /// Grants write permission for a key in etcd's key-value store to this role.
@@ -266,25 +312,44 @@ impl RoleUpdate {
     where
         K: Into<String>,
     {
-        self.grants.kv.grant_write_permission(key)
+        match self.grants {
+            Some(ref mut grants) => grants.kv.modify_write_permission(key),
+            None => {
+                let mut permissions = Permissions::new();
+                permissions.kv.modify_write_permission(key);
+                self.grants = Some(permissions);
+            }
+        }
     }
 
     /// Revokes read permission for a key in etcd's key-value store from this role.
-    pub fn revoke_kv_read_permission<K>(&mut self, key: &K)
+    pub fn revoke_kv_read_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
-        String: PartialEq<K>,
     {
-        self.revocations.kv.revoke_read_permission(key)
+        match self.revocations {
+            Some(ref mut revocations) => revocations.kv.modify_read_permission(key),
+            None => {
+                let mut permissions = Permissions::new();
+                permissions.kv.modify_read_permission(key);
+                self.revocations = Some(permissions);
+            }
+        }
     }
 
     /// Revokes write permission for a key in etcd's key-value store from this role.
-    pub fn revoke_kv_write_permission<K>(&mut self, key: &K)
+    pub fn revoke_kv_write_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
-        String: PartialEq<K>,
     {
-        self.revocations.kv.revoke_write_permission(key)
+        match self.revocations {
+            Some(ref mut revocations) => revocations.kv.modify_write_permission(key),
+            None => {
+                let mut permissions = Permissions::new();
+                permissions.kv.modify_write_permission(key);
+                self.revocations = Some(permissions);
+            }
+        }
     }
 }
 
@@ -308,55 +373,41 @@ impl Permissions {
 #[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq, Serialize)]
 struct Permission {
     /// Resources allowed to be read.
-    read: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    read: Option<Vec<String>>,
     /// Resources allowed to be written.
-    write: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    write: Option<Vec<String>>,
 }
 
 impl Permission {
     /// Creates a new permission record.
     fn new() -> Self {
         Permission {
-            read: Vec::new(),
-            write: Vec::new(),
+            read: None,
+            write: None,
         }
     }
 
-    /// Grants read access to a resource.
-    fn grant_read_permission<K>(&mut self, key: K)
+    /// Modifies read access to a resource.
+    fn modify_read_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
     {
-        self.read.push(key.into())
-    }
-
-    /// Grants write access to a resource.
-    fn grant_write_permission<K>(&mut self, key: K)
-    where
-        K: Into<String>,
-    {
-        self.write.push(key.into())
-    }
-
-    /// Revokes read access to a resource.
-    fn revoke_read_permission<K>(&mut self, key: &K)
-    where
-        K: Into<String>,
-        String: PartialEq<K>,
-    {
-        if let Some(position) = self.read.iter().position(|k| k == key) {
-            self.read.remove(position);
+        match self.read {
+            Some(ref mut read) => read.push(key.into()),
+            None => self.read = Some(vec![key.into()]),
         }
     }
 
-    /// Revokes write access to a resource.
-    fn revoke_write_permission<K>(&mut self, key: &K)
+    /// Modifies write access to a resource.
+    fn modify_write_permission<K>(&mut self, key: K)
     where
         K: Into<String>,
-        String: PartialEq<K>,
     {
-        if let Some(position) = self.write.iter().position(|k| k == key) {
-            self.write.remove(position);
+        match self.write {
+            Some(ref mut write) => write.push(key.into()),
+            None => self.write = Some(vec![key.into()]),
         }
     }
 }
@@ -394,13 +445,14 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<Role>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| match status {
+                StatusCode::Ok | StatusCode::Created => {
+                    match serde_json::from_slice::<Role>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
+                status => Err(Error::UnexpectedStatus(status)),
             })
         });
 
@@ -443,13 +495,14 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<User>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| match status {
+                StatusCode::Ok | StatusCode::Created => {
+                    match serde_json::from_slice::<User>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
+                status => Err(Error::UnexpectedStatus(status)),
             })
         });
 
@@ -718,7 +771,7 @@ where
 pub fn get_user<C, N>(
     client: &Client<C>,
     name: N,
-) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
+) -> Box<Future<Item = Response<UserDetail>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
     N: Into<String>,
@@ -742,7 +795,7 @@ where
             let body = response.body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| if status == StatusCode::Ok {
-                match serde_json::from_slice::<User>(body) {
+                match serde_json::from_slice::<UserDetail>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
                 }
@@ -760,7 +813,7 @@ where
 /// Gets all users.
 pub fn get_users<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<Vec<User>>, Error = Vec<Error>>>
+) -> Box<Future<Item = Response<Vec<UserDetail>>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
