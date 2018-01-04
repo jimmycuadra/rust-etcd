@@ -30,7 +30,7 @@ tests/ssl/ca.pem: tests/ssl/ca-key.pem
 tests/ssl/ca-key.pem:
 	openssl genrsa -out tests/ssl/ca-key.pem 2048
 
-tests/ssl/client.p12:
+tests/ssl/client.p12: tests/ssl/client.pem tests/ssl/client-key.pem tests/ssl/ca.pem
 	openssl pkcs12 -export -out tests/ssl/client.p12 -inkey tests/ssl/client-key.pem -in tests/ssl/client.pem -certfile tests/ssl/ca.pem -password pass:secret
 
 tests/ssl/client.pem: tests/ssl/ca.pem tests/ssl/ca-key.pem tests/ssl/client-csr.pem
