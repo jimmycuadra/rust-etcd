@@ -998,11 +998,5 @@ where
 
 /// Constructs the full URL for an API call.
 fn build_url(endpoint: &Uri, path: &str) -> String {
-    let maybe_slash = if endpoint.as_ref().ends_with("/") {
-        ""
-    } else {
-        "/"
-    };
-
-    format!("{}{}v2/auth{}", endpoint, maybe_slash, path)
+    format!("{}v2/auth{}", endpoint, path)
 }

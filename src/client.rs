@@ -379,11 +379,5 @@ impl<'a> From<&'a Headers> for ClusterInfo {
 
 /// Constructs the full URL for the versions API call.
 fn build_url(endpoint: &Uri, path: &str) -> String {
-    let maybe_slash = if endpoint.as_ref().ends_with("/") {
-        ""
-    } else {
-        "/"
-    };
-
-    format!("{}{}{}", endpoint, maybe_slash, path)
+    format!("{}{}", endpoint, path)
 }
