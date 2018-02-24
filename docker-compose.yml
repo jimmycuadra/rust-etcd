@@ -9,13 +9,14 @@ services:
     volumes:
       - ./tests/ssl:/ssl
   rust:
-    image: jimmycuadra/rust
+    image: rust:1.24.0
     environment:
       RUST_BACKTRACE: 1
       RUST_TEST_THREADS: 1
     links:
       - etcd
       - etcdsecure
+    working_dir: /source
     volumes:
       - .:/source
       - cargo_git:/root/.cargo/git
