@@ -22,6 +22,7 @@ where
     }
 }
 
+#[derive(Debug)]
 #[must_use = "futures do nothing unless polled"]
 pub struct FirstOk<F, T>
 where

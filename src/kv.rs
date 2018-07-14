@@ -24,12 +24,6 @@ use error::{ApiError, Error};
 use options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
 use url::form_urlencoded::Serializer;
 
-/// The future returned by most key-value API calls.
-///
-/// On success, information about the result of the operation and information about the etcd
-/// cluster. On failure, an error for each cluster member that failed.
-pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>> + Send>;
-
 /// Information about the result of a successful key-value API operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
 pub struct KeyValueInfo {
@@ -142,7 +136,7 @@ pub fn compare_and_delete<C>(
     key: &str,
     current_value: Option<&str>,
     current_modified_index: Option<u64>,
-) -> FutureKeyValueInfo
+) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -183,7 +177,7 @@ pub fn compare_and_swap<C>(
     ttl: Option<u64>,
     current_value: Option<&str>,
     current_modified_index: Option<u64>,
-) -> FutureKeyValueInfo
+) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -214,7 +208,7 @@ where
 /// # Errors
 ///
 /// Fails if the key already exists.
-pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn create<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -241,7 +235,7 @@ where
 /// # Errors
 ///
 /// Fails if the key already exists.
-pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn create_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -281,7 +275,7 @@ pub fn create_in_order<C>(
     key: &str,
     value: &str,
     ttl: Option<u64>,
-) -> FutureKeyValueInfo
+) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -309,7 +303,7 @@ where
 /// # Errors
 ///
 /// Fails if the key is a directory and `recursive` is `false`.
-pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> FutureKeyValueInfo
+pub fn delete<C>(client: &Client<C>, key: &str, recursive: bool) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -333,7 +327,7 @@ where
 /// # Errors
 ///
 /// Fails if the directory is not empty.
-pub fn delete_dir<C>(client: &Client<C>, key: &str) -> FutureKeyValueInfo
+pub fn delete_dir<C>(client: &Client<C>, key: &str) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -358,7 +352,7 @@ where
 /// # Errors
 ///
 /// Fails if the key doesn't exist.
-pub fn get<C>(client: &Client<C>, key: &str, options: GetOptions) -> FutureKeyValueInfo
+pub fn get<C>(client: &Client<C>, key: &str, options: GetOptions) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -388,7 +382,7 @@ where
 /// # Errors
 ///
 /// Fails if the node is a directory.
-pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn set<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -416,7 +410,7 @@ where
 /// # Errors
 ///
 /// Fails if the node is an existing directory.
-pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn set_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -443,7 +437,7 @@ where
 /// # Errors
 ///
 /// Fails if the key does not exist.
-pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn update<C>(client: &Client<C>, key: &str, value: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -473,7 +467,7 @@ where
 /// # Errors
 ///
 /// Fails if the node does not exist.
-pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> FutureKeyValueInfo
+pub fn update_dir<C>(client: &Client<C>, key: &str, ttl: Option<u64>) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -542,7 +536,7 @@ fn build_url(endpoint: &Uri, path: &str) -> String {
 }
 
 /// Handles all delete operations.
-fn raw_delete<C>(client: &Client<C>, key: &str, options: DeleteOptions) -> FutureKeyValueInfo
+fn raw_delete<C>(client: &Client<C>, key: &str, options: DeleteOptions) -> Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -593,7 +587,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
 
-        let result = response.and_then(move |response| {
+        response.and_then(move |response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -609,16 +603,14 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
+        })
     });
 
     Box::new(result)
 }
 
 /// Handles all get operations.
-fn raw_get<C>(client: &Client<C>, key: &str, options: InternalGetOptions) -> FutureKeyValueInfo
+fn raw_get<C>(client: &Client<C>, key: &str, options: InternalGetOptions) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
@@ -641,7 +633,7 @@ where
     let http_client = client.http_client().clone();
     let key = key.to_string();
 
-    let result = first_ok(client.endpoints().to_vec(), move |endpoint| {
+    first_ok(client.endpoints().to_vec(), move |endpoint| {
         let url = Url::parse_with_params(&build_url(endpoint, &key), query_pairs.clone())
             .map_err(Error::from)
             .into_future();
@@ -656,7 +648,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -672,16 +664,12 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Handles all set operations.
-fn raw_set<C>(client: &Client<C>, key: &str, options: SetOptions) -> FutureKeyValueInfo
+fn raw_set<C>(client: &Client<C>, key: &str, options: SetOptions) -> Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -739,7 +727,7 @@ where
             http_client.put(uri, body).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -756,9 +744,7 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 },
             })
-        });
-
-        Box::new(result)
+        })
     });
 
     Box::new(result)

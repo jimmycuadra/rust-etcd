@@ -5,9 +5,8 @@
 //! separate types for backwards compatibility and to support both APIs simultaneously.
 //!
 //! The client uses asynchronous I/O, backed by the `futures` and `tokio-core` crates, and requires
-//! both to be used alongside. Functions that return futures currently return them boxed. As soon
-//! as Rust's [impl Trait](https://github.com/rust-lang/rust/issues/34511) feature is stabilized,
-//! this crate's API will be updated to use it.
+//! both to be used alongside. Where possible, futures are returned using "impl Trait" instead of
+//! boxing.
 //!
 //! The client is tested against etcd 2.3.7.
 //!

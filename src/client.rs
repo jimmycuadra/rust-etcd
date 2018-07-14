@@ -1,7 +1,6 @@
 //! Contains the etcd client. All API calls are made via the client.
 
 use futures::{Future, IntoFuture, Stream};
-use futures::future::FutureResult;
 use futures::stream::futures_unordered;
 use hyper::{Client as Hyper, StatusCode, Uri};
 use hyper::client::connect::{Connect, HttpConnector};
@@ -234,7 +233,7 @@ where
     }
 
     /// Runs a basic health check against each etcd member.
-    pub fn health(&self) -> Box<Stream<Item = Response<Health>, Error = Error>> {
+    pub fn health(&self) -> impl Stream<Item = Response<Health>, Error = Error> {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "health");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -259,11 +258,11 @@ where
             })
         });
 
-        Box::new(futures_unordered(futures))
+        futures_unordered(futures)
     }
 
     /// Returns version information from each etcd cluster member the client was initialized with.
-    pub fn versions(&self) -> Box<Stream<Item = Response<VersionInfo>, Error = Error>> {
+    pub fn versions(&self) -> impl Stream<Item = Response<VersionInfo>, Error = Error> {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "version");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -288,20 +287,21 @@ where
             })
         });
 
-        Box::new(futures_unordered(futures))
+        futures_unordered(futures)
     }
 
     /// Lets other internal code make basic HTTP requests.
-    pub(crate) fn request<T>(
+    pub(crate) fn request<U, T>(
         &self,
-        uri: FutureResult<Uri, Error>,
-    ) -> Box<Future<Item = Response<T>, Error = Error>>
+        uri: U,
+    ) -> impl Future<Item = Response<T>, Error = Error>
     where
+        U: Future<Item = Uri, Error = Error>,
         T: DeserializeOwned + 'static,
     {
         let http_client = self.http_client.clone();
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -317,9 +317,7 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
+        })
     }
 }
 

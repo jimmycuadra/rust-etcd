@@ -416,13 +416,13 @@ impl Permission {
 pub fn create_role<C>(
     client: &Client<C>,
     role: Role,
-) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<Role>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let body = serde_json::to_string(&role)
             .map_err(Error::from)
             .into_future();
@@ -440,7 +440,7 @@ where
             http_client.put(uri, body).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -454,25 +454,21 @@ where
                 }
                 status => Err(Error::UnexpectedStatus(status)),
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Creates a new user.
 pub fn create_user<C>(
     client: &Client<C>,
     user: NewUser,
-) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<User>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let body = serde_json::to_string(&user)
             .map_err(Error::from)
             .into_future();
@@ -490,7 +486,7 @@ where
             http_client.put(uri, body).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -504,19 +500,15 @@ where
                 }
                 status => Err(Error::UnexpectedStatus(status)),
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Deletes a role.
 pub fn delete_role<C, N>(
     client: &Client<C>,
     name: N,
-) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<()>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
     N: Into<String>,
@@ -524,7 +516,7 @@ where
     let http_client = client.http_client().clone();
     let name = name.into();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, &format!("/roles/{}", name));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -534,7 +526,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
@@ -546,19 +538,15 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             }
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Deletes a user.
 pub fn delete_user<C, N>(
     client: &Client<C>,
     name: N,
-) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<()>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
     N: Into<String>,
@@ -566,7 +554,7 @@ where
     let http_client = client.http_client().clone();
     let name = name.into();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, &format!("/users/{}", name));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -576,7 +564,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
@@ -588,24 +576,20 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             }
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Attempts to disable the auth system.
 pub fn disable<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<AuthChange>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "/enable");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -615,7 +599,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
@@ -630,22 +614,18 @@ where
                 }),
                 _ => Err(Error::UnexpectedStatus(status)),
             }
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Attempts to enable the auth system.
-pub fn enable<C>(client: &Client<C>) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
+pub fn enable<C>(client: &Client<C>) -> impl Future<Item = Response<AuthChange>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "/enable");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -657,7 +637,7 @@ where
             http_client.put(uri, "".to_owned()).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
@@ -672,19 +652,15 @@ where
                 }),
                 _ => return Err(Error::UnexpectedStatus(status)),
             }
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Get a role.
 pub fn get_role<C, N>(
     client: &Client<C>,
     name: N,
-) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<Role>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
     N: Into<String>,
@@ -692,7 +668,7 @@ where
     let http_client = client.http_client().clone();
     let name = name.into();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, &format!("/roles/{}", name));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -702,7 +678,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -715,24 +691,20 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Gets all roles.
 pub fn get_roles<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<Vec<Role>>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<Vec<Role>>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "/roles");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -742,7 +714,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -759,19 +731,15 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Get a user.
 pub fn get_user<C, N>(
     client: &Client<C>,
     name: N,
-) -> Box<Future<Item = Response<UserDetail>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<UserDetail>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
     N: Into<String>,
@@ -779,7 +747,7 @@ where
     let http_client = client.http_client().clone();
     let name = name.into();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, &format!("/users/{}", name));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -789,7 +757,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -802,24 +770,20 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Gets all users.
 pub fn get_users<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<Vec<UserDetail>>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<Vec<UserDetail>>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "/users");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -829,7 +793,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -846,22 +810,18 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Determines whether or not the auth system is enabled.
-pub fn status<C>(client: &Client<C>) -> Box<Future<Item = Response<bool>, Error = Vec<Error>>>
+pub fn status<C>(client: &Client<C>) -> impl Future<Item = Response<bool>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "/enable");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -871,7 +831,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -890,25 +850,21 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Updates an existing role.
 pub fn update_role<C>(
     client: &Client<C>,
     role: RoleUpdate,
-) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<Role>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let body = serde_json::to_string(&role)
             .map_err(Error::from)
             .into_future();
@@ -926,7 +882,7 @@ where
             http_client.put(uri, body).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -939,25 +895,21 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Updates an existing user.
 pub fn update_user<C>(
     client: &Client<C>,
     user: UserUpdate,
-) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<User>, Error = Vec<Error>>
 where
     C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let body = serde_json::to_string(&user)
             .map_err(Error::from)
             .into_future();
@@ -975,7 +927,7 @@ where
             http_client.put(uri, body).map_err(Error::from)
         });
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -988,12 +940,8 @@ where
             } else {
                 Err(Error::UnexpectedStatus(status))
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Constructs the full URL for an API call.

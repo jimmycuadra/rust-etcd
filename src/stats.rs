@@ -158,7 +158,7 @@ pub struct StoreStats {
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
 pub fn leader_stats<C>(
     client: &Client<C>,
-) -> Box<Future<Item = Response<LeaderStats>, Error = Error>>
+) -> impl Future<Item = Response<LeaderStats>, Error = Error>
 where
     C: Clone + Connect,
 {
@@ -171,7 +171,7 @@ where
 /// Returns statistics about each cluster member the client was initialized with.
 ///
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
-pub fn self_stats<C>(client: &Client<C>) -> Box<Stream<Item = Response<SelfStats>, Error = Error>>
+pub fn self_stats<C>(client: &Client<C>) -> impl Stream<Item = Response<SelfStats>, Error = Error>
 where
     C: Clone + Connect,
 {
@@ -182,14 +182,14 @@ where
         client.request(uri)
     });
 
-    Box::new(futures_unordered(futures))
+    futures_unordered(futures)
 }
 
 /// Returns statistics about operations handled by each etcd member the client was initialized
 /// with.
 ///
 /// Fails if JSON decoding fails, which suggests a bug in our schema.
-pub fn store_stats<C>(client: &Client<C>) -> Box<Stream<Item = Response<StoreStats>, Error = Error>>
+pub fn store_stats<C>(client: &Client<C>) -> impl Stream<Item = Response<StoreStats>, Error = Error>
 where
     C: Clone + Connect,
 {
@@ -200,7 +200,7 @@ where
         client.request(uri)
     });
 
-    Box::new(futures_unordered(futures))
+    futures_unordered(futures)
 }
 
 /// Constructs the full URL for an API call.

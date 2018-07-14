@@ -76,7 +76,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.post(uri, body).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -92,9 +92,7 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
+        })
     });
 
     Box::new(result)
@@ -109,13 +107,13 @@ where
 pub fn delete<C>(
     client: &Client<C>,
     id: String,
-) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+) -> impl Future<Item = Response<()>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, &format!("/{}", id));
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -125,7 +123,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.delete(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -141,25 +139,22 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
+
 /// Lists the members of the cluster.
 ///
 /// # Parameters
 ///
 /// * client: A `Client` to use to make the API call.
-pub fn list<C>(client: &Client<C>) -> Box<Future<Item = Response<Vec<Member>>, Error = Vec<Error>>>
+pub fn list<C>(client: &Client<C>) -> impl Future<Item = Response<Vec<Member>>, Error = Vec<Error>>
 where
     C: Clone + Connect,
 {
     let http_client = client.http_client().clone();
 
-    let result = first_ok(client.endpoints().to_vec(), move |member| {
+    first_ok(client.endpoints().to_vec(), move |member| {
         let url = build_url(member, "");
         let uri = Uri::from_str(url.as_str())
             .map_err(Error::from)
@@ -169,7 +164,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -188,12 +183,8 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
-    });
-
-    Box::new(result)
+        })
+    })
 }
 
 /// Updates the peer URLs of a member of the cluster.
@@ -231,7 +222,7 @@ where
 
         let response = uri.and_then(move |uri| http_client.put(uri, body).map_err(Error::from));
 
-        let result = response.and_then(|response| {
+        response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
@@ -247,9 +238,7 @@ where
                     Err(error) => Err(Error::Serialization(error)),
                 }
             })
-        });
-
-        Box::new(result)
+        })
     });
 
     Box::new(result)
