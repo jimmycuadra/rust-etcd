@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use futures::{Future, IntoFuture, Stream};
 use hyper::{StatusCode, Uri};
-use hyper::client::Connect;
+use hyper::client::connect::Connect;
 use serde_json;
 
 use async::first_ok;
@@ -418,7 +418,7 @@ pub fn create_role<C>(
     role: Role,
 ) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -443,10 +443,10 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| match status {
-                StatusCode::Ok | StatusCode::Created => {
+                StatusCode::OK | StatusCode::CREATED => {
                     match serde_json::from_slice::<Role>(body) {
                         Ok(data) => Ok(Response { data, cluster_info }),
                         Err(error) => Err(Error::Serialization(error)),
@@ -468,7 +468,7 @@ pub fn create_user<C>(
     user: NewUser,
 ) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -493,10 +493,10 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| match status {
-                StatusCode::Ok | StatusCode::Created => {
+                StatusCode::OK | StatusCode::CREATED => {
                     match serde_json::from_slice::<User>(body) {
                         Ok(data) => Ok(Response { data, cluster_info }),
                         Err(error) => Err(Error::Serialization(error)),
@@ -518,7 +518,7 @@ pub fn delete_role<C, N>(
     name: N,
 ) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
     N: Into<String>,
 {
     let http_client = client.http_client().clone();
@@ -538,7 +538,7 @@ where
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
-            if status == StatusCode::Ok {
+            if status == StatusCode::OK {
                 Ok(Response {
                     data: (),
                     cluster_info,
@@ -560,7 +560,7 @@ pub fn delete_user<C, N>(
     name: N,
 ) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
     N: Into<String>,
 {
     let http_client = client.http_client().clone();
@@ -580,7 +580,7 @@ where
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
 
-            if status == StatusCode::Ok {
+            if status == StatusCode::OK {
                 Ok(Response {
                     data: (),
                     cluster_info,
@@ -601,7 +601,7 @@ pub fn disable<C>(
     client: &Client<C>,
 ) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -620,11 +620,11 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
 
             match status {
-                StatusCode::Ok => Ok(Response {
+                StatusCode::OK => Ok(Response {
                     data: AuthChange::Changed,
                     cluster_info,
                 }),
-                StatusCode::Conflict => Ok(Response {
+                StatusCode::CONFLICT => Ok(Response {
                     data: AuthChange::Unchanged,
                     cluster_info,
                 }),
@@ -641,7 +641,7 @@ where
 /// Attempts to enable the auth system.
 pub fn enable<C>(client: &Client<C>) -> Box<Future<Item = Response<AuthChange>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -662,11 +662,11 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
 
             match status {
-                StatusCode::Ok => Ok(Response {
+                StatusCode::OK => Ok(Response {
                     data: AuthChange::Changed,
                     cluster_info,
                 }),
-                StatusCode::Conflict => Ok(Response {
+                StatusCode::CONFLICT => Ok(Response {
                     data: AuthChange::Unchanged,
                     cluster_info,
                 }),
@@ -686,7 +686,7 @@ pub fn get_role<C, N>(
     name: N,
 ) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
     N: Into<String>,
 {
     let http_client = client.http_client().clone();
@@ -705,9 +705,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<Role>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -728,7 +728,7 @@ pub fn get_roles<C>(
     client: &Client<C>,
 ) -> Box<Future<Item = Response<Vec<Role>>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -745,9 +745,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<Roles>(body) {
                     Ok(roles) => {
                         let data = roles.roles.unwrap_or_else(|| Vec::with_capacity(0));
@@ -773,7 +773,7 @@ pub fn get_user<C, N>(
     name: N,
 ) -> Box<Future<Item = Response<UserDetail>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
     N: Into<String>,
 {
     let http_client = client.http_client().clone();
@@ -792,9 +792,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<UserDetail>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -815,7 +815,7 @@ pub fn get_users<C>(
     client: &Client<C>,
 ) -> Box<Future<Item = Response<Vec<UserDetail>>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -832,9 +832,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<Users>(body) {
                     Ok(users) => {
                         let data = users.users.unwrap_or_else(|| Vec::with_capacity(0));
@@ -857,7 +857,7 @@ where
 /// Determines whether or not the auth system is enabled.
 pub fn status<C>(client: &Client<C>) -> Box<Future<Item = Response<bool>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -874,9 +874,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<AuthStatus>(body) {
                     Ok(data) => Ok(Response {
                         data: data.enabled,
@@ -904,7 +904,7 @@ pub fn update_role<C>(
     role: RoleUpdate,
 ) -> Box<Future<Item = Response<Role>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -929,9 +929,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<Role>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -953,7 +953,7 @@ pub fn update_user<C>(
     user: UserUpdate,
 ) -> Box<Future<Item = Response<User>, Error = Vec<Error>>>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     let http_client = client.http_client().clone();
 
@@ -978,9 +978,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<User>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),

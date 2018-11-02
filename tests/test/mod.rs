@@ -4,15 +4,16 @@ use std::ops::Deref;
 
 use etcd::{kv, Client};
 use futures::Future;
-use hyper::client::{Client as Hyper, Connect, HttpConnector};
+use hyper::client::{Client as Hyper, HttpConnector};
+use hyper::client::connect::Connect;
 use hyper_tls::HttpsConnector;
-use native_tls::{Certificate, Pkcs12, TlsConnector};
+use native_tls::{Certificate, TlsConnector, Identity};
 use tokio_core::reactor::Core;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
 pub struct TestClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     c: Client<C>,
     core: Core,
@@ -23,10 +24,8 @@ impl TestClient<HttpConnector> {
     /// Creates a new client for a test.
     #[allow(dead_code)]
     pub fn new(core: Core) -> TestClient<HttpConnector> {
-        let handle = core.handle();
-
         TestClient {
-            c: Client::new(&handle, &["http://etcd:2379"], None).unwrap(),
+            c: Client::new(&["http://etcd:2379"], None).unwrap(),
             core: core,
             run_destructor: true,
         }
@@ -35,10 +34,8 @@ impl TestClient<HttpConnector> {
     /// Creates a new client for a test that will not clean up the key space afterwards.
     #[allow(dead_code)]
     pub fn no_destructor(core: Core) -> TestClient<HttpConnector> {
-        let handle = core.handle();
-
         TestClient {
-            c: Client::new(&handle, &["http://etcd:2379"], None).unwrap(),
+            c: Client::new(&["http://etcd:2379"], None).unwrap(),
             core: core,
             run_destructor: false,
         }
@@ -51,10 +48,9 @@ impl TestClient<HttpConnector> {
         let mut ca_cert_buffer = Vec::new();
         ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
 
-        let mut builder = TlsConnector::builder().unwrap();
+        let mut builder = TlsConnector::builder();
         builder
-            .add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap())
-            .unwrap();
+            .add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap());
 
         if use_client_cert {
             let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
@@ -62,19 +58,16 @@ impl TestClient<HttpConnector> {
             pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
 
             builder
-                .identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap())
-                .unwrap();
+                .identity(Identity::from_pkcs12(&pkcs12_buffer, "secret").unwrap());
         }
 
         let tls_connector = builder.build().unwrap();
 
-        let handle = core.handle();
-
-        let mut http_connector = HttpConnector::new(1, &handle);
+        let mut http_connector = HttpConnector::new(1);
         http_connector.enforce_http(false);
         let https_connector = HttpsConnector::from((http_connector, tls_connector));
 
-        let hyper = Hyper::configure().connector(https_connector).build(&handle);
+        let hyper = Hyper::builder().build(https_connector);
 
         TestClient {
             c: Client::custom(hyper, &["https://etcdsecure:2379"], None).unwrap(),
@@ -86,7 +79,7 @@ impl TestClient<HttpConnector> {
 
 impl<C> TestClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     #[allow(dead_code)]
     pub fn run<W, T, E>(&mut self, work: W) -> Result<T, E>
@@ -99,7 +92,7 @@ where
 
 impl<C> Drop for TestClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     fn drop(&mut self) {
         if self.run_destructor {
@@ -111,7 +104,7 @@ where
 
 impl<C> Deref for TestClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     type Target = Client<C>;
 

@@ -3,37 +3,42 @@
 use futures::{Future, IntoFuture, Stream};
 use futures::future::FutureResult;
 use futures::stream::futures_unordered;
-use hyper::{Client as Hyper, Headers, StatusCode, Uri};
-use hyper::client::{Connect, HttpConnector};
+use hyper::{Client as Hyper, StatusCode, Uri};
+use hyper::client::connect::{Connect, HttpConnector};
+use hyper_http::header::{HeaderMap, HeaderValue};
 #[cfg(feature = "tls")]
 use hyper_tls::HttpsConnector;
 use serde::de::DeserializeOwned;
 use serde_json;
-use tokio_core::reactor::Handle;
+// use tokio_core::reactor::Handle;
 
 use error::{ApiError, Error};
 use http::HttpClient;
 use version::VersionInfo;
 
-header! {
-    /// The `X-Etcd-Cluster-Id` header.
-    (XEtcdClusterId, "X-Etcd-Cluster-Id") => [String]
-}
+// header! {
+//     /// The `X-Etcd-Cluster-Id` header.
+//     (XEtcdClusterId, "X-Etcd-Cluster-Id") => [String]
+// }
+const XETCD_CLUSTER_ID: &str = "X-Etcd-Cluster-Id";
 
-header! {
-    /// The `X-Etcd-Index` HTTP header.
-    (XEtcdIndex, "X-Etcd-Index") => [u64]
-}
+// header! {
+//     /// The `X-Etcd-Index` HTTP header.
+//     (XEtcdIndex, "X-Etcd-Index") => [u64]
+// }
+const XETCD_INDEX: &str = "X-Etcd-Index";
 
-header! {
-    /// The `X-Raft-Index` HTTP header.
-    (XRaftIndex, "X-Raft-Index") => [u64]
-}
+// header! {
+//     /// The `X-Raft-Index` HTTP header.
+//     (XRaftIndex, "X-Raft-Index") => [u64]
+// }
+const XRAFT_INDEX: &str = "X-Raft-Index";
 
-header! {
-    /// The `X-Raft-Term` HTTP header.
-    (XRaftTerm, "X-Raft-Term") => [u64]
-}
+// header! {
+//     /// The `X-Raft-Term` HTTP header.
+//     (XRaftTerm, "X-Raft-Term") => [u64]
+// }
+const XRAFT_TERM: &str = "X-Raft-Term";
 
 /// API client for etcd.
 ///
@@ -41,7 +46,7 @@ header! {
 #[derive(Clone, Debug)]
 pub struct Client<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     endpoints: Vec<Uri>,
     http_client: HttpClient<C>,
@@ -77,11 +82,10 @@ impl Client<HttpConnector> {
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn new(
-        handle: &Handle,
         endpoints: &[&str],
         basic_auth: Option<BasicAuth>,
     ) -> Result<Client<HttpConnector>, Error> {
-        let hyper = Hyper::configure().keep_alive(true).build(handle);
+        let hyper = Hyper::builder().keep_alive(true).build_http();
 
         Client::custom(hyper, endpoints, basic_auth)
     }
@@ -102,15 +106,13 @@ impl Client<HttpsConnector<HttpConnector>> {
     ///
     /// Fails if no endpoints are provided or if any of the endpoints is an invalid URL.
     pub fn https(
-        handle: &Handle,
         endpoints: &[&str],
         basic_auth: Option<BasicAuth>,
     ) -> Result<Client<HttpsConnector<HttpConnector>>, Error> {
-        let connector = HttpsConnector::new(4, handle)?;
-        let hyper = Hyper::configure()
-            .connector(connector)
+        let connector = HttpsConnector::new(4)?;
+        let hyper = Hyper::builder()
             .keep_alive(true)
-            .build(handle);
+            .build(connector);
 
         Client::custom(hyper, endpoints, basic_auth)
     }
@@ -118,7 +120,7 @@ impl Client<HttpsConnector<HttpConnector>> {
 
 impl<C> Client<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     /// Constructs a new client using the provided `hyper::Client`.
     ///
@@ -155,7 +157,7 @@ where
     /// use futures::Future;
     /// use hyper::client::HttpConnector;
     /// use hyper_tls::HttpsConnector;
-    /// use native_tls::{Certificate, Pkcs12, TlsConnector};
+    /// use native_tls::{Certificate, TlsConnector, Identity};
     /// use tokio_core::reactor::Core;
     ///
     /// use etcd::{Client, kv};
@@ -169,20 +171,19 @@ where
     ///     let mut pkcs12_buffer = Vec::new();
     ///     pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
     ///
-    ///     let mut builder = TlsConnector::builder().unwrap();
-    ///     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap()).unwrap();
-    ///     builder.identity(Pkcs12::from_der(&pkcs12_buffer, "secret").unwrap()).unwrap();
+    ///     let mut builder = TlsConnector::builder();
+    ///     builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap());
+    ///     builder.identity(Identity::from_pkcs12(&pkcs12_buffer, "secret").unwrap());
     ///
     ///     let tls_connector = builder.build().unwrap();
     ///
     ///     let mut core = Core::new().unwrap();
-    ///     let handle = core.handle();
     ///
-    ///     let mut http_connector = HttpConnector::new(4, &handle);
+    ///     let mut http_connector = HttpConnector::new(4);
     ///     http_connector.enforce_http(false);
     ///     let https_connector = HttpsConnector::from((http_connector, tls_connector));
     ///
-    ///     let hyper = hyper::Client::configure().connector(https_connector).build(&handle);
+    ///     let hyper = hyper::Client::builder().build(https_connector);
     ///
     ///     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
     ///
@@ -242,9 +243,9 @@ where
             response.and_then(|response| {
                 let status = response.status();
                 let cluster_info = ClusterInfo::from(response.headers());
-                let body = response.body().concat2().map_err(Error::from);
+                let body = response.into_body().concat2().map_err(Error::from);
 
-                body.and_then(move |ref body| if status == StatusCode::Ok {
+                body.and_then(move |ref body| if status == StatusCode::OK {
                     match serde_json::from_slice::<Health>(body) {
                         Ok(data) => Ok(Response { data, cluster_info }),
                         Err(error) => Err(Error::Serialization(error)),
@@ -271,9 +272,9 @@ where
             response.and_then(|response| {
                 let status = response.status();
                 let cluster_info = ClusterInfo::from(response.headers());
-                let body = response.body().concat2().map_err(Error::from);
+                let body = response.into_body().concat2().map_err(Error::from);
 
-                body.and_then(move |ref body| if status == StatusCode::Ok {
+                body.and_then(move |ref body| if status == StatusCode::OK {
                     match serde_json::from_slice::<VersionInfo>(body) {
                         Ok(data) => Ok(Response { data, cluster_info }),
                         Err(error) => Err(Error::Serialization(error)),
@@ -303,9 +304,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |body| if status == StatusCode::Ok {
+            body.and_then(move |body| if status == StatusCode::OK {
                 match serde_json::from_slice::<T>(&body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -347,32 +348,55 @@ pub struct ClusterInfo {
     pub raft_term: Option<u64>,
 }
 
-impl<'a> From<&'a Headers> for ClusterInfo {
-    fn from(headers: &'a Headers) -> Self {
-        let cluster_id = match headers.get::<XEtcdClusterId>() {
-            Some(&XEtcdClusterId(ref value)) => Some(value.clone()),
-            None => None,
-        };
-        let etcd_index = match headers.get::<XEtcdIndex>() {
-            Some(&XEtcdIndex(value)) => Some(value),
-            None => None,
-        };
+impl<'a> From<&'a HeaderMap<HeaderValue>> for ClusterInfo {
+    fn from(headers: &'a HeaderMap<HeaderValue>) -> Self {
+        let cluster_id = headers.get(XETCD_CLUSTER_ID)
+                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec()) {
+                                    Ok(s) => Some(s),
+                                    Err(e) => {
+                                        error!("{} header decode error: {:?}", XETCD_CLUSTER_ID, e);
+                                        None
+                                    },
+                                });
 
-        let raft_index = match headers.get::<XRaftIndex>() {
-            Some(&XRaftIndex(value)) => Some(value),
-            None => None,
-        };
+        let etcd_index = headers.get(XETCD_INDEX)
+                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
+                                                            .map_err(|e| format!("{:?}", e))
+                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
+                                    Ok(i) => Some(i),
+                                    Err(e) => {
+                                        error!("{} header decode error: {}", XETCD_INDEX, e);
+                                        None
+                                    },
+                                });
 
-        let raft_term = match headers.get::<XRaftTerm>() {
-            Some(&XRaftTerm(value)) => Some(value),
-            None => None,
-        };
+        let raft_index = headers.get(XRAFT_INDEX)
+                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
+                                                            .map_err(|e| format!("{:?}", e))
+                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
+                                    Ok(i) => Some(i),
+                                    Err(e) => {
+                                        error!("{} header decode error: {}", XRAFT_INDEX, e);
+                                        None
+                                    },
+                                });
+
+        let raft_term = headers.get(XRAFT_TERM)
+                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
+                                                            .map_err(|e| format!("{:?}", e))
+                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
+                                    Ok(i) => Some(i),
+                                    Err(e) => {
+                                        error!("{} header decode error: {}", XRAFT_TERM, e);
+                                        None
+                                    },
+                                });
 
         ClusterInfo {
-            cluster_id,
-            etcd_index,
-            raft_index,
-            raft_term,
+            cluster_id: cluster_id,
+            etcd_index: etcd_index,
+            raft_index: raft_index,
+            raft_term: raft_term,
         }
     }
 }

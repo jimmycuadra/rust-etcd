@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use futures::{Future, IntoFuture, Stream};
 use futures::stream::futures_unordered;
 use hyper::Uri;
-use hyper::client::Connect;
+use hyper::client::connect::Connect;
 
 use client::{Client, Response};
 use error::Error;

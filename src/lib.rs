@@ -40,13 +40,11 @@
 //! fn main() {
 //!     // Create a `Core`, which is the event loop which will drive futures to completion.
 //!     let mut core = Core::new().unwrap();
-//!     // Get a "handle" to the event loop that the client can use to schedule work.
-//!     let handle = core.handle();
 //!
 //!     // Create a client to access a single cluster member. Addresses of multiple cluster
 //!     // members can be provided and the client will try each one in sequence until it
 //!     // receives a successful response.
-//!     let client = Client::new(&handle, &["http://etcd.example.com:2379"], None).unwrap();
+//!     let client = Client::new(&["http://etcd.example.com:2379"], None).unwrap();
 //!
 //!     // Set the key "/foo" to the value "bar" with no expiration.
 //!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
@@ -80,8 +78,9 @@
 #![deny(missing_debug_implementations, missing_docs, warnings)]
 
 extern crate futures;
-#[macro_use]
+// #[macro_use]
 extern crate hyper;
+extern crate http as hyper_http;
 #[cfg(feature = "tls")]
 extern crate hyper_tls;
 #[cfg(feature = "tls")]
@@ -93,6 +92,9 @@ extern crate serde_json;
 extern crate tokio_core;
 extern crate tokio_timer;
 extern crate url;
+extern crate base64;
+#[macro_use]
+extern crate log;
 
 pub use client::{BasicAuth, Client, ClusterInfo, Health, Response};
 pub use error::{ApiError, Error};
