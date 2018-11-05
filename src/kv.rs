@@ -28,7 +28,7 @@ use url::form_urlencoded::Serializer;
 ///
 /// On success, information about the result of the operation and information about the etcd
 /// cluster. On failure, an error for each cluster member that failed.
-pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>;
+pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>> + Send>;
 
 /// Information about the result of a successful key-value API operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -510,7 +510,7 @@ pub fn watch<C>(
     client: &Client<C>,
     key: &str,
     options: WatchOptions,
-) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError>>
+) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError> + Send>
 where
     C: Clone + Connect,
 {
