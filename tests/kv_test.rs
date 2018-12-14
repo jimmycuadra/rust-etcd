@@ -16,7 +16,6 @@ use etcd::{Error, Response};
 use etcd::kv::{
     self,
     Action,
-    FutureKeyValueInfo,
     GetOptions,
     KeyValueInfo,
     WatchError,
@@ -74,10 +73,10 @@ fn create_does_not_replace_existing_key() {
 fn create_in_order() {
     let core = Core::new().unwrap();
     let mut client = TestClient::new(core);
+    let inner_client = client.clone();
 
-    let requests: Vec<FutureKeyValueInfo> = (1..4)
-        .map(|_| kv::create_in_order(&client, "/test/foo", "bar", None))
-        .collect();
+    let requests = (1..4)
+        .map(|_| Box::new(kv::create_in_order(&inner_client, "/test/foo", "bar", None)));
 
     let work = join_all(requests).and_then(|res: Vec<Response<KeyValueInfo>>| {
         let mut kvis: Vec<KeyValueInfo> = res.into_iter().map(|response| response.data).collect();
