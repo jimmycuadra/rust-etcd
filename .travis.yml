@@ -1,6 +1,11 @@
-script: make ci
+language: "rust"
+before_script:
+  - "rustup component add rustfmt"
+script:
+  - "cargo fmt --all -- --check"
+  - "make ci"
 services:
-  - docker
-sudo: required
+  - "docker"
+sudo: "required"
 notifications:
   email: false
