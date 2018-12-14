@@ -2,10 +2,11 @@ language: "rust"
 before_script:
   - "rustup component add rustfmt"
 script:
-  - "cargo fmt --all -- --check"
-  - "make ci"
+  - "cargo fmt --all -- --check && make ci"
 services:
   - "docker"
 sudo: "required"
 notifications:
   email: false
+rust:
+  - "nightly"
