@@ -14,7 +14,7 @@ use etcd::auth::{self, AuthChange, NewUser, Role, RoleUpdate, UserUpdate};
 #[test]
 fn auth() {
     let mut core = Core::new().unwrap();
-    let client = Client::new(&core.handle(), &["http://etcd:2379"], None).unwrap();
+    let client = Client::new(&["http://etcd:2379"], None).unwrap();
 
     let basic_auth = BasicAuth {
         username: "root".into(),
@@ -22,7 +22,7 @@ fn auth() {
     };
 
     let authed_client =
-        Client::new(&core.handle(), &["http://etcd:2379"], Some(basic_auth)).unwrap();
+        Client::new(&["http://etcd:2379"], Some(basic_auth)).unwrap();
 
     let root_user = NewUser::new("root", "secret");
 

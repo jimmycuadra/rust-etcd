@@ -11,9 +11,9 @@ use std::time::Duration;
 use futures::future::{Future, IntoFuture};
 use futures::stream::Stream;
 use hyper::{StatusCode, Uri};
-use hyper::client::Connect;
+use hyper::client::connect::Connect;
 use serde_json;
-use tokio_timer::Timer;
+use tokio_timer::Timeout;
 use url::Url;
 
 pub use error::WatchError;
@@ -28,7 +28,7 @@ use url::form_urlencoded::Serializer;
 ///
 /// On success, information about the result of the operation and information about the etcd
 /// cluster. On failure, an error for each cluster member that failed.
-pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>;
+pub type FutureKeyValueInfo = Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>> + Send>;
 
 /// Information about the result of a successful key-value API operation.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -510,7 +510,7 @@ pub fn watch<C>(
     client: &Client<C>,
     key: &str,
     options: WatchOptions,
-) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError>>
+) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError> + Send>
 where
     C: Clone + Connect,
 {
@@ -526,9 +526,11 @@ where
     ).map_err(|errors| WatchError::Other(errors));
 
     if let Some(duration) = options.timeout {
-        let timer = Timer::default();
-
-        Box::new(timer.timeout(work, duration))
+        Box::new(Timeout::new(work, duration)
+                        .map_err(|e| match e.into_inner() {
+                            Some(we) => we,
+                            None => WatchError::Timeout,
+                        }))
     } else {
         Box::new(work)
     }
@@ -594,9 +596,9 @@ where
         let result = response.and_then(move |response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -657,9 +659,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<KeyValueInfo>(body) {
                     Ok(data) => Ok(Response { data, cluster_info }),
                     Err(error) => Err(Error::Serialization(error)),
@@ -740,10 +742,10 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
             body.and_then(move |ref body| match status {
-                StatusCode::Created | StatusCode::Ok => {
+                StatusCode::CREATED | StatusCode::OK => {
                     match serde_json::from_slice::<KeyValueInfo>(body) {
                         Ok(data) => Ok(Response { data, cluster_info }),
                         Err(error) => Err(Error::Serialization(error)),

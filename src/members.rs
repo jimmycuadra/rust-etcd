@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use futures::{Future, IntoFuture, Stream};
 use hyper::{StatusCode, Uri};
-use hyper::client::Connect;
+use hyper::client::connect::Connect;
 use serde_json;
 
 use async::first_ok;
@@ -79,9 +79,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Created {
+            body.and_then(move |ref body| if status == StatusCode::CREATED {
                 Ok(Response {
                     data: (),
                     cluster_info,
@@ -128,9 +128,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::NoContent {
+            body.and_then(move |ref body| if status == StatusCode::NO_CONTENT {
                 Ok(Response {
                     data: (),
                     cluster_info,
@@ -172,9 +172,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::Ok {
+            body.and_then(move |ref body| if status == StatusCode::OK {
                 match serde_json::from_slice::<ListResponse>(body) {
                     Ok(data) => Ok(Response {
                         data: data.members,
@@ -234,9 +234,9 @@ where
         let result = response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
-            let body = response.body().concat2().map_err(Error::from);
+            let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::NoContent {
+            body.and_then(move |ref body| if status == StatusCode::NO_CONTENT {
                 Ok(Response {
                     data: (),
                     cluster_info,

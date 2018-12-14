@@ -5,11 +5,11 @@ use std::error::Error as StdError;
 use std::fmt::{Display, Error as FmtError, Formatter};
 
 use hyper::{Error as HttpError, StatusCode};
-use hyper::error::UriError;
+use hyper_http::uri::InvalidUri;
 #[cfg(feature = "tls")]
 use native_tls::Error as TlsError;
 use serde_json::Error as SerializationError;
-use tokio_timer::TimeoutError as TokioTimeoutError;
+use tokio_timer::timeout::Error as TokioTimeoutError;
 use url::ParseError as UrlError;
 
 /// An error returned by an etcd API endpoint.
@@ -52,7 +52,7 @@ pub enum Error {
     /// compare-and-swap operation.
     InvalidConditions,
     /// An error returned when an etcd cluster member's endpoint is not a valid URI.
-    InvalidUri(UriError),
+    InvalidUri(InvalidUri),
     /// An error returned when the URL for a specific API endpoint cannot be generated.
     InvalidUrl(UrlError),
     /// An error returned when attempting to create a client without at least one member endpoint.
@@ -129,8 +129,8 @@ impl From<SerializationError> for Error {
     }
 }
 
-impl From<UriError> for Error {
-    fn from(error: UriError) -> Error {
+impl From<InvalidUri> for Error {
+    fn from(error: InvalidUri) -> Error {
         Error::InvalidUri(error)
     }
 }

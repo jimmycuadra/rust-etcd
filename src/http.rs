@@ -1,13 +1,16 @@
-use hyper::{Client as Hyper, Method, Request, Uri};
-use hyper::client::{Connect, FutureResponse};
-use hyper::header::{Authorization, Basic, ContentType};
+use hyper::{Client as Hyper, Method, Request, Uri, Body};
+use hyper::client::ResponseFuture;
+use hyper::client::connect::Connect;
+use hyper_http::header::{AUTHORIZATION, CONTENT_TYPE};
+use hyper_http::request::Builder;
+use base64::encode;
 
 use client::BasicAuth;
 
 #[derive(Clone, Debug)]
 pub struct HttpClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     basic_auth: Option<BasicAuth>,
     hyper: Hyper<C>,
@@ -15,7 +18,7 @@ where
 
 impl<C> HttpClient<C>
 where
-    C: Clone + Connect,
+    C: Clone + Connect + Sync + 'static,
 {
     /// Constructs a new `HttpClient`.
     pub fn new(hyper: Hyper<C>, basic_auth: Option<BasicAuth>) -> Self {
@@ -23,58 +26,55 @@ where
     }
 
     /// Makes a DELETE request to etcd.
-    pub fn delete(&self, uri: Uri) -> FutureResponse {
-        self.request(Method::Delete, uri)
+    pub fn delete(&self, uri: Uri) -> ResponseFuture {
+        self.request(Method::DELETE, uri)
     }
 
     /// Makes a GET request to etcd.
-    pub fn get(&self, uri: Uri) -> FutureResponse {
-        self.request(Method::Get, uri)
+    pub fn get(&self, uri: Uri) -> ResponseFuture {
+        self.request(Method::GET, uri)
     }
 
     /// Makes a POST request to etcd.
-    pub fn post(&self, uri: Uri, body: String) -> FutureResponse {
-        self.request_with_body(Method::Post, uri, body)
+    pub fn post(&self, uri: Uri, body: String) -> ResponseFuture {
+        self.request_with_body(Method::POST, uri, body)
     }
 
     /// Makes a PUT request to etcd.
-    pub fn put(&self, uri: Uri, body: String) -> FutureResponse {
-        self.request_with_body(Method::Put, uri, body)
+    pub fn put(&self, uri: Uri, body: String) -> ResponseFuture {
+        self.request_with_body(Method::PUT, uri, body)
     }
 
     // private
 
     /// Adds the Authorization HTTP header to a request if a credentials were supplied.
-    fn add_auth_header<'a>(&self, request: &mut Request) {
+    fn add_auth_header<'a>(&self, request: &mut Builder) {
         if let Some(ref basic_auth) = self.basic_auth {
-            let authorization = Authorization(Basic {
-                username: basic_auth.username.clone(),
-                password: Some(basic_auth.password.clone()),
-            });
+            let auth = format!("{}:{}", basic_auth.username, basic_auth.password);
+            let header_value = format!("Basic {}", encode(&auth));
 
-            request.headers_mut().set(authorization);
+            request.header(AUTHORIZATION, header_value);
         }
     }
 
     /// Makes a request to etcd.
-    fn request(&self, method: Method, uri: Uri) -> FutureResponse {
-        let mut request = Request::new(method, uri);
+    fn request(&self, method: Method, uri: Uri) -> ResponseFuture {
+        let mut request = Request::builder();
+        request.method(method).uri(uri);
 
         self.add_auth_header(&mut request);
 
-        self.hyper.request(request)
+        self.hyper.request(request.body(Body::empty()).unwrap())
     }
 
     /// Makes a request with an HTTP body to etcd.
-    fn request_with_body(&self, method: Method, uri: Uri, body: String) -> FutureResponse {
-        let content_type = ContentType::form_url_encoded();
-
-        let mut request = Request::new(method, uri);
-        request.headers_mut().set(content_type);
-        request.set_body(body);
+    fn request_with_body(&self, method: Method, uri: Uri, body: String) -> ResponseFuture {
+        let mut request = Request::builder();
+        request.method(method).uri(uri);
+        request.header(CONTENT_TYPE, "application/x-www-form-urlencoded");
 
         self.add_auth_header(&mut request);
 
-        self.hyper.request(request)
+        self.hyper.request(request.body(Body::from(body)).unwrap())
     }
 }
