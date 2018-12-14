@@ -5,8 +5,8 @@
 use std::str::FromStr;
 
 use futures::{Future, IntoFuture, Stream};
-use hyper::{StatusCode, Uri};
 use hyper::client::connect::Connect;
+use hyper::{StatusCode, Uri};
 use serde_json;
 
 use async::first_ok;
@@ -436,9 +436,8 @@ where
 
         let http_client = http_client.clone();
 
-        let response = params.and_then(move |(uri, body)| {
-            http_client.put(uri, body).map_err(Error::from)
-        });
+        let response =
+            params.and_then(move |(uri, body)| http_client.put(uri, body).map_err(Error::from));
 
         response.and_then(|response| {
             let status = response.status();
@@ -482,9 +481,8 @@ where
 
         let http_client = http_client.clone();
 
-        let response = params.and_then(move |(uri, body)| {
-            http_client.put(uri, body).map_err(Error::from)
-        });
+        let response =
+            params.and_then(move |(uri, body)| http_client.put(uri, body).map_err(Error::from));
 
         response.and_then(|response| {
             let status = response.status();
@@ -633,9 +631,8 @@ where
 
         let http_client = http_client.clone();
 
-        let response = uri.and_then(move |uri| {
-            http_client.put(uri, "".to_owned()).map_err(Error::from)
-        });
+        let response =
+            uri.and_then(move |uri| http_client.put(uri, "".to_owned()).map_err(Error::from));
 
         response.and_then(|response| {
             let status = response.status();
@@ -683,13 +680,15 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<Role>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<Role>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })
@@ -719,17 +718,19 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<Roles>(body) {
-                    Ok(roles) => {
-                        let data = roles.roles.unwrap_or_else(|| Vec::with_capacity(0));
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<Roles>(body) {
+                        Ok(roles) => {
+                            let data = roles.roles.unwrap_or_else(|| Vec::with_capacity(0));
 
-                        Ok(Response { data, cluster_info })
+                            Ok(Response { data, cluster_info })
+                        }
+                        Err(error) => Err(Error::Serialization(error)),
                     }
-                    Err(error) => Err(Error::Serialization(error)),
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })
@@ -762,13 +763,15 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<UserDetail>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<UserDetail>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })
@@ -798,17 +801,19 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<Users>(body) {
-                    Ok(users) => {
-                        let data = users.users.unwrap_or_else(|| Vec::with_capacity(0));
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<Users>(body) {
+                        Ok(users) => {
+                            let data = users.users.unwrap_or_else(|| Vec::with_capacity(0));
 
-                        Ok(Response { data, cluster_info })
+                            Ok(Response { data, cluster_info })
+                        }
+                        Err(error) => Err(Error::Serialization(error)),
                     }
-                    Err(error) => Err(Error::Serialization(error)),
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })
@@ -836,18 +841,20 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<AuthStatus>(body) {
-                    Ok(data) => Ok(Response {
-                        data: data.enabled,
-                        cluster_info,
-                    }),
-                    Err(error) => Err(Error::Serialization(error)),
-                }
-            } else {
-                match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<AuthStatus>(body) {
+                        Ok(data) => Ok(Response {
+                            data: data.enabled,
+                            cluster_info,
+                        }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -878,22 +885,23 @@ where
 
         let http_client = http_client.clone();
 
-        let response = params.and_then(move |(uri, body)| {
-            http_client.put(uri, body).map_err(Error::from)
-        });
+        let response =
+            params.and_then(move |(uri, body)| http_client.put(uri, body).map_err(Error::from));
 
         response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<Role>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<Role>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })
@@ -923,22 +931,23 @@ where
 
         let http_client = http_client.clone();
 
-        let response = params.and_then(move |(uri, body)| {
-            http_client.put(uri, body).map_err(Error::from)
-        });
+        let response =
+            params.and_then(move |(uri, body)| http_client.put(uri, body).map_err(Error::from));
 
         response.and_then(|response| {
             let status = response.status();
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<User>(body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<User>(body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    Err(Error::UnexpectedStatus(status))
                 }
-            } else {
-                Err(Error::UnexpectedStatus(status))
             })
         })
     })

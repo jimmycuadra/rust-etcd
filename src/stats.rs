@@ -2,10 +2,10 @@
 
 use std::collections::HashMap;
 
-use futures::{Future, IntoFuture, Stream};
 use futures::stream::futures_unordered;
-use hyper::Uri;
+use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::Connect;
+use hyper::Uri;
 
 use client::{Client, Response};
 use error::Error;

@@ -5,8 +5,8 @@
 use std::str::FromStr;
 
 use futures::{Future, IntoFuture, Stream};
-use hyper::{StatusCode, Uri};
 use hyper::client::connect::Connect;
+use hyper::{StatusCode, Uri};
 use serde_json;
 
 use async::first_ok;
@@ -81,15 +81,17 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::CREATED {
-                Ok(Response {
-                    data: (),
-                    cluster_info,
-                })
-            } else {
-                match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::CREATED {
+                    Ok(Response {
+                        data: (),
+                        cluster_info,
+                    })
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -128,15 +130,17 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::NO_CONTENT {
-                Ok(Response {
-                    data: (),
-                    cluster_info,
-                })
-            } else {
-                match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::NO_CONTENT {
+                    Ok(Response {
+                        data: (),
+                        cluster_info,
+                    })
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -169,18 +173,20 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::OK {
-                match serde_json::from_slice::<ListResponse>(body) {
-                    Ok(data) => Ok(Response {
-                        data: data.members,
-                        cluster_info,
-                    }),
-                    Err(error) => Err(Error::Serialization(error)),
-                }
-            } else {
-                match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<ListResponse>(body) {
+                        Ok(data) => Ok(Response {
+                            data: data.members,
+                            cluster_info,
+                        }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -227,15 +233,17 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |ref body| if status == StatusCode::NO_CONTENT {
-                Ok(Response {
-                    data: (),
-                    cluster_info,
-                })
-            } else {
-                match serde_json::from_slice::<ApiError>(body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |ref body| {
+                if status == StatusCode::NO_CONTENT {
+                    Ok(Response {
+                        data: (),
+                        cluster_info,
+                    })
+                } else {
+                    match serde_json::from_slice::<ApiError>(body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -243,7 +251,6 @@ where
 
     Box::new(result)
 }
-
 
 /// Constructs the full URL for an API call.
 fn build_url(endpoint: &Uri, path: &str) -> String {

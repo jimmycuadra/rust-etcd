@@ -78,8 +78,8 @@
 
 extern crate futures;
 // #[macro_use]
-extern crate hyper;
 extern crate http as hyper_http;
+extern crate hyper;
 #[cfg(feature = "tls")]
 extern crate hyper_tls;
 #[cfg(feature = "tls")]
@@ -87,11 +87,11 @@ extern crate native_tls;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate base64;
 extern crate serde_json;
 extern crate tokio_core;
 extern crate tokio_timer;
 extern crate url;
-extern crate base64;
 #[macro_use]
 extern crate log;
 

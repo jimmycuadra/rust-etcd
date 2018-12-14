@@ -1,9 +1,9 @@
-use hyper::{Client as Hyper, Method, Request, Uri, Body};
-use hyper::client::ResponseFuture;
+use base64::encode;
 use hyper::client::connect::Connect;
+use hyper::client::ResponseFuture;
+use hyper::{Body, Client as Hyper, Method, Request, Uri};
 use hyper_http::header::{AUTHORIZATION, CONTENT_TYPE};
 use hyper_http::request::Builder;
-use base64::encode;
 
 use client::BasicAuth;
 

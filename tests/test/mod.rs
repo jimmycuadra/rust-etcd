@@ -4,10 +4,10 @@ use std::ops::Deref;
 
 use etcd::{kv, Client};
 use futures::Future;
-use hyper::client::{Client as Hyper, HttpConnector};
 use hyper::client::connect::Connect;
+use hyper::client::{Client as Hyper, HttpConnector};
 use hyper_tls::HttpsConnector;
-use native_tls::{Certificate, TlsConnector, Identity};
+use native_tls::{Certificate, Identity, TlsConnector};
 use tokio_core::reactor::Core;
 
 /// Wrapper around Client that automatically cleans up etcd after each test.
@@ -49,16 +49,14 @@ impl TestClient<HttpConnector> {
         ca_cert_file.read_to_end(&mut ca_cert_buffer).unwrap();
 
         let mut builder = TlsConnector::builder();
-        builder
-            .add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap());
+        builder.add_root_certificate(Certificate::from_der(&ca_cert_buffer).unwrap());
 
         if use_client_cert {
             let mut pkcs12_file = File::open("/source/tests/ssl/client.p12").unwrap();
             let mut pkcs12_buffer = Vec::new();
             pkcs12_file.read_to_end(&mut pkcs12_buffer).unwrap();
 
-            builder
-                .identity(Identity::from_pkcs12(&pkcs12_buffer, "secret").unwrap());
+            builder.identity(Identity::from_pkcs12(&pkcs12_buffer, "secret").unwrap());
         }
 
         let tls_connector = builder.build().unwrap();

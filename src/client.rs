@@ -1,9 +1,9 @@
 //! Contains the etcd client. All API calls are made via the client.
 
-use futures::{Future, IntoFuture, Stream};
 use futures::stream::futures_unordered;
-use hyper::{Client as Hyper, StatusCode, Uri};
+use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::{Connect, HttpConnector};
+use hyper::{Client as Hyper, StatusCode, Uri};
 use hyper_http::header::{HeaderMap, HeaderValue};
 #[cfg(feature = "tls")]
 use hyper_tls::HttpsConnector;
@@ -109,9 +109,7 @@ impl Client<HttpsConnector<HttpConnector>> {
         basic_auth: Option<BasicAuth>,
     ) -> Result<Client<HttpsConnector<HttpConnector>>, Error> {
         let connector = HttpsConnector::new(4)?;
-        let hyper = Hyper::builder()
-            .keep_alive(true)
-            .build(connector);
+        let hyper = Hyper::builder().keep_alive(true).build(connector);
 
         Client::custom(hyper, endpoints, basic_auth)
     }
@@ -244,15 +242,17 @@ where
                 let cluster_info = ClusterInfo::from(response.headers());
                 let body = response.into_body().concat2().map_err(Error::from);
 
-                body.and_then(move |ref body| if status == StatusCode::OK {
-                    match serde_json::from_slice::<Health>(body) {
-                        Ok(data) => Ok(Response { data, cluster_info }),
-                        Err(error) => Err(Error::Serialization(error)),
-                    }
-                } else {
-                    match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => Err(Error::Api(error)),
-                        Err(error) => Err(Error::Serialization(error)),
+                body.and_then(move |ref body| {
+                    if status == StatusCode::OK {
+                        match serde_json::from_slice::<Health>(body) {
+                            Ok(data) => Ok(Response { data, cluster_info }),
+                            Err(error) => Err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => Err(Error::Api(error)),
+                            Err(error) => Err(Error::Serialization(error)),
+                        }
                     }
                 })
             })
@@ -273,15 +273,17 @@ where
                 let cluster_info = ClusterInfo::from(response.headers());
                 let body = response.into_body().concat2().map_err(Error::from);
 
-                body.and_then(move |ref body| if status == StatusCode::OK {
-                    match serde_json::from_slice::<VersionInfo>(body) {
-                        Ok(data) => Ok(Response { data, cluster_info }),
-                        Err(error) => Err(Error::Serialization(error)),
-                    }
-                } else {
-                    match serde_json::from_slice::<ApiError>(body) {
-                        Ok(error) => Err(Error::Api(error)),
-                        Err(error) => Err(Error::Serialization(error)),
+                body.and_then(move |ref body| {
+                    if status == StatusCode::OK {
+                        match serde_json::from_slice::<VersionInfo>(body) {
+                            Ok(data) => Ok(Response { data, cluster_info }),
+                            Err(error) => Err(Error::Serialization(error)),
+                        }
+                    } else {
+                        match serde_json::from_slice::<ApiError>(body) {
+                            Ok(error) => Err(Error::Api(error)),
+                            Err(error) => Err(Error::Serialization(error)),
+                        }
                     }
                 })
             })
@@ -291,10 +293,7 @@ where
     }
 
     /// Lets other internal code make basic HTTP requests.
-    pub(crate) fn request<U, T>(
-        &self,
-        uri: U,
-    ) -> impl Future<Item = Response<T>, Error = Error>
+    pub(crate) fn request<U, T>(&self, uri: U) -> impl Future<Item = Response<T>, Error = Error>
     where
         U: Future<Item = Uri, Error = Error>,
         T: DeserializeOwned + 'static,
@@ -306,15 +305,17 @@ where
             let cluster_info = ClusterInfo::from(response.headers());
             let body = response.into_body().concat2().map_err(Error::from);
 
-            body.and_then(move |body| if status == StatusCode::OK {
-                match serde_json::from_slice::<T>(&body) {
-                    Ok(data) => Ok(Response { data, cluster_info }),
-                    Err(error) => Err(Error::Serialization(error)),
-                }
-            } else {
-                match serde_json::from_slice::<ApiError>(&body) {
-                    Ok(error) => Err(Error::Api(error)),
-                    Err(error) => Err(Error::Serialization(error)),
+            body.and_then(move |body| {
+                if status == StatusCode::OK {
+                    match serde_json::from_slice::<T>(&body) {
+                        Ok(data) => Ok(Response { data, cluster_info }),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
+                } else {
+                    match serde_json::from_slice::<ApiError>(&body) {
+                        Ok(error) => Err(Error::Api(error)),
+                        Err(error) => Err(Error::Serialization(error)),
+                    }
                 }
             })
         })
@@ -348,47 +349,54 @@ pub struct ClusterInfo {
 
 impl<'a> From<&'a HeaderMap<HeaderValue>> for ClusterInfo {
     fn from(headers: &'a HeaderMap<HeaderValue>) -> Self {
-        let cluster_id = headers.get(XETCD_CLUSTER_ID)
-                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec()) {
-                                    Ok(s) => Some(s),
-                                    Err(e) => {
-                                        error!("{} header decode error: {:?}", XETCD_CLUSTER_ID, e);
-                                        None
-                                    },
-                                });
+        let cluster_id = headers.get(XETCD_CLUSTER_ID).and_then(|v| {
+            match String::from_utf8(v.as_bytes().to_vec()) {
+                Ok(s) => Some(s),
+                Err(e) => {
+                    error!("{} header decode error: {:?}", XETCD_CLUSTER_ID, e);
+                    None
+                }
+            }
+        });
 
-        let etcd_index = headers.get(XETCD_INDEX)
-                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
-                                                            .map_err(|e| format!("{:?}", e))
-                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
-                                    Ok(i) => Some(i),
-                                    Err(e) => {
-                                        error!("{} header decode error: {}", XETCD_INDEX, e);
-                                        None
-                                    },
-                                });
+        let etcd_index = headers.get(XETCD_INDEX).and_then(|v| {
+            match String::from_utf8(v.as_bytes().to_vec())
+                .map_err(|e| format!("{:?}", e))
+                .and_then(|s| s.parse().map_err(|e| format!("{:?}", e)))
+            {
+                Ok(i) => Some(i),
+                Err(e) => {
+                    error!("{} header decode error: {}", XETCD_INDEX, e);
+                    None
+                }
+            }
+        });
 
-        let raft_index = headers.get(XRAFT_INDEX)
-                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
-                                                            .map_err(|e| format!("{:?}", e))
-                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
-                                    Ok(i) => Some(i),
-                                    Err(e) => {
-                                        error!("{} header decode error: {}", XRAFT_INDEX, e);
-                                        None
-                                    },
-                                });
+        let raft_index = headers.get(XRAFT_INDEX).and_then(|v| {
+            match String::from_utf8(v.as_bytes().to_vec())
+                .map_err(|e| format!("{:?}", e))
+                .and_then(|s| s.parse().map_err(|e| format!("{:?}", e)))
+            {
+                Ok(i) => Some(i),
+                Err(e) => {
+                    error!("{} header decode error: {}", XRAFT_INDEX, e);
+                    None
+                }
+            }
+        });
 
-        let raft_term = headers.get(XRAFT_TERM)
-                                .and_then(|v| match String::from_utf8(v.as_bytes().to_vec())
-                                                            .map_err(|e| format!("{:?}", e))
-                                                            .and_then(|s| s.parse().map_err(|e| format!("{:?}", e))) {
-                                    Ok(i) => Some(i),
-                                    Err(e) => {
-                                        error!("{} header decode error: {}", XRAFT_TERM, e);
-                                        None
-                                    },
-                                });
+        let raft_term = headers.get(XRAFT_TERM).and_then(|v| {
+            match String::from_utf8(v.as_bytes().to_vec())
+                .map_err(|e| format!("{:?}", e))
+                .and_then(|s| s.parse().map_err(|e| format!("{:?}", e)))
+            {
+                Ok(i) => Some(i),
+                Err(e) => {
+                    error!("{} header decode error: {}", XRAFT_TERM, e);
+                    None
+                }
+            }
+        });
 
         ClusterInfo {
             cluster_id: cluster_id,

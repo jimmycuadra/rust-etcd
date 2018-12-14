@@ -9,18 +9,11 @@ extern crate tokio_timer;
 use std::thread::spawn;
 use std::time::Duration;
 
+use etcd::kv::{self, Action, GetOptions, KeyValueInfo, WatchError, WatchOptions};
+use etcd::{Error, Response};
 use futures::future::{join_all, Future};
 use futures::sync::oneshot::channel;
 use tokio_core::reactor::Core;
-use etcd::{Error, Response};
-use etcd::kv::{
-    self,
-    Action,
-    GetOptions,
-    KeyValueInfo,
-    WatchError,
-    WatchOptions,
-};
 
 use test::TestClient;
 
@@ -54,12 +47,16 @@ fn create_does_not_replace_existing_key() {
         kv::create(&inner_client, "/test/foo", "bar", Some(60)).then(|result| {
             match result {
                 Ok(_) => panic!("expected EtcdError due to pre-existing key"),
-                Err(errors) => for error in errors {
-                    match error {
-                        Error::Api(ref error) => assert_eq!(error.message, "Key already exists"),
-                        _ => panic!("expected EtcdError due to pre-existing key"),
+                Err(errors) => {
+                    for error in errors {
+                        match error {
+                            Error::Api(ref error) => {
+                                assert_eq!(error.message, "Key already exists")
+                            }
+                            _ => panic!("expected EtcdError due to pre-existing key"),
+                        }
                     }
-                },
+                }
             }
 
             Ok(())
@@ -75,8 +72,8 @@ fn create_in_order() {
     let mut client = TestClient::new(core);
     let inner_client = client.clone();
 
-    let requests = (1..4)
-        .map(|_| Box::new(kv::create_in_order(&inner_client, "/test/foo", "bar", None)));
+    let requests =
+        (1..4).map(|_| Box::new(kv::create_in_order(&inner_client, "/test/foo", "bar", None)));
 
     let work = join_all(requests).and_then(|res: Vec<Response<KeyValueInfo>>| {
         let mut kvis: Vec<KeyValueInfo> = res.into_iter().map(|response| response.data).collect();
@@ -174,14 +171,16 @@ fn compare_and_delete_requires_conditions() {
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
         kv::compare_and_delete(&inner_client, "/test/foo", None, None).then(|result| match result {
             Ok(_) => panic!("expected Error::InvalidConditions"),
-            Err(errors) => if errors.len() == 1 {
-                match errors[0] {
-                    Error::InvalidConditions => Ok(()),
-                    _ => panic!("expected Error::InvalidConditions"),
+            Err(errors) => {
+                if errors.len() == 1 {
+                    match errors[0] {
+                        Error::InvalidConditions => Ok(()),
+                        _ => panic!("expected Error::InvalidConditions"),
+                    }
+                } else {
+                    panic!("expected a single error: Error::InvalidConditions");
                 }
-            } else {
-                panic!("expected a single error: Error::InvalidConditions");
-            },
+            }
         })
     });
 
@@ -204,7 +203,8 @@ fn test_compare_and_swap() {
             Some(100),
             Some("bar"),
             index,
-        ).and_then(|res| {
+        )
+        .and_then(|res| {
             assert_eq!(res.data.action, Action::CompareAndSwap);
 
             Ok(())
@@ -259,19 +259,21 @@ fn compare_and_swap_requires_conditions() {
     let inner_client = client.clone();
 
     let work = kv::create(&client, "/test/foo", "bar", None).and_then(|_| {
-        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, None).then(
-            |result| match result {
+        kv::compare_and_swap(&inner_client, "/test/foo", "baz", None, None, None).then(|result| {
+            match result {
                 Ok(_) => panic!("expected Error::InvalidConditions"),
-                Err(errors) => if errors.len() == 1 {
-                    match errors[0] {
-                        Error::InvalidConditions => Ok(()),
-                        _ => panic!("expected Error::InvalidConditions"),
+                Err(errors) => {
+                    if errors.len() == 1 {
+                        match errors[0] {
+                            Error::InvalidConditions => Ok(()),
+                            _ => panic!("expected Error::InvalidConditions"),
+                        }
+                    } else {
+                        panic!("expected a single error: Error::InvalidConditions");
                     }
-                } else {
-                    panic!("expected a single error: Error::InvalidConditions");
-                },
-            },
-        )
+                }
+            }
+        })
     });
 
     assert!(client.run(work).is_ok());
@@ -308,7 +310,8 @@ fn get_non_recursive() {
     let work = join_all(vec![
         kv::set(&client, "/test/dir/baz", "blah", None),
         kv::set(&client, "/test/foo", "bar", None),
-    ]).and_then(|_| {
+    ])
+    .and_then(|_| {
         kv::get(
             &inner_client,
             "/test",
@@ -316,7 +319,8 @@ fn get_non_recursive() {
                 sort: true,
                 ..Default::default()
             },
-        ).and_then(|res| {
+        )
+        .and_then(|res| {
             let node = res.data.node;
 
             assert_eq!(node.dir.unwrap(), true);
@@ -350,7 +354,8 @@ fn get_recursive() {
                 sort: true,
                 ..Default::default()
             },
-        ).and_then(|res| {
+        )
+        .and_then(|res| {
             let nodes = res.data.node.nodes.unwrap();
 
             assert_eq!(
@@ -672,7 +677,8 @@ fn watch_index() {
                     index: index,
                     ..Default::default()
                 },
-            ).and_then(move |res| {
+            )
+            .and_then(move |res| {
                 let node = res.data.node;
 
                 assert_eq!(node.modified_index, index);
@@ -711,7 +717,8 @@ fn watch_recursive() {
             recursive: true,
             ..Default::default()
         },
-    ).and_then(|res| {
+    )
+    .and_then(|res| {
         let node = res.data.node;
 
         assert_eq!(node.key.unwrap(), "/test/foo/bar");

@@ -6,10 +6,10 @@ extern crate native_tls;
 extern crate tokio_core;
 extern crate tokio_timer;
 
+use etcd::auth::{self, AuthChange, NewUser, Role, RoleUpdate, UserUpdate};
+use etcd::{BasicAuth, Client};
 use futures::future::Future;
 use tokio_core::reactor::Core;
-use etcd::{BasicAuth, Client};
-use etcd::auth::{self, AuthChange, NewUser, Role, RoleUpdate, UserUpdate};
 
 #[test]
 fn auth() {
@@ -21,8 +21,7 @@ fn auth() {
         password: "secret".into(),
     };
 
-    let authed_client =
-        Client::new(&["http://etcd:2379"], Some(basic_auth)).unwrap();
+    let authed_client = Client::new(&["http://etcd:2379"], Some(basic_auth)).unwrap();
 
     let root_user = NewUser::new("root", "secret");
 
