@@ -8,7 +8,7 @@
 //! both to be used alongside. Where possible, futures are returned using "impl Trait" instead of
 //! boxing.
 //!
-//! The client is tested against etcd 2.3.7.
+//! The client is tested against etcd 2.3.8.
 //!
 //! # Usage
 //!

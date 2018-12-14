@@ -35,7 +35,7 @@ fn versions() {
     let work = client.versions().collect().and_then(|responses| {
         for response in responses {
             assert_eq!(response.data.cluster_version, "2.3.0");
-            assert_eq!(response.data.server_version, "2.3.7");
+            assert_eq!(response.data.server_version, "2.3.8");
         }
 
         Ok(())
