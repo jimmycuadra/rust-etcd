@@ -2,10 +2,10 @@ use base64::encode;
 use hyper::client::connect::Connect;
 use hyper::client::ResponseFuture;
 use hyper::{Body, Client as Hyper, Method, Request, Uri};
-use hyper_http::header::{AUTHORIZATION, CONTENT_TYPE};
-use hyper_http::request::Builder;
+use crate::hyper_http::header::{AUTHORIZATION, CONTENT_TYPE};
+use crate::hyper_http::request::Builder;
 
-use client::BasicAuth;
+use crate::client::BasicAuth;
 
 #[derive(Clone, Debug)]
 pub struct HttpClient<C>

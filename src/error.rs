@@ -5,7 +5,7 @@ use std::error::Error as StdError;
 use std::fmt::{Display, Error as FmtError, Formatter};
 
 use hyper::{Error as HttpError, StatusCode};
-use hyper_http::uri::InvalidUri;
+use crate::hyper_http::uri::InvalidUri;
 #[cfg(feature = "tls")]
 use native_tls::Error as TlsError;
 use serde_json::Error as SerializationError;

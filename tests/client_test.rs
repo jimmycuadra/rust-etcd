@@ -8,7 +8,7 @@ extern crate tokio_core;
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 
-use test::TestClient;
+use crate::test::TestClient;
 
 mod test;
 

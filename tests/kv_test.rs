@@ -15,7 +15,7 @@ use futures::future::{join_all, Future};
 use futures::sync::oneshot::channel;
 use tokio_core::reactor::Core;
 
-use test::TestClient;
+use crate::test::TestClient;
 
 mod test;
 

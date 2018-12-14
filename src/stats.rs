@@ -7,8 +7,8 @@ use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::Connect;
 use hyper::Uri;
 
-use client::{Client, Response};
-use error::Error;
+use crate::client::{Client, Response};
+use crate::error::Error;
 
 /// Statistics about an etcd cluster leader.
 #[derive(Clone, Debug, Deserialize)]

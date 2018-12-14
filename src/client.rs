@@ -4,16 +4,16 @@ use futures::stream::futures_unordered;
 use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::{Connect, HttpConnector};
 use hyper::{Client as Hyper, StatusCode, Uri};
-use hyper_http::header::{HeaderMap, HeaderValue};
+use crate::hyper_http::header::{HeaderMap, HeaderValue};
 #[cfg(feature = "tls")]
 use hyper_tls::HttpsConnector;
 use serde::de::DeserializeOwned;
 use serde_json;
 // use tokio_core::reactor::Handle;
 
-use error::{ApiError, Error};
-use http::HttpClient;
-use version::VersionInfo;
+use crate::error::{ApiError, Error};
+use crate::http::HttpClient;
+use crate::version::VersionInfo;
 
 // header! {
 //     /// The `X-Etcd-Cluster-Id` header.

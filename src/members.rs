@@ -9,9 +9,9 @@ use hyper::client::connect::Connect;
 use hyper::{StatusCode, Uri};
 use serde_json;
 
-use async::first_ok;
-use client::{Client, ClusterInfo, Response};
-use error::{ApiError, Error};
+use crate::r#async::first_ok;
+use crate::client::{Client, ClusterInfo, Response};
+use crate::error::{ApiError, Error};
 
 /// An etcd server that is a member of a cluster.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]

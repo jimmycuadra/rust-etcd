@@ -95,16 +95,16 @@ extern crate url;
 #[macro_use]
 extern crate log;
 
-pub use client::{BasicAuth, Client, ClusterInfo, Health, Response};
-pub use error::{ApiError, Error};
-pub use version::VersionInfo;
+pub use crate::client::{BasicAuth, Client, ClusterInfo, Health, Response};
+pub use crate::error::{ApiError, Error};
+pub use crate::version::VersionInfo;
 
 pub mod auth;
 pub mod kv;
 pub mod members;
 pub mod stats;
 
-mod async;
+mod r#async;
 mod client;
 mod error;
 mod http;

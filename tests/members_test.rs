@@ -10,7 +10,7 @@ use etcd::members;
 use futures::future::Future;
 use tokio_core::reactor::Core;
 
-use test::TestClient;
+use crate::test::TestClient;
 
 mod test;
 
