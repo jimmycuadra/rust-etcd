@@ -27,10 +27,6 @@
 //! Basic usage:
 //!
 //! ```no_run
-//! extern crate etcd;
-//! extern crate futures;
-//! extern crate tokio_core;
-//!
 //! use etcd::Client;
 //! use etcd::kv::{self, Action};
 //! use futures::Future;

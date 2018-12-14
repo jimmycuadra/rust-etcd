@@ -142,13 +142,6 @@ where
     /// certificate:
     ///
     /// ```no_run
-    /// extern crate etcd;
-    /// extern crate futures;
-    /// extern crate hyper;
-    /// extern crate hyper_tls;
-    /// extern crate native_tls;
-    /// extern crate tokio_core;
-    ///
     /// use std::fs::File;
     /// use std::io::Read;
     ///
