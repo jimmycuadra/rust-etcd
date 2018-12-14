@@ -12,20 +12,26 @@ use futures::future::{Future, IntoFuture};
 use futures::stream::Stream;
 use hyper::client::connect::Connect;
 use hyper::{StatusCode, Uri};
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 use tokio_timer::Timeout;
 use url::Url;
 
 pub use crate::error::WatchError;
 
-use crate::r#async::first_ok;
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
-use crate::options::{ComparisonConditions, DeleteOptions, GetOptions as InternalGetOptions, SetOptions};
+use crate::options::{
+    ComparisonConditions,
+    DeleteOptions,
+    GetOptions as InternalGetOptions,
+    SetOptions,
+};
+use crate::r#async::first_ok;
 use url::form_urlencoded::Serializer;
 
 /// Information about the result of a successful key-value API operation.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct KeyValueInfo {
     /// The action that was taken, e.g. `get`, `set`.
     pub action: Action,
@@ -39,7 +45,7 @@ pub struct KeyValueInfo {
 /// The type of action that was taken in response to a key value API request.
 ///
 /// "Node" refers to the key or directory being acted upon.
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum Action {
     /// Atomic deletion of a node based on previous state.
     #[serde(rename = "compareAndDelete")]
@@ -68,7 +74,7 @@ pub enum Action {
 }
 
 /// An etcd key or directory.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Node {
     /// The new value of the etcd creation index.
     #[serde(rename = "createdIndex")]
@@ -542,7 +548,7 @@ pub fn watch<C>(
     client: &Client<C>,
     key: &str,
     options: WatchOptions,
-) -> Box<Future<Item = Response<KeyValueInfo>, Error = WatchError> + Send>
+) -> Box<dyn Future<Item = Response<KeyValueInfo>, Error = WatchError> + Send>
 where
     C: Clone + Connect,
 {
@@ -579,8 +585,8 @@ fn build_url(endpoint: &Uri, path: &str) -> String {
 fn raw_delete<C>(
     client: &Client<C>,
     key: &str,
-    options: DeleteOptions,
-) -> Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
+    options: DeleteOptions<'_>,
+) -> Box<dyn Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -724,8 +730,8 @@ where
 fn raw_set<C>(
     client: &Client<C>,
     key: &str,
-    options: SetOptions,
-) -> Box<Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
+    options: SetOptions<'_>,
+) -> Box<dyn Future<Item = Response<KeyValueInfo>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {

@@ -7,11 +7,12 @@ use std::str::FromStr;
 use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::Connect;
 use hyper::{StatusCode, Uri};
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
-use crate::r#async::first_ok;
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
+use crate::r#async::first_ok;
 
 /// An etcd server that is a member of a cluster.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
@@ -52,7 +53,7 @@ struct ListResponse {
 pub fn add<C>(
     client: &Client<C>,
     peer_urls: Vec<String>,
-) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+) -> Box<dyn Future<Item = Response<()>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {
@@ -204,7 +205,7 @@ pub fn update<C>(
     client: &Client<C>,
     id: String,
     peer_urls: Vec<String>,
-) -> Box<Future<Item = Response<()>, Error = Vec<Error>>>
+) -> Box<dyn Future<Item = Response<()>, Error = Vec<Error>>>
 where
     C: Clone + Connect,
 {

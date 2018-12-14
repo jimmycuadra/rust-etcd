@@ -1,11 +1,3 @@
-extern crate etcd;
-extern crate futures;
-extern crate hyper;
-extern crate hyper_tls;
-extern crate native_tls;
-extern crate tokio_core;
-extern crate tokio_timer;
-
 use etcd::auth::{self, AuthChange, NewUser, Role, RoleUpdate, UserUpdate};
 use etcd::{BasicAuth, Client};
 use futures::future::Future;
@@ -25,7 +17,7 @@ fn auth() {
 
     let root_user = NewUser::new("root", "secret");
 
-    let work: Box<Future<Item = (), Error = ()>> = Box::new(
+    let work: Box<dyn Future<Item = (), Error = ()>> = Box::new(
         auth::status(&client)
             .then(|res| {
                 let response = res.unwrap();

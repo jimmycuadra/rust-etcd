@@ -7,11 +7,12 @@ use std::str::FromStr;
 use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::Connect;
 use hyper::{StatusCode, Uri};
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
-use crate::r#async::first_ok;
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
+use crate::r#async::first_ok;
 
 /// The structure returned by the `GET /v2/auth/enable` endpoint.
 #[derive(Debug, Deserialize)]

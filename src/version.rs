@@ -1,9 +1,11 @@
 //! Types for the version endpoint.
 
+use serde_derive::{Deserialize, Serialize};
+
 /// Information about the versions of etcd running in a cluster.
 ///
 /// This value is returned by `Client::versions`.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct VersionInfo {
     /// The version of the entire etcd cluster.
     #[serde(rename = "etcdcluster")]

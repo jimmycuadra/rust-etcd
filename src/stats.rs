@@ -6,12 +6,13 @@ use futures::stream::futures_unordered;
 use futures::{Future, IntoFuture, Stream};
 use hyper::client::connect::Connect;
 use hyper::Uri;
+use serde_derive::{Deserialize, Serialize};
 
 use crate::client::{Client, Response};
 use crate::error::Error;
 
 /// Statistics about an etcd cluster leader.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LeaderStats {
     /// A unique identifier of a leader member.
     pub leader: String,
@@ -20,7 +21,7 @@ pub struct LeaderStats {
 }
 
 /// Statistics about the health of a single etcd follower node.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FollowerStats {
     /// Counts of Raft RPC request successes and failures to this follower.
     pub counts: CountStats,
@@ -29,7 +30,7 @@ pub struct FollowerStats {
 }
 
 /// Statistics about the number of successful and failed Raft RPC requests to an etcd node.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CountStats {
     /// The number of times an RPC request to the node failed.
     pub fail: u64,
@@ -38,7 +39,7 @@ pub struct CountStats {
 }
 
 /// Statistics about the network latency to an etcd node.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LatencyStats {
     /// The average observed latency to the node, in seconds.
     pub average: f64,
@@ -54,7 +55,7 @@ pub struct LatencyStats {
 }
 
 /// Statistics about an etcd cluster member.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SelfStats {
     /// The unique Raft ID of the member.
     pub id: String,
@@ -89,7 +90,7 @@ pub struct SelfStats {
 }
 
 /// A small amount of information about the leader of the cluster.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct LeaderInfo {
     /// The unique Raft ID of the leader.
     #[serde(rename = "leader")]
@@ -102,7 +103,7 @@ pub struct LeaderInfo {
 }
 
 /// Statistics about the operations handled by an etcd member.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct StoreStats {
     /// The number of failed compare and delete operations.
     #[serde(rename = "compareAndDeleteFail")]

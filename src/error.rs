@@ -4,10 +4,11 @@ use std::convert::From;
 use std::error::Error as StdError;
 use std::fmt::{Display, Error as FmtError, Formatter};
 
+use http::uri::InvalidUri;
 use hyper::{Error as HttpError, StatusCode};
-use crate::hyper_http::uri::InvalidUri;
 #[cfg(feature = "tls")]
 use native_tls::Error as TlsError;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::Error as SerializationError;
 use tokio_timer::timeout::Error as TokioTimeoutError;
 use url::ParseError as UrlError;
@@ -16,7 +17,7 @@ use url::ParseError as UrlError;
 ///
 /// This is a logical error, as opposed to other types of errors that may occur when using this
 /// crate, such as network or serialization errors. See `Error` for the other types of errors.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct ApiError {
     /// The key that was being operated upon or reason for the failure.
     pub cause: Option<String>,
@@ -30,7 +31,7 @@ pub struct ApiError {
 }
 
 impl Display for ApiError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.message)
     }
 }
@@ -67,7 +68,7 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match *self {
             Error::Api(ref error) => write!(f, "{}", error),
             Error::Http(ref error) => write!(f, "{}", error),
@@ -151,7 +152,7 @@ impl<T> From<TokioTimeoutError<T>> for WatchError {
 }
 
 impl Display for WatchError {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match *self {
             WatchError::Timeout => write!(f, "{}", self.description()),
             ref other => other.fmt(f),

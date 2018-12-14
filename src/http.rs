@@ -1,9 +1,9 @@
 use base64::encode;
+use http::header::{AUTHORIZATION, CONTENT_TYPE};
+use http::request::Builder;
 use hyper::client::connect::Connect;
 use hyper::client::ResponseFuture;
 use hyper::{Body, Client as Hyper, Method, Request, Uri};
-use crate::hyper_http::header::{AUTHORIZATION, CONTENT_TYPE};
-use crate::hyper_http::request::Builder;
 
 use crate::client::BasicAuth;
 

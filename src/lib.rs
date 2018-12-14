@@ -76,25 +76,6 @@
 //! constructor. This feature is enabled by default.
 #![deny(missing_debug_implementations, missing_docs, warnings)]
 
-extern crate futures;
-// #[macro_use]
-extern crate http as hyper_http;
-extern crate hyper;
-#[cfg(feature = "tls")]
-extern crate hyper_tls;
-#[cfg(feature = "tls")]
-extern crate native_tls;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate base64;
-extern crate serde_json;
-extern crate tokio_core;
-extern crate tokio_timer;
-extern crate url;
-#[macro_use]
-extern crate log;
-
 pub use crate::client::{BasicAuth, Client, ClusterInfo, Health, Response};
 pub use crate::error::{ApiError, Error};
 pub use crate::version::VersionInfo;

@@ -1,10 +1,3 @@
-extern crate etcd;
-extern crate futures;
-extern crate hyper;
-extern crate hyper_tls;
-extern crate native_tls;
-extern crate tokio_core;
-
 use etcd::stats;
 use futures::{Future, Stream};
 use tokio_core::reactor::Core;

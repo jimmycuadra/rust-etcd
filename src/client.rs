@@ -2,14 +2,15 @@
 
 use futures::stream::futures_unordered;
 use futures::{Future, IntoFuture, Stream};
+use http::header::{HeaderMap, HeaderValue};
 use hyper::client::connect::{Connect, HttpConnector};
 use hyper::{Client as Hyper, StatusCode, Uri};
-use crate::hyper_http::header::{HeaderMap, HeaderValue};
 #[cfg(feature = "tls")]
 use hyper_tls::HttpsConnector;
+use log::error;
 use serde::de::DeserializeOwned;
+use serde_derive::Deserialize;
 use serde_json;
-// use tokio_core::reactor::Handle;
 
 use crate::error::{ApiError, Error};
 use crate::http::HttpClient;
