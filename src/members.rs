@@ -12,7 +12,7 @@ use serde_json;
 
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
-use crate::r#async::first_ok;
+use crate::first_ok::first_ok;
 
 /// An etcd server that is a member of a cluster.
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]

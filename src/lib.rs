@@ -85,9 +85,9 @@ pub mod kv;
 pub mod members;
 pub mod stats;
 
-mod r#async;
 mod client;
 mod error;
+mod first_ok;
 mod http;
 mod options;
 mod version;

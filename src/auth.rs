@@ -12,7 +12,7 @@ use serde_json;
 
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
-use crate::r#async::first_ok;
+use crate::first_ok::first_ok;
 
 /// The structure returned by the `GET /v2/auth/enable` endpoint.
 #[derive(Debug, Deserialize)]

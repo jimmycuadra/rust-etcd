@@ -21,13 +21,13 @@ pub use crate::error::WatchError;
 
 use crate::client::{Client, ClusterInfo, Response};
 use crate::error::{ApiError, Error};
+use crate::first_ok::first_ok;
 use crate::options::{
     ComparisonConditions,
     DeleteOptions,
     GetOptions as InternalGetOptions,
     SetOptions,
 };
-use crate::r#async::first_ok;
 use url::form_urlencoded::Serializer;
 
 /// Information about the result of a successful key-value API operation.
