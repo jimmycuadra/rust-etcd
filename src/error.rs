@@ -10,7 +10,7 @@ use hyper::{Error as HttpError, StatusCode};
 use native_tls::Error as TlsError;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Error as SerializationError;
-use tokio_timer::timeout::Error as TokioTimeoutError;
+use tokio::timer::timeout::Error as TokioTimeoutError;
 use url::ParseError as UrlError;
 
 /// An error returned by an etcd API endpoint.
