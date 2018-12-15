@@ -149,7 +149,7 @@ where
     /// use hyper::client::HttpConnector;
     /// use hyper_tls::HttpsConnector;
     /// use native_tls::{Certificate, TlsConnector, Identity};
-    /// use tokio_core::reactor::Core;
+    /// use tokio::runtime::Runtime;
     ///
     /// use etcd::{Client, kv};
     ///
@@ -168,8 +168,6 @@ where
     ///
     ///     let tls_connector = builder.build().unwrap();
     ///
-    ///     let mut core = Core::new().unwrap();
-    ///
     ///     let mut http_connector = HttpConnector::new(4);
     ///     http_connector.enforce_http(false);
     ///     let https_connector = HttpsConnector::from((http_connector, tls_connector));
@@ -178,7 +176,7 @@ where
     ///
     ///     let client = Client::custom(hyper, &["https://etcd.example.com:2379"], None).unwrap();
     ///
-    ///     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+    ///     let work = kv::set(&client, "/foo", "bar", None).and_then(move |_| {
     ///         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
     ///
     ///         get_request.and_then(|response| {
@@ -190,7 +188,7 @@ where
     ///         })
     ///     });
     ///
-    ///     core.run(work).unwrap();
+    ///     assert!(Runtime::new().unwrap().block_on(work).is_ok());
     /// }
     /// ```
     pub fn custom(

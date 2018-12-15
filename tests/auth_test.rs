@@ -1,12 +1,13 @@
 use etcd::auth::{self, AuthChange, NewUser, Role, RoleUpdate, UserUpdate};
 use etcd::{BasicAuth, Client};
 use futures::future::Future;
-use tokio_core::reactor::Core;
+use tokio::runtime::Runtime;
 
 #[test]
 fn auth() {
-    let mut core = Core::new().unwrap();
     let client = Client::new(&["http://etcd:2379"], None).unwrap();
+    let client_2 = client.clone();
+    let client_3 = client.clone();
 
     let basic_auth = BasicAuth {
         username: "root".into(),
@@ -14,26 +15,34 @@ fn auth() {
     };
 
     let authed_client = Client::new(&["http://etcd:2379"], Some(basic_auth)).unwrap();
+    let authed_client_2 = authed_client.clone();
+    let authed_client_3 = authed_client.clone();
+    let authed_client_4 = authed_client.clone();
+    let authed_client_5 = authed_client.clone();
+    let authed_client_6 = authed_client.clone();
+    let authed_client_7 = authed_client.clone();
+    let authed_client_8 = authed_client.clone();
+    let authed_client_9 = authed_client.clone();
 
     let root_user = NewUser::new("root", "secret");
 
-    let work: Box<dyn Future<Item = (), Error = ()>> = Box::new(
+    let work: Box<dyn Future<Item = (), Error = ()> + Send> = Box::new(
         auth::status(&client)
-            .then(|res| {
+            .then(move |res| {
                 let response = res.unwrap();
 
                 assert_eq!(response.data, false);
 
-                auth::create_user(&client, root_user)
+                auth::create_user(&client_2, root_user)
             })
-            .then(|res| {
+            .then(move |res| {
                 let response = res.unwrap();
 
                 assert_eq!(response.data.name(), "root");
 
-                auth::enable(&client)
+                auth::enable(&client_3)
             })
-            .then(|res| {
+            .then(move |res| {
                 let response = res.unwrap();
 
                 assert_eq!(response.data, AuthChange::Changed);
@@ -44,7 +53,7 @@ fn auth() {
 
                 auth::update_role(&authed_client, update_guest)
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
                 let mut rkt_role = Role::new("rkt");
@@ -52,18 +61,18 @@ fn auth() {
                 rkt_role.grant_kv_read_permission("/rkt/*");
                 rkt_role.grant_kv_write_permission("/rkt/*");
 
-                auth::create_role(&authed_client, rkt_role)
+                auth::create_role(&authed_client_2, rkt_role)
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
                 let mut rkt_user = NewUser::new("rkt", "secret");
 
                 rkt_user.add_role("rkt");
 
-                auth::create_user(&authed_client, rkt_user)
+                auth::create_user(&authed_client_3, rkt_user)
             })
-            .then(|res| {
+            .then(move |res| {
                 let response = res.unwrap();
 
                 let rkt_user = response.data;
@@ -79,14 +88,14 @@ fn auth() {
                 update_rkt_user.update_password("secret2");
                 update_rkt_user.grant_role("root");
 
-                auth::update_user(&authed_client, update_rkt_user)
+                auth::update_user(&authed_client_4, update_rkt_user)
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
-                auth::get_role(&authed_client, "rkt")
+                auth::get_role(&authed_client_5, "rkt")
             })
-            .then(|res| {
+            .then(move |res| {
                 let response = res.unwrap();
 
                 let role = response.data;
@@ -94,26 +103,26 @@ fn auth() {
                 assert!(role.kv_read_permissions().contains(&"/rkt/*".to_owned()));
                 assert!(role.kv_write_permissions().contains(&"/rkt/*".to_owned()));
 
-                auth::delete_user(&authed_client, "rkt")
+                auth::delete_user(&authed_client_6, "rkt")
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
-                auth::delete_role(&authed_client, "rkt")
+                auth::delete_role(&authed_client_7, "rkt")
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
                 let mut update_guest = RoleUpdate::new("guest");
 
                 update_guest.grant_kv_write_permission("/*");
 
-                auth::update_role(&authed_client, update_guest)
+                auth::update_role(&authed_client_8, update_guest)
             })
-            .then(|res| {
+            .then(move |res| {
                 res.unwrap();
 
-                auth::disable(&authed_client)
+                auth::disable(&authed_client_9)
             })
             .then(|res| {
                 let response = res.unwrap();
@@ -124,5 +133,7 @@ fn auth() {
             }),
     );
 
-    assert!(core.run(work).is_ok());
+    let _ = Runtime::new()
+        .expect("failed to create Tokio runtime")
+        .block_on(work);
 }

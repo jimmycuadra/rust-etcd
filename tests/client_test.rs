@@ -1,5 +1,4 @@
 use futures::{Future, Stream};
-use tokio_core::reactor::Core;
 
 use crate::test::TestClient;
 
@@ -7,8 +6,7 @@ mod test;
 
 #[test]
 fn health() {
-    let core = Core::new().unwrap();
-    let mut client = TestClient::no_destructor(core);
+    let mut client = TestClient::no_destructor();
 
     let work = client.health().collect().and_then(|responses| {
         for response in responses {
@@ -18,12 +16,11 @@ fn health() {
         Ok(())
     });
 
-    assert!(client.run(work).is_ok());
+    client.run(work);
 }
 #[test]
 fn versions() {
-    let core = Core::new().unwrap();
-    let mut client = TestClient::no_destructor(core);
+    let mut client = TestClient::no_destructor();
 
     let work = client.versions().collect().and_then(|responses| {
         for response in responses {
@@ -34,5 +31,5 @@ fn versions() {
         Ok(())
     });
 
-    assert!(client.run(work).is_ok());
+    client.run(work);
 }

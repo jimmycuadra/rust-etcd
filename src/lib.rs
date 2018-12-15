@@ -4,7 +4,7 @@
 //! The client uses etcd's v2 API. Support for the v3 API is planned, and will be added via
 //! separate types for backwards compatibility and to support both APIs simultaneously.
 //!
-//! The client uses asynchronous I/O, backed by the `futures` and `tokio-core` crates, and requires
+//! The client uses asynchronous I/O, backed by the `futures` and `tokio` crates, and requires
 //! both to be used alongside. Where possible, futures are returned using "impl Trait" instead of
 //! boxing.
 //!
@@ -30,19 +30,16 @@
 //! use etcd::Client;
 //! use etcd::kv::{self, Action};
 //! use futures::Future;
-//! use tokio_core::reactor::Core;
+//! use tokio::runtime::Runtime;
 //!
 //! fn main() {
-//!     // Create a `Core`, which is the event loop which will drive futures to completion.
-//!     let mut core = Core::new().unwrap();
-//!
 //!     // Create a client to access a single cluster member. Addresses of multiple cluster
 //!     // members can be provided and the client will try each one in sequence until it
 //!     // receives a successful response.
 //!     let client = Client::new(&["http://etcd.example.com:2379"], None).unwrap();
 //!
 //!     // Set the key "/foo" to the value "bar" with no expiration.
-//!     let work = kv::set(&client, "/foo", "bar", None).and_then(|_| {
+//!     let work = kv::set(&client, "/foo", "bar", None).and_then(move |_| {
 //!         // Once the key has been set, ask for details about it.
 //!         let get_request = kv::get(&client, "/foo", kv::GetOptions::default());
 //!
@@ -62,7 +59,7 @@
 //!     });
 //!
 //!     // Start the event loop, driving the asynchronous code to completion.
-//!     core.run(work).unwrap();
+//!     assert!(Runtime::new().unwrap().block_on(work).is_ok());
 //! }
 //! ```
 //!
