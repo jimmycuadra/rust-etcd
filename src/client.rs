@@ -225,7 +225,7 @@ where
     }
 
     /// Runs a basic health check against each etcd member.
-    pub fn health(&self) -> impl Stream<Item = Response<Health>, Error = Error> {
+    pub fn health(&self) -> impl Stream<Item = Response<Health>, Error = Error> + Send {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "health");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -256,7 +256,7 @@ where
     }
 
     /// Returns version information from each etcd cluster member the client was initialized with.
-    pub fn versions(&self) -> impl Stream<Item = Response<VersionInfo>, Error = Error> {
+    pub fn versions(&self) -> impl Stream<Item = Response<VersionInfo>, Error = Error> + Send {
         let futures = self.endpoints.iter().map(|endpoint| {
             let url = build_url(&endpoint, "version");
             let uri = url.parse().map_err(Error::from).into_future();
@@ -287,10 +287,13 @@ where
     }
 
     /// Lets other internal code make basic HTTP requests.
-    pub(crate) fn request<U, T>(&self, uri: U) -> impl Future<Item = Response<T>, Error = Error>
+    pub(crate) fn request<U, T>(
+        &self,
+        uri: U,
+    ) -> impl Future<Item = Response<T>, Error = Error> + Send
     where
-        U: Future<Item = Uri, Error = Error>,
-        T: DeserializeOwned + 'static,
+        U: Future<Item = Uri, Error = Error> + Send,
+        T: DeserializeOwned + Send + 'static,
     {
         let http_client = self.http_client.clone();
         let response = uri.and_then(move |uri| http_client.get(uri).map_err(Error::from));

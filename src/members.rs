@@ -110,7 +110,7 @@ where
 pub fn delete<C>(
     client: &Client<C>,
     id: String,
-) -> impl Future<Item = Response<()>, Error = Vec<Error>>
+) -> impl Future<Item = Response<()>, Error = Vec<Error>> + Send
 where
     C: Clone + Connect,
 {
@@ -153,7 +153,9 @@ where
 /// # Parameters
 ///
 /// * client: A `Client` to use to make the API call.
-pub fn list<C>(client: &Client<C>) -> impl Future<Item = Response<Vec<Member>>, Error = Vec<Error>>
+pub fn list<C>(
+    client: &Client<C>,
+) -> impl Future<Item = Response<Vec<Member>>, Error = Vec<Error>> + Send
 where
     C: Clone + Connect,
 {
