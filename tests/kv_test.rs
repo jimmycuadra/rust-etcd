@@ -1,4 +1,4 @@
-use std::thread::spawn;
+use std::thread::{sleep, spawn};
 use std::time::Duration;
 
 use etcd::kv::{self, Action, GetOptions, KeyValueInfo, WatchError, WatchOptions};
@@ -692,7 +692,11 @@ fn watch_recursive() {
         let mut client = TestClient::no_destructor(core);
         let inner_client = client.clone();
 
-        let work = rx.then(|_| kv::set(&inner_client, "/test/foo/bar", "baz", None));
+        let work = rx.then(|_| {
+            let duration = Duration::from_millis(100);
+            sleep(duration);
+            kv::set(&inner_client, "/test/foo/bar", "baz", None)
+        });
 
         assert!(client.run(work).is_ok());
     });
@@ -707,6 +711,7 @@ fn watch_recursive() {
         "/test",
         WatchOptions {
             recursive: true,
+            timeout: Some(Duration::from_millis(1000)),
             ..Default::default()
         },
     )
