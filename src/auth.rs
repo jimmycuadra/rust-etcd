@@ -15,14 +15,14 @@ use crate::error::{ApiError, Error};
 use crate::first_ok::first_ok;
 
 /// The structure returned by the `GET /v2/auth/enable` endpoint.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 struct AuthStatus {
     /// Whether or not the auth system is enabled.
     pub enabled: bool,
 }
 
 /// The type returned when the auth system is successfully enabled or disabled.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub enum AuthChange {
     /// The auth system was successfully enabled or disabled.
     Changed,
@@ -31,7 +31,7 @@ pub enum AuthChange {
 }
 
 /// An existing etcd user with a list of their granted roles.
-#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct User {
     /// The user's name.
     #[serde(rename = "user")]
@@ -53,7 +53,7 @@ impl User {
 }
 
 /// An existing etcd user with details of granted roles.
-#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct UserDetail {
     /// The user's name.
     #[serde(rename = "user")]
@@ -75,13 +75,13 @@ impl UserDetail {
 }
 
 /// A list of all users.
-#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
 struct Users {
     users: Option<Vec<UserDetail>>,
 }
 
 /// Paramters used to create a new etcd user.
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct NewUser {
     /// The user's name.
     #[serde(rename = "user")]
@@ -125,7 +125,7 @@ impl NewUser {
 }
 
 /// Parameters used to update an existing etcd user.
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct UserUpdate {
     /// The user's name.
     #[serde(rename = "user")]
@@ -254,13 +254,13 @@ impl Role {
 }
 
 /// A list of all roles.
-#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
 struct Roles {
     roles: Option<Vec<Role>>,
 }
 
 /// Parameters used to update an existing authorization role.
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, Clone, Eq, Hash, PartialEq, Serialize)]
 pub struct RoleUpdate {
     /// The name of the role.
     #[serde(rename = "role")]

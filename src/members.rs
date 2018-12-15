@@ -15,7 +15,7 @@ use crate::error::{ApiError, Error};
 use crate::first_ok::first_ok;
 
 /// An etcd server that is a member of a cluster.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Member {
     /// An internal identifier for the cluster member.
     pub id: String,
@@ -30,7 +30,7 @@ pub struct Member {
 }
 
 /// The request body for `POST /v2/members` and `PUT /v2/members/:id`.
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 struct PeerUrls {
     /// The peer URLs.
     #[serde(rename = "peerURLs")]
@@ -38,7 +38,7 @@ struct PeerUrls {
 }
 
 /// A small wrapper around `Member` to match the response of `GET /v2/members`.
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 struct ListResponse {
     /// The members.
     members: Vec<Member>,

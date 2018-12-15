@@ -9,7 +9,7 @@ use hyper::{Client as Hyper, StatusCode, Uri};
 use hyper_tls::HttpsConnector;
 use log::error;
 use serde::de::DeserializeOwned;
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
 use crate::error::{ApiError, Error};
@@ -62,7 +62,7 @@ pub struct BasicAuth {
 }
 
 /// A value returned by the health check API endpoint to indicate a healthy cluster member.
-#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Health {
     /// The health status of the cluster member.
     pub health: String,
@@ -330,7 +330,7 @@ pub struct Response<T> {
 }
 
 /// Information about the state of the etcd cluster from an API response's HTTP headers.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct ClusterInfo {
     /// An internal identifier for the cluster.
     pub cluster_id: Option<String>,
