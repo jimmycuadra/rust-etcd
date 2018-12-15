@@ -16,11 +16,12 @@
 //! HTTPS, and supports authenticating to the etcd cluster via HTTP basic authentication (username
 //! and password) and/or X.509 client certificates.
 //!
-//! To get basic information about the versions of etcd running in a cluster, use the
-//! `Client::versions` method. All other API calls are made by passing a `Client` reference to the
-//! functions in the `auth`, `kv`, `members`, and `stats` modules. These modules contain functions
-//! for API calls to the authentication and authorization API, the primary key-value store API, the
-//! cluster membership API, and statistics API, respectively.
+//! To get basic information about the health and versions of etcd running in a cluster, use the
+//! `Client::health` and `Client::versions` methods, respectively. All other API calls are made by
+//! passing a `Client` reference to the functions in the `auth`, `kv`, `members`, and `stats`
+//! modules. These modules contain functions for API calls to the authentication and authorization
+//! API, the primary key-value store API, the cluster membership API, and statistics API,
+//! respectively.
 //!
 //! # Examples
 //!
