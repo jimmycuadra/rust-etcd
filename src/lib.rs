@@ -18,9 +18,9 @@
 //!
 //! To get basic information about the versions of etcd running in a cluster, use the
 //! `Client::versions` method. All other API calls are made by passing a `Client` reference to the
-//! functions in the `kv`, `members`, and `stats` modules. These modules contain functions for API
-//! calls to the primary key-value store API, the cluster membership API, and statistics API,
-//! respectively. The authentication API is not yet supported, but planned.
+//! functions in the `auth`, `kv`, `members`, and `stats` modules. These modules contain functions
+//! for API calls to the authentication and authorization API, the primary key-value store API, the
+//! cluster membership API, and statistics API, respectively.
 //!
 //! # Examples
 //!
