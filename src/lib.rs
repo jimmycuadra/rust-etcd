@@ -79,6 +79,9 @@ pub mod kv;
 pub mod members;
 pub mod stats;
 
+#[cfg(feature = "v3")]
+pub mod v3;
+
 mod client;
 mod error;
 mod first_ok;
