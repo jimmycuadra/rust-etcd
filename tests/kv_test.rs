@@ -411,6 +411,37 @@ fn set() {
 }
 
 #[test]
+fn set_and_refresh() {
+    let mut client = TestClient::new();
+
+    let work = kv::set(&client, "/test/foo", "baz", Some(30)).and_then(|res| {
+        assert_eq!(res.data.action, Action::Set);
+
+        let node = res.data.node;
+
+        assert_eq!(node.value.unwrap(), "baz");
+        assert!(node.ttl.is_some());
+
+        Ok(())
+    });
+
+    client.run(work);
+
+    let work = kv::refresh(&client, "/test/foo", 30).and_then(|res| {
+        assert_eq!(res.data.action, Action::Update);
+
+        let node = res.data.node;
+
+        assert_eq!(node.value.unwrap(), "baz");
+        assert!(node.ttl.is_some());
+
+        Ok(())
+    });
+
+    client.run(work);
+}
+
+#[test]
 fn set_dir() {
     let mut client = TestClient::new();
     let inner_client = client.clone();
