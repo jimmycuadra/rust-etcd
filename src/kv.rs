@@ -767,7 +767,6 @@ where
     C: Clone + Connect,
 {
     let mut http_options = vec![];
-    
 
     if let Some(ref value) = options.value {
         http_options.push(("value".to_owned(), value.to_string()));
@@ -783,7 +782,7 @@ where
 
     let prev_exist = match options.prev_exist {
         Some(prev_exist) => prev_exist,
-        None => false
+        None => false,
     };
 
     // If we are calling refresh, we should also ensure we are setting prevExist.
