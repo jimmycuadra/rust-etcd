@@ -55,4 +55,6 @@ pub struct SetOptions<'a> {
     pub ttl: Option<u64>,
     /// New value for the key.
     pub value: Option<&'a str>,
+    /// Whether we should refresh the key, instead of setting it.alloc
+    pub refresh: bool,
 }

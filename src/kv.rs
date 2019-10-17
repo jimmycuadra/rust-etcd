@@ -428,6 +428,37 @@ where
     )
 }
 
+/// Refreshes the already set etcd key, bumping its TTL without triggering watcher updates.
+///
+/// # Parameters
+///
+/// * client: A `Client` to use to make the API call.
+/// * key: The name of the key-value pair to set.
+/// * ttl: If given, the node will expire after this many seconds.
+///
+/// # Errors
+///
+/// Fails if the node does not exist.
+pub fn refresh<C>(
+    client: &Client<C>,
+    key: &str,
+    ttl: u64,
+) -> impl Future<Item = Response<KeyValueInfo>, Error = Vec<Error>> + Send
+where
+    C: Clone + Connect,
+{
+    raw_set(
+        client,
+        key,
+        SetOptions {
+            ttl: Some(ttl),
+            refresh: true,
+            prev_exist: Some(true),
+            ..Default::default()
+        },
+    )
+}
+
 /// Sets the key to an empty directory.
 ///
 /// An existing key-value pair will be replaced, but an existing directory will not.
@@ -749,8 +780,19 @@ where
         http_options.push(("dir".to_owned(), dir.to_string()));
     }
 
-    if let Some(ref prev_exist) = options.prev_exist {
+    let prev_exist = match options.prev_exist {
+        Some(prev_exist) => prev_exist,
+        None => false,
+    };
+
+    // If we are calling refresh, we should also ensure we are setting prevExist.
+    if prev_exist || options.refresh {
+        let prev_exist = prev_exist || options.refresh;
         http_options.push(("prevExist".to_owned(), prev_exist.to_string()));
+    }
+
+    if options.refresh {
+        http_options.push(("refresh".to_owned(), "true".to_owned()));
     }
 
     if let Some(ref conditions) = options.conditions {
