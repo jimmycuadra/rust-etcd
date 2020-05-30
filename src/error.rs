@@ -72,10 +72,10 @@ impl Display for Error {
         match *self {
             Error::Api(ref error) => write!(f, "{}", error),
             Error::Http(ref error) => write!(f, "{}", error),
-            ref error @ Error::InvalidConditions => write!(f, "{}", error.description()),
+            ref error @ Error::InvalidConditions => write!(f, "{}", error),
             Error::InvalidUri(ref error) => write!(f, "{}", error),
             Error::InvalidUrl(ref error) => write!(f, "{}", error),
-            ref error @ Error::NoEndpoints => write!(f, "{}", error.description()),
+            ref error @ Error::NoEndpoints => write!(f, "{}", error),
             #[cfg(feature = "tls")]
             Error::Tls(ref error) => write!(f, "{}", error),
             Error::Serialization(ref error) => write!(f, "{}", error),
@@ -154,7 +154,7 @@ impl<T> From<TokioTimeoutError<T>> for WatchError {
 impl Display for WatchError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match *self {
-            WatchError::Timeout => write!(f, "{}", self.description()),
+            WatchError::Timeout => write!(f, "{}", self),
             ref other => other.fmt(f),
         }
     }
